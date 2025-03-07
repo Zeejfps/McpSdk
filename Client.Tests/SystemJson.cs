@@ -19,6 +19,25 @@ class SystemJson : IJson
             {
                 var parameters = jsonRpcRequest.Parameters;
                 writer.WriteString("protocolVersion", parameters.ProtocolVersion);
+                
+                writer.WriteStartObject("capabilities");
+                {
+                    var capabilities = parameters.Capabilities;
+                    if (capabilities.Roots != null)
+                    {
+                        writer.WriteStartObject("roots");
+                        writer.WriteBoolean("listChanged", capabilities.Roots.IsListChangedNotificationSupported);
+                        writer.WriteEndObject();
+                    }
+
+                    if (capabilities.Sampling != null)
+                    {
+                        writer.WriteStartObject("sampling");
+                        writer.WriteEndObject();
+                    }
+                }
+                writer.WriteEndObject();
+
                 writer.WriteStartObject("clientInfo");
                 {
                     var clientInfo = parameters.ClientInfo;

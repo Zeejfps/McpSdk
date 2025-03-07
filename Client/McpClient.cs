@@ -22,7 +22,10 @@ namespace McpSharp.Client
         {
             await _transport.Connect();
             var protocolVersion = "2024-11-05";
-            var response = await _transport.SendMessage(new InitializeMessage(protocolVersion, _clientInfo));
+            var message = new InitializeMessage(protocolVersion, _clientInfo)
+                .WithCapability(new RootsCapability(false))
+                .WithCapability(new SamplingCapability());
+            var response = await _transport.SendMessage(message);
             if (response.ProtocolVersion != protocolVersion)
                 throw new ClientException($"Invalid protocol version. Expected {protocolVersion}, got {response.ProtocolVersion}");
             await _transport.SendNotification(new InitializedNotification());
