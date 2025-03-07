@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Net.Http.Headers;
 using System.Text;
 using McpSharp.Client;
 
@@ -7,9 +8,9 @@ class SystemHttpClientAdapter : ISseClient
     private readonly HttpClient _httpClient;
     private readonly ConcurrentQueue<string> _receivedMessages = new();
 
-    public SystemHttpClientAdapter(HttpClient httpClient)
+    public SystemHttpClientAdapter()
     {
-        _httpClient = httpClient;
+        _httpClient = new HttpClient();
     }
     
     public async Task<IHttpResponse> PostMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
@@ -22,28 +23,54 @@ class SystemHttpClientAdapter : ISseClient
         return new HttpResponseAdapter(response);
     }
 
-    public Task<string> DequeueMessage(CancellationToken cancellationToken)
+    public async Task<string> DequeueMessage(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        string message;
+        while (!_receivedMessages.TryDequeue(out message))
+        {
+            await Task.Delay(100, cancellationToken);
+        }
+        return message;
     }
+    
+    private Task _startListeningTask;
 
     public async Task Connect(string sseUrl, CancellationToken cancellationToken = default)
     {
-        var client = _httpClient;
-        client.DefaultRequestHeaders.Accept.ParseAdd("text/event-stream");
+        _startListeningTask = StartListening(sseUrl, cancellationToken);
+    }
 
-        var response = await client.GetAsync(sseUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        using (var stream = await response.Content.ReadAsStreamAsync())
-        using (var reader = new StreamReader(stream))
+    private async Task StartListening(string sseUrl, CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
         {
-            string line;
-            while ((line = await reader.ReadLineAsync()) != null && !cancellationToken.IsCancellationRequested)
+            try
             {
-                _receivedMessages.Enqueue(line);
+                using var request = new HttpRequestMessage(HttpMethod.Get, sseUrl);
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
+
+                using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var reader = new StreamReader(stream);
+                // Continuously read the stream.
+                while (!reader.EndOfStream)
+                {
+                    // Read a line from the stream.
+                    var line = await reader.ReadLineAsync(cancellationToken);
+                    if (string.IsNullOrEmpty(line))
+                        continue;
+                    
+                    Console.WriteLine($"{line}");
+                    _receivedMessages.Enqueue(line);
+                }
             }
-        }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }   
     }
 
     public void Dispose()

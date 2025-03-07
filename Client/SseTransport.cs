@@ -21,7 +21,8 @@ namespace McpSharp.Client
 
         public async Task Connect()
         {
-            await _sseClient.Connect(_endpoint);
+            await _sseClient.Connect("http://localhost:3000/sse");
+            Console.WriteLine($"Connected");
         }
 
         public async Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default)
@@ -35,7 +36,6 @@ namespace McpSharp.Client
             Console.WriteLine($"SSE Message: {sseMessage}");
 
             var responsePayloadAsJson = await response.ReadContentAsJsonString();
-            Console.WriteLine($"Json response: {responsePayloadAsJson}");
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
