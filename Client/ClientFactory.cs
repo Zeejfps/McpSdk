@@ -13,7 +13,8 @@ namespace McpSharp.Client
         
         public IClient CreateClient(ClientInfo clientInfo)
         {
-            return new McpClient(_connectionFactory, clientInfo);
+            var connection = _connectionFactory.CreateConnection();
+            return new McpClient(connection, clientInfo);
         }
     }
 }

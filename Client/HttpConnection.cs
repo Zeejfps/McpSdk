@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
@@ -20,6 +19,11 @@ namespace McpSharp.Client
             _sseClient = sseClient;
         }
 
+        public async Task Connect()
+        {
+            await _sseClient.Connect(_endpoint);
+        }
+
         public async Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default)
         {
             var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
@@ -28,7 +32,8 @@ namespace McpSharp.Client
             var response = await _sseClient.PostMessage(url, requestAsJson, cancellationToken);
 
             var sseMessage = await _sseClient.DequeueMessage(cancellationToken);
-            
+            Console.WriteLine($"SSE Message: {sseMessage}");
+
             var responsePayloadAsJson = await response.ReadContentAsJsonString();
             Console.WriteLine($"Json response: {responsePayloadAsJson}");
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);

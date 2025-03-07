@@ -5,6 +5,6 @@ namespace McpSharp.Client
 {
     public interface IConnectionFactory
     {
-        Task<IConnection> CreateConnection(CancellationToken cancellationToken = default);
+        IConnection CreateConnection(CancellationToken cancellationToken = default);
     }
 }

@@ -14,9 +14,9 @@ namespace McpSharp.Client
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<IConnection> CreateConnection(CancellationToken cancellationToken = default)
+        public IConnection CreateConnection(CancellationToken cancellationToken = default)
         {
-            var httpClient = await _httpClientFactory.CreateHttpClient("http://localhost:3000/sse");
+            var httpClient = _httpClientFactory.CreateHttpClient("http://localhost:3000/sse");
             return new HttpConnection(httpClient, _json, "test");
         }
     }

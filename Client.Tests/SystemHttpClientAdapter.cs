@@ -25,6 +25,11 @@ class SystemHttpClientAdapter : IHttpClient
         throw new NotImplementedException();
     }
 
+    public Task Connect(string sseEndpoint)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
         

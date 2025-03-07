@@ -7,14 +7,12 @@ namespace McpSharp.Client
 {
     internal sealed class McpClient : IClient
     {
-        private IConnection _connection;
-        
+        private readonly IConnection _connection;
         private readonly ClientInfo _clientInfo;
-        private readonly IConnectionFactory _connectionFactory;
 
-        public McpClient(IConnectionFactory connectionFactory, ClientInfo clientInfo)
+        public McpClient(IConnection connection, ClientInfo clientInfo)
         {
-            _connectionFactory = connectionFactory;
+            _connection = connection;
             _clientInfo = clientInfo;
         }
 
@@ -22,7 +20,7 @@ namespace McpSharp.Client
         
         public async Task Connect()
         {
-            _connection = await _connectionFactory.CreateConnection();
+            await _connection.Connect();
             var protocolVersion = "2024-11-05";
             var response = await _connection.SendMessage(new InitializeMessage(protocolVersion, _clientInfo));
             if (response.ProtocolVersion != protocolVersion)
