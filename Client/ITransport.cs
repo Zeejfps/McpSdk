@@ -8,6 +8,7 @@ namespace McpSharp.Client
     {
         Task Connect();
         Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default);
+        Task<ListToolsResult> SendMessage(ListToolsRequest payload, CancellationToken cancellationToken = default);
         Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default);
     }
 }

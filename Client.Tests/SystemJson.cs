@@ -72,6 +72,11 @@ class SystemJson : IJson
         return jsonString;
     }
 
+    public string Stringify(JsonRpcRequest<int, ListToolsRequest> jsonRpcRequest)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponseMessage?> jsonRpcResponse)
     {
         // Load the JSON into a JsonDocument.

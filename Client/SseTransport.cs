@@ -54,11 +54,20 @@ namespace McpSharp.Client
             return jsonRpcResponse.Result;
         }
 
+        public Task<ListToolsResult> SendMessage(ListToolsRequest payload, CancellationToken cancellationToken = default)
+        {
+            var request = new JsonRpcRequest<int, ListToolsRequest>(1, "tools/list", payload);
+            var requestAsJson = _json.Stringify(request);
+
+            throw new NotImplementedException();
+        }
+
         public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
         {
             var request = new JsonRpcNotification("initialized");
             var requestAsJson = _json.Stringify(request);
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
         }
+        
     }
 }

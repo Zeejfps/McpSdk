@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
@@ -32,9 +33,11 @@ namespace McpSharp.Client
             IsConnected = true;
         }
 
-        public Task<IEnumerable<IToolInfo>> ListTools()
+        public async Task<IEnumerable<IToolInfo>> ListTools()
         {
-            throw new System.NotImplementedException();
+            var request = new ListToolsRequest();
+            var result = await _transport.SendMessage(request);
+            return Enumerable.Empty<IToolInfo>();
         }
 
         public Task<ICallToolResult> CallTool(string toolName)
