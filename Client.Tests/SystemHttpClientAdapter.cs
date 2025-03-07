@@ -1,9 +1,11 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Text;
 using McpSharp.Client;
 
 class SystemHttpClientAdapter : IHttpClient
 {
     private readonly HttpClient _httpClient;
+    private readonly ConcurrentQueue<string> _receivedMessages = new();
 
     public SystemHttpClientAdapter(HttpClient httpClient)
     {
@@ -25,9 +27,23 @@ class SystemHttpClientAdapter : IHttpClient
         throw new NotImplementedException();
     }
 
-    public Task Connect(string sseEndpoint)
+    public async Task Connect(string sseUrl, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var client = _httpClient;
+        client.DefaultRequestHeaders.Accept.ParseAdd("text/event-stream");
+
+        var response = await client.GetAsync(sseUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        using (var stream = await response.Content.ReadAsStreamAsync())
+        using (var reader = new StreamReader(stream))
+        {
+            string line;
+            while ((line = await reader.ReadLineAsync()) != null && !cancellationToken.IsCancellationRequested)
+            {
+                _receivedMessages.Enqueue(line);
+            }
+        }
     }
 
     public void Dispose()

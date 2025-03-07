@@ -6,7 +6,7 @@ using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
-    internal sealed class HttpConnection : IConnection
+    internal sealed class HttpConnection : ITransport
     {
         private readonly string _endpoint;
         private readonly IJson _json;

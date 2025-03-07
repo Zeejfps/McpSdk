@@ -5,9 +5,9 @@ namespace McpSharp.Client
 {
     public interface IHttpClient
     {
-        Task Connect(string sseEndpoint);
+        Task Connect(string sseEndpoint, CancellationToken cancellationToken = default);
         void Dispose();
         Task<IHttpResponse> PostMessage(string url, string jsonBody, CancellationToken cancellationToken = default);
-        Task<string> DequeueMessage(CancellationToken cancellationToken);
+        Task<string> DequeueMessage(CancellationToken cancellationToken = default);
     }
 }

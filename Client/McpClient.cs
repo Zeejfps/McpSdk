@@ -7,12 +7,12 @@ namespace McpSharp.Client
 {
     internal sealed class McpClient : IClient
     {
-        private readonly IConnection _connection;
+        private readonly ITransport _transport;
         private readonly ClientInfo _clientInfo;
 
-        public McpClient(IConnection connection, ClientInfo clientInfo)
+        public McpClient(ITransport transport, ClientInfo clientInfo)
         {
-            _connection = connection;
+            _transport = transport;
             _clientInfo = clientInfo;
         }
 
@@ -20,12 +20,12 @@ namespace McpSharp.Client
         
         public async Task Connect()
         {
-            await _connection.Connect();
+            await _transport.Connect();
             var protocolVersion = "2024-11-05";
-            var response = await _connection.SendMessage(new InitializeMessage(protocolVersion, _clientInfo));
+            var response = await _transport.SendMessage(new InitializeMessage(protocolVersion, _clientInfo));
             if (response.ProtocolVersion != protocolVersion)
                 throw new ClientException($"Invalid protocol version. Expected {protocolVersion}, got {response.ProtocolVersion}");
-            await _connection.SendNotification(new InitializedNotification());
+            await _transport.SendNotification(new InitializedNotification());
             IsConnected = true;
         }
 

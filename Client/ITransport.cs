@@ -5,7 +5,7 @@ using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
-    public interface IConnection : IDisposable
+    public interface ITransport : IDisposable
     {
         Task Connect();
         Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default);

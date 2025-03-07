@@ -4,16 +4,16 @@ namespace McpSharp.Client
 {
     public sealed class ClientFactory
     {
-        private readonly IConnectionFactory _connectionFactory;
+        private readonly ITransportFactory _transportFactory;
         
         public ClientFactory(IJson json, IHttpClientFactory httpClientFactory)
         {
-            _connectionFactory = new HttpConnectionFactory(json, httpClientFactory);
+            _transportFactory = new HttpTransportFactory(json, httpClientFactory);
         }
         
         public IClient CreateClient(ClientInfo clientInfo)
         {
-            var connection = _connectionFactory.CreateConnection();
+            var connection = _transportFactory.Create();
             return new McpClient(connection, clientInfo);
         }
     }
