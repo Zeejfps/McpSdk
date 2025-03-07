@@ -12,7 +12,7 @@ namespace McpSharp.Client
     
     public interface ISseClient
     {
-        Task Connect(string sseEndpoint, CancellationToken cancellationToken = default);
+        Task Connect(string url, CancellationToken cancellationToken = default);
         Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default);
         Task<ISseMessage> DequeueMessage(CancellationToken cancellationToken = default);
     }

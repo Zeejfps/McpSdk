@@ -3,18 +3,20 @@ using System.Net.Http.Headers;
 using System.Text;
 using McpSharp.Client;
 
-class SystemHttpClientAdapter : ISseClient
+internal class SystemHttpClientAdapter : ISseClient
 {
     private readonly HttpClient _httpClient;
     private readonly ConcurrentQueue<SseMessage> _receivedMessages = new();
     private readonly SseMessageReader _sseMessageReader;
-    
+
     public SystemHttpClientAdapter()
     {
         _httpClient = new HttpClient();
         _sseMessageReader = new SseMessageReader(_receivedMessages);
     }
-    
+
+    private Task _startListeningTask;
+
     public async Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Sending: {jsonBody}");
@@ -34,11 +36,9 @@ class SystemHttpClientAdapter : ISseClient
         return message;
     }
     
-    private Task _startListeningTask;
-
-    public async Task Connect(string sseUrl, CancellationToken cancellationToken = default)
+    public async Task Connect(string url, CancellationToken cancellationToken = default)
     {
-        _startListeningTask = StartListening(sseUrl, cancellationToken);
+        _startListeningTask = StartListening(url, cancellationToken);
     }
 
     private async Task StartListening(string sseUrl, CancellationToken cancellationToken)
