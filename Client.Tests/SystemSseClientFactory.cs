@@ -1,6 +1,6 @@
 ﻿using McpSharp.Client;
 
-class SystemHttpClientFactory : IHttpClientFactory
+class SystemSseClientFactory : ISseClientFactory
 {
     public ISseClient Create(string sseEndpoint)
     {

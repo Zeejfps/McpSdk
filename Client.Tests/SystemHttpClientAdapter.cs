@@ -15,7 +15,7 @@ class SystemHttpClientAdapter : ISseClient
         _sseMessageReader = new SseMessageReader(_receivedMessages);
     }
     
-    public async Task<IHttpResponse> PostMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
+    public async Task<IHttpResponse> SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Sending: {jsonBody}");
         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");

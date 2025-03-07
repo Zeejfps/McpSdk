@@ -32,7 +32,7 @@ namespace McpSharp.Client
             var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
             var requestAsJson = _json.Stringify(request);
             
-            await _sseClient.PostMessage(_url, requestAsJson, cancellationToken);
+            await _sseClient.SendMessage(_url, requestAsJson, cancellationToken);
 
             ISseMessage sseMessage;
             do
@@ -53,12 +53,11 @@ namespace McpSharp.Client
         {
             var request = new JsonRpcNotification("initialized");
             var requestAsJson = _json.Stringify(request);
-            await _sseClient.PostMessage(_url, requestAsJson, cancellationToken);
+            await _sseClient.SendMessage(_url, requestAsJson, cancellationToken);
         }
 
         public void Dispose()
         {
-            _sseClient?.Dispose();
         }
     }
 }

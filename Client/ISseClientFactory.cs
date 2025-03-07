@@ -1,6 +1,6 @@
 ﻿namespace McpSharp.Client
 {
-    public interface IHttpClientFactory
+    public interface ISseClientFactory
     {
         ISseClient Create(string sseEndpoint);
     }

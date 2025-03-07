@@ -2,7 +2,7 @@
 using McpSharp.Protocol;
 
 var json = new SystemJson();
-var httpClientFactory = new SystemHttpClientFactory();
+var httpClientFactory = new SystemSseClientFactory();
 
 var clientFactory = new ClientFactory(json, httpClientFactory);
 var client = clientFactory.CreateClient(new ClientInfo("Echo Client", "1.0.0"));
