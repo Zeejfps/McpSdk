@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <AssemblyName>McpSharp.Client</AssemblyName>
+        <RootNamespace>McpSharp.Client</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Protocol\Protocol.csproj" />
+    </ItemGroup>
+
+</Project>
