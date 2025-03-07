@@ -3,16 +3,14 @@ using McpSharp.Client;
 
 class SystemHttpClientAdapter : IHttpClient
 {
-    private readonly IJson _json;
     private readonly HttpClient _httpClient;
 
-    public SystemHttpClientAdapter(IJson json, HttpClient httpClient)
+    public SystemHttpClientAdapter(HttpClient httpClient)
     {
-        _json = json;
         _httpClient = httpClient;
     }
-
-    public async Task<IHttpResponse> Post<TResponsePayload>(string url, string jsonBody, CancellationToken cancellationToken = default) where TResponsePayload : class
+    
+    public async Task<IHttpResponse> PostMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Sending: {jsonBody}");
         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
@@ -22,8 +20,13 @@ class SystemHttpClientAdapter : IHttpClient
         return new HttpResponseAdapter(response);
     }
 
-    public Task<IHttpResponse> Post(string url, string requestAsJson, CancellationToken cancellationToken = default)
+    public Task<string> DequeueMessage(CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
+    }
+
+    public void Dispose()
+    {
+        
     }
 }

@@ -1,7 +1,9 @@
-﻿namespace McpSharp.Client
+﻿using System.Threading.Tasks;
+
+namespace McpSharp.Client
 {
     public interface IHttpClientFactory
     {
-        IHttpClient CreateHttpClient();
+        Task<IHttpClient> CreateHttpClient(string sseEndpoint);
     }
 }

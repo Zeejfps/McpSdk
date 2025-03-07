@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
@@ -10,13 +11,13 @@ namespace McpSharp.Client
     {
         private readonly string _endpoint;
         private readonly IJson _json;
-        private readonly IHttpClient _httpClient;
+        private readonly IHttpClient _sseClient;
 
-        public HttpConnection(IHttpClient httpClient, IJson json, string endpoint)
+        public HttpConnection(IHttpClient sseClient, IJson json, string endpoint)
         {
             _json = json;
             _endpoint = endpoint;
-            _httpClient = httpClient;
+            _sseClient = sseClient;
         }
 
         public async Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default)
@@ -24,7 +25,10 @@ namespace McpSharp.Client
             var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
             var requestAsJson = _json.Stringify(request);
             var url = "http://localhost:3000/messages";
-            var response = await _httpClient.Post<InitializeResponseMessage>(url, requestAsJson, cancellationToken);
+            var response = await _sseClient.PostMessage(url, requestAsJson, cancellationToken);
+
+            var sseMessage = await _sseClient.DequeueMessage(cancellationToken);
+            
             var responsePayloadAsJson = await response.ReadContentAsJsonString();
             Console.WriteLine($"Json response: {responsePayloadAsJson}");
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
@@ -38,7 +42,12 @@ namespace McpSharp.Client
             var request = new JsonRpcNotification("initialized");
             var requestAsJson = _json.Stringify(request);
             var endpoint = "messages";
-            await _httpClient.Post(endpoint, requestAsJson, cancellationToken);
+            await _sseClient.PostMessage(endpoint, requestAsJson, cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            _sseClient?.Dispose();
         }
     }
 }
