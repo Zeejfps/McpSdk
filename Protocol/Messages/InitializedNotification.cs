@@ -1,6 +1,6 @@
 ﻿namespace McpSharp.Protocol.Messages
 {
-    public sealed class InitializedMessage
+    public sealed class InitializedNotification
     {
         
     }

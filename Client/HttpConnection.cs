@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
@@ -28,9 +27,12 @@ namespace McpSharp.Client
             return response.Result;
         }
 
-        public Task SendMessage(InitializedMessage message, CancellationToken cancellationToken = default)
+        public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            var request = new JsonRpcNotification("initialized");
+            var requestAsJson = _json.Stringify(request);
+            var endpoint = "asdf";
+            await _httpClient.Post(endpoint, requestAsJson, cancellationToken);
         }
     }
 }

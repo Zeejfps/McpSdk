@@ -7,6 +7,6 @@ namespace McpSharp.Client
     public interface IConnection
     {
         Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default);
-        Task SendMessage(InitializedMessage message, CancellationToken cancellationToken = default);
+        Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default);
     }
 }

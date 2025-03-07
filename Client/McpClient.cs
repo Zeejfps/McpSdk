@@ -27,7 +27,7 @@ namespace McpSharp.Client
             var response = await _connection.SendMessage(new InitializeMessage(protocolVersion, _clientInfo));
             if (response.ProtocolVersion != protocolVersion)
                 throw new ClientException($"Invalid protocol version. Expected {protocolVersion}, got {response.ProtocolVersion}");
-            await _connection.SendMessage(new InitializedMessage());
+            await _connection.SendNotification(new InitializedNotification());
             IsConnected = true;
         }
 
