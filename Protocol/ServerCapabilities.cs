@@ -34,6 +34,11 @@
 
     public sealed class ToolsCapability : ServerCapability
     {
+        public ToolsCapability(bool isListChangedNotificationSupported)
+        {
+            IsListChangedNotificationSupported = isListChangedNotificationSupported;
+        }
+
         public bool IsListChangedNotificationSupported { get; }
     }
 }

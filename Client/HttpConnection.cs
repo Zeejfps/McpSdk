@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
@@ -22,9 +23,10 @@ namespace McpSharp.Client
         {
             var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
             var requestAsJson = _json.Stringify(request);
-            var endpoint = "messages";
-            var response = await _httpClient.Post<InitializeResponseMessage>(endpoint, requestAsJson, cancellationToken);
+            var url = "http://localhost:3000/messages";
+            var response = await _httpClient.Post<InitializeResponseMessage>(url, requestAsJson, cancellationToken);
             var responsePayloadAsJson = await response.ReadContentAsJsonString();
+            Console.WriteLine($"Json response: {responsePayloadAsJson}");
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
