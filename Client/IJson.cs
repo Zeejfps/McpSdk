@@ -5,7 +5,8 @@ namespace McpSharp.Client
 {
     public interface IJson
     {
-        string Stringify(JsonRpcRequest<int, InitializeMessage> request);
-        string Stringify(JsonRpcNotification request);
+        string Stringify(JsonRpcRequest<int, InitializeMessage> jsonRpcRequest);
+        string Stringify(JsonRpcNotification jsonRpcNotification);
+        void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
     }
 }

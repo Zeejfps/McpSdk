@@ -6,7 +6,7 @@ namespace McpSharp.Client
 {
     public interface IHttpClient
     {
-        Task<JsonRpcResponse<TResponsePayload>> Post<TResponsePayload>(string endpoint, string requestAsJson, CancellationToken cancellationToken = default) where TResponsePayload : class;
-        Task Post(string endpoint, string requestAsJson, CancellationToken cancellationToken = default);
+        Task<IHttpResponse> Post<TResponsePayload>(string url, string jsonBody, CancellationToken cancellationToken = default) where TResponsePayload : class;
+        Task<IHttpResponse> Post(string url, string jsonBody, CancellationToken cancellationToken = default);
     }
 }

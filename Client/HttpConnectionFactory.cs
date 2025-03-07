@@ -17,7 +17,7 @@ namespace McpSharp.Client
         public Task<IConnection> CreateConnection(CancellationToken cancellationToken = default)
         {
             var httpClient = _httpClientFactory.CreateHttpClient();
-            var connection = new HttpConnection(httpClient, _json);
+            var connection = new HttpConnection(httpClient, _json, "test");
             return Task.FromResult<IConnection>(connection);
         }
     }

@@ -6,9 +6,9 @@ namespace McpSharp.Client
     {
         private readonly IConnectionFactory _connectionFactory;
         
-        public ClientFactory()
+        public ClientFactory(IJson json, IHttpClientFactory httpClientFactory)
         {
-            
+            _connectionFactory = new HttpConnectionFactory(json, httpClientFactory);
         }
         
         public IClient CreateClient(ClientInfo clientInfo)

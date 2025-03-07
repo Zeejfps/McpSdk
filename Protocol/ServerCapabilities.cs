@@ -2,10 +2,10 @@
 {
     public sealed class ServerCapabilities
     {
-        public LoggingCapability Logging { get; }
-        public PromptsCapability Prompts { get; }
-        public ResourcesCapability Resources { get; }
-        public ToolsCapability Tools { get; }
+        public LoggingCapability Logging { get; set; }
+        public PromptsCapability Prompts { get; set; }
+        public ResourcesCapability Resources { get; set; }
+        public ToolsCapability Tools { get; set; }
     }
 
     public abstract class ServerCapability
@@ -19,6 +19,11 @@
     public sealed class PromptsCapability : ServerCapability
     {
         public bool IsListChangedNotificationSupported { get; }
+
+        public PromptsCapability(bool isListChangedNotificationSupported)
+        {
+            IsListChangedNotificationSupported = isListChangedNotificationSupported;
+        }
     }
 
     public sealed class ResourcesCapability : ServerCapability
