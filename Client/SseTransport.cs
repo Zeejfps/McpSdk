@@ -8,23 +8,22 @@ namespace McpSharp.Client
 {
     internal sealed class SseTransport : ITransport
     {
-        private readonly string _endpoint;
         private readonly IJson _json;
         private readonly ISseClient _sseClient;
-        private readonly string _url;
+        private readonly string _connectionUrl;
+        private readonly string _messagesUrl;
 
-        public SseTransport(ISseClient sseClient, IJson json, string endpoint)
+        public SseTransport(ISseClient sseClient, IJson json, string host)
         {
             _json = json;
-            _endpoint = endpoint;
             _sseClient = sseClient;
-            _url = "http://localhost:3000/messages";
+            _connectionUrl = $"{host}/sse";
+            _messagesUrl = $"{host}/messages";
         }
 
         public async Task Connect()
         {
-            await _sseClient.Connect("http://localhost:3000/sse");
-            Console.WriteLine($"Connected");
+            await _sseClient.Connect(_connectionUrl);
         }
 
         public async Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default)
@@ -32,7 +31,7 @@ namespace McpSharp.Client
             var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
             var requestAsJson = _json.Stringify(request);
             
-            await _sseClient.SendMessage(_url, requestAsJson, cancellationToken);
+            await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
 
             ISseMessage sseMessage;
             do
@@ -53,11 +52,7 @@ namespace McpSharp.Client
         {
             var request = new JsonRpcNotification("initialized");
             var requestAsJson = _json.Stringify(request);
-            await _sseClient.SendMessage(_url, requestAsJson, cancellationToken);
-        }
-
-        public void Dispose()
-        {
+            await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
         }
     }
 }

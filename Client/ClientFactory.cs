@@ -6,9 +6,9 @@ namespace McpSharp.Client
     {
         private readonly ITransportFactory _transportFactory;
         
-        public ClientFactory(IJson json, ISseClientFactory sseClientFactory)
+        public ClientFactory(ITransportFactory transportFactory)
         {
-            _transportFactory = new SseTransportFactory(json, sseClientFactory);
+            _transportFactory = transportFactory;
         }
         
         public IClient CreateClient(ClientInfo clientInfo)

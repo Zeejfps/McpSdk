@@ -2,9 +2,10 @@
 using McpSharp.Protocol;
 
 var json = new SystemJson();
-var httpClientFactory = new SystemSseClientFactory();
+var httpSseClientFactory = new SystemSseClientFactory();
 
-var clientFactory = new ClientFactory(json, httpClientFactory);
+var sseTransportFactory = new SseTransportFactory(json, httpSseClientFactory);
+var clientFactory = new ClientFactory(sseTransportFactory);
 var client = clientFactory.CreateClient(new ClientInfo("Echo Client", "1.0.0"));
 
 await client.Connect();
