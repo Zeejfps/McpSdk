@@ -8,7 +8,7 @@ namespace McpSharp.Client
         
         public ClientFactory(IJson json, IHttpClientFactory httpClientFactory)
         {
-            _transportFactory = new HttpTransportFactory(json, httpClientFactory);
+            _transportFactory = new SseTransportFactory(json, httpClientFactory);
         }
         
         public IClient CreateClient(ClientInfo clientInfo)

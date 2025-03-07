@@ -2,6 +2,6 @@
 {
     public interface IHttpClientFactory
     {
-        IHttpClient CreateHttpClient(string sseEndpoint);
+        ISseClient Create(string sseEndpoint);
     }
 }

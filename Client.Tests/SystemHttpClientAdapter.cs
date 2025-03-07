@@ -2,7 +2,7 @@
 using System.Text;
 using McpSharp.Client;
 
-class SystemHttpClientAdapter : IHttpClient
+class SystemHttpClientAdapter : ISseClient
 {
     private readonly HttpClient _httpClient;
     private readonly ConcurrentQueue<string> _receivedMessages = new();

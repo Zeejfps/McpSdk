@@ -6,13 +6,13 @@ using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
-    internal sealed class HttpConnection : ITransport
+    internal sealed class SseTransport : ITransport
     {
         private readonly string _endpoint;
         private readonly IJson _json;
-        private readonly IHttpClient _sseClient;
+        private readonly ISseClient _sseClient;
 
-        public HttpConnection(IHttpClient sseClient, IJson json, string endpoint)
+        public SseTransport(ISseClient sseClient, IJson json, string endpoint)
         {
             _json = json;
             _endpoint = endpoint;

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace McpSharp.Client
 {
-    public interface IHttpClient
+    public interface ISseClient
     {
         Task Connect(string sseEndpoint, CancellationToken cancellationToken = default);
         void Dispose();
