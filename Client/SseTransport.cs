@@ -10,13 +10,16 @@ namespace McpSharp.Client
     {
         private readonly IJson _json;
         private readonly ISseClient _sseClient;
+        private readonly string _host;
         private readonly string _connectionUrl;
-        private readonly string _messagesUrl;
+        
+        private string _messagesUrl;
 
         public SseTransport(ISseClient sseClient, IJson json, string host)
         {
             _json = json;
             _sseClient = sseClient;
+            _host = host;
             _connectionUrl = $"{host}/sse";
             _messagesUrl = $"{host}/messages";
         }
@@ -33,18 +36,21 @@ namespace McpSharp.Client
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
 
-            ISseMessage sseMessage;
-            do
-            {
-                sseMessage = await _sseClient.DequeueMessage(cancellationToken);
-            } while(sseMessage.Kind != "message");
-            
-            Console.WriteLine($"SSE Message: {sseMessage}");
+            var endpointMessage = await _sseClient.DequeueMessage(cancellationToken);
+            if (endpointMessage.Kind != "endpoint")
+                throw new Exception($"Expected endpoint message, got: {endpointMessage.Kind}");
 
-            var responsePayloadAsJson = sseMessage.Data;
+            _messagesUrl = $"{_host}{endpointMessage.Data}";
+            
+            var initializeResponseMessage = await _sseClient.DequeueMessage(cancellationToken);
+            if (initializeResponseMessage.Kind != "message")
+                throw new Exception($"Expected message, got: {initializeResponseMessage.Kind}");
+            
+            var responsePayloadAsJson = initializeResponseMessage.Data;
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
+            
             return jsonRpcResponse.Result;
         }
 

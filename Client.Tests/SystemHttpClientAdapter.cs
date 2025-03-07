@@ -15,13 +15,13 @@ class SystemHttpClientAdapter : ISseClient
         _sseMessageReader = new SseMessageReader(_receivedMessages);
     }
     
-    public async Task<IHttpResponse> SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
+    public async Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Sending: {jsonBody}");
         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(url, content, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return new HttpResponseAdapter(response);
+        Console.WriteLine($"Message sent to: {url}");
     }
 
     public async Task<ISseMessage> DequeueMessage(CancellationToken cancellationToken)
@@ -68,11 +68,6 @@ class SystemHttpClientAdapter : ISseClient
                 Console.WriteLine(ex);
             }
         }   
-    }
-
-    public void Dispose()
-    {
-        
     }
 }
 
