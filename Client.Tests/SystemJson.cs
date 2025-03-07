@@ -58,7 +58,18 @@ class SystemJson : IJson
 
     public string Stringify(JsonRpcNotification jsonRpcNotification)
     {
-        throw new NotImplementedException();
+        using var memoryStream = new MemoryStream();
+        using var writer = new Utf8JsonWriter(memoryStream);
+        
+        writer.WriteStartObject();
+        writer.WriteString("jsonrpc", jsonRpcNotification.JsonRpcVersion);
+        writer.WriteString("method", jsonRpcNotification.Method);
+        writer.WriteEndObject();
+        
+        writer.Flush();
+        
+        var jsonString = Encoding.UTF8.GetString(memoryStream.ToArray());
+        return jsonString;
     }
 
     public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponseMessage?> jsonRpcResponse)
@@ -81,13 +92,20 @@ class SystemJson : IJson
             
             if (capabilitiesObj.TryGetProperty("prompts", out var prompts))
             {
-                var promptsListChanged = prompts.GetProperty("listChanged").GetBoolean();
+                var promptsListChanged = false;
+                if (prompts.TryGetProperty("listChanged", out var listChangedProp))
+                {
+                    promptsListChanged = listChangedProp.GetBoolean();
+                }
                 capabilities.Prompts = new PromptsCapability(promptsListChanged);
             }
 
             if (capabilitiesObj.TryGetProperty("tools", out var toolsObj))
             {
-                var toolsListChanged = toolsObj.GetProperty("listChanged").GetBoolean();
+                var toolsListChanged = false;
+                if (toolsObj.TryGetProperty("listChanged", out var listChangedProp))
+                    toolsListChanged = listChangedProp.GetBoolean();
+                
                 capabilities.Tools = new ToolsCapability(toolsListChanged);
             }
             

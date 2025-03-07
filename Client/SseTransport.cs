@@ -11,12 +11,14 @@ namespace McpSharp.Client
         private readonly string _endpoint;
         private readonly IJson _json;
         private readonly ISseClient _sseClient;
+        private readonly string _url;
 
         public SseTransport(ISseClient sseClient, IJson json, string endpoint)
         {
             _json = json;
             _endpoint = endpoint;
             _sseClient = sseClient;
+            _url = "http://localhost:3000/messages";
         }
 
         public async Task Connect()
@@ -29,13 +31,18 @@ namespace McpSharp.Client
         {
             var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
             var requestAsJson = _json.Stringify(request);
-            var url = "http://localhost:3000/messages";
-            var response = await _sseClient.PostMessage(url, requestAsJson, cancellationToken);
+            
+            await _sseClient.PostMessage(_url, requestAsJson, cancellationToken);
 
-            var sseMessage = await _sseClient.DequeueMessage(cancellationToken);
+            ISseMessage sseMessage;
+            do
+            {
+                sseMessage = await _sseClient.DequeueMessage(cancellationToken);
+            } while(sseMessage.Kind != "message");
+            
             Console.WriteLine($"SSE Message: {sseMessage}");
 
-            var responsePayloadAsJson = await response.ReadContentAsJsonString();
+            var responsePayloadAsJson = sseMessage.Data;
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
@@ -46,8 +53,7 @@ namespace McpSharp.Client
         {
             var request = new JsonRpcNotification("initialized");
             var requestAsJson = _json.Stringify(request);
-            var endpoint = "messages";
-            await _sseClient.PostMessage(endpoint, requestAsJson, cancellationToken);
+            await _sseClient.PostMessage(_url, requestAsJson, cancellationToken);
         }
 
         public void Dispose()
