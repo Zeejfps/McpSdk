@@ -2,7 +2,7 @@
 
 class SystemSseClientFactory : ISseClientFactory
 {
-    public ISseClient Create(string sseEndpoint)
+    public ISseClient Create()
     {
         return new SystemHttpClientAdapter();
     }

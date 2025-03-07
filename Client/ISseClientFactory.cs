@@ -2,6 +2,6 @@
 {
     public interface ISseClientFactory
     {
-        ISseClient Create(string sseEndpoint);
+        ISseClient Create();
     }
 }

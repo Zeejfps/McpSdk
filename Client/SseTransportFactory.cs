@@ -4,17 +4,19 @@
     {
         private readonly IJson _json;
         private readonly ISseClientFactory _sseClientFactory;
+        private readonly string _host;
 
-        public SseTransportFactory(IJson json, ISseClientFactory sseClientFactory)
+        public SseTransportFactory(IJson json, ISseClientFactory sseClientFactory, string host)
         {
             _json = json;
             _sseClientFactory = sseClientFactory;
+            _host = host;
         }
 
         public ITransport Create()
         {
-            var sseClient = _sseClientFactory.Create("http://localhost:3000/sse");
-            return new SseTransport(sseClient, _json, "test");
+            var sseClient = _sseClientFactory.Create();
+            return new SseTransport(sseClient, _json, _host);
         }
     }
 }
