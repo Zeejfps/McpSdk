@@ -18,7 +18,11 @@ foreach (var toolInfo in toolInfos)
     Console.WriteLine(toolInfo.ToString());
 }
 
-//
-// var result = await client.CallTool(
-//     "echo"
-// );
+var result = await client.CallTool(
+    "get-forecast",
+    new Dictionary<string, object>
+    {
+        {"latitude", 51.5},
+        {"longitude", 51.5}
+    }
+);

@@ -32,8 +32,7 @@ namespace McpSharp.Client
 
         public async Task<InitializeResultPayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var requestId = Interlocked.Increment(ref _nextRequestId);
-            var request = new JsonRpcRequest<int, InitializeRequestPayload>(requestId, "initialize", payload);
+            var request = CreateRequest("initialize", payload);
             var requestAsJson = _json.Stringify(request);
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
@@ -58,8 +57,7 @@ namespace McpSharp.Client
 
         public async Task<ListToolsResultPayload> SendMessage(ListToolsRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var requestId = Interlocked.Increment(ref _nextRequestId);
-            var request = new JsonRpcRequest<int, ListToolsRequestPayload>(requestId, "tools/list", payload);
+            var request = CreateRequest("tools/list", payload);
             var requestAsJson = _json.Stringify(request);
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
@@ -75,12 +73,38 @@ namespace McpSharp.Client
             return jsonRpcResponse.Result;
         }
 
+        public async Task SendMessage(CallToolRequestPayload payload, CancellationToken cancellationToken = default)
+        {
+            var request = CreateRequest("tools/call", payload);
+            var requestAsJson = _json.Stringify(request);
+            
+            await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
+            var sseEvent = await _sseClient.DequeueEvent(cancellationToken);
+            if (sseEvent.Kind != "message")
+                throw new Exception($"Expected event kind: message, got: {sseEvent.Kind}");
+            
+            // var responsePayloadAsJson = sseEvent.Data;
+            // _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse);
+            // if (jsonRpcResponse.Error != null)
+            //     throw new ClientException(jsonRpcResponse.Error.ToString());
+        }
+
         public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
         {
             var request = new JsonRpcNotification("initialized");
             var requestAsJson = _json.Stringify(request);
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
         }
-        
+
+        private int NextRequestId()
+        {
+            return Interlocked.Increment(ref _nextRequestId);
+        }
+
+        private JsonRpcRequest<int, TPayload> CreateRequest<TPayload>(string method, TPayload payload)
+        {
+            var requestId = NextRequestId();
+            return new JsonRpcRequest<int, TPayload>(requestId, method, payload);
+        }
     }
 }

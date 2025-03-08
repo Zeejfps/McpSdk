@@ -58,6 +58,11 @@ internal class SystemJson : IJson
         return jsonString;
     }
 
+    public string Stringify(JsonRpcRequest<int, CallToolRequestPayload> jsonRpcRequest)
+    {
+        throw new NotImplementedException();
+    }
+
     public string Stringify(JsonRpcNotification jsonRpcNotification)
     {
         using var memoryStream = new MemoryStream();

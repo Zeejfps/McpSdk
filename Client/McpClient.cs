@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
@@ -23,10 +24,10 @@ namespace McpSharp.Client
         {
             await _transport.Connect();
             var protocolVersion = "2024-11-05";
-            var message = new InitializeRequestPayload(protocolVersion, _clientInfo)
+            var requestPayload = new InitializeRequestPayload(protocolVersion, _clientInfo)
                 .WithCapability(new RootsCapability(false))
                 .WithCapability(new SamplingCapability());
-            var response = await _transport.SendMessage(message);
+            var response = await _transport.SendMessage(requestPayload);
             if (response.ProtocolVersion != protocolVersion)
                 throw new ClientException($"Invalid protocol version. Expected {protocolVersion}, got {response.ProtocolVersion}");
             await _transport.SendNotification(new InitializedNotification());
@@ -35,14 +36,16 @@ namespace McpSharp.Client
 
         public async Task<IEnumerable<Tool>> ListTools()
         {
-            var request = new ListToolsRequestPayload();
-            var result = await _transport.SendMessage(request);
+            var requestPayload = new ListToolsRequestPayload();
+            var result = await _transport.SendMessage(requestPayload);
             return result.Tools;
         }
 
-        public Task<ICallToolResult> CallTool(string toolName)
+        public async Task<ICallToolResult> CallTool(string toolName, Dictionary<string, object> parameters = null)
         {
-            throw new System.NotImplementedException();
+            var requestPayload = new CallToolRequestPayload(toolName, parameters);
+            await _transport.SendMessage(requestPayload);
+            return null;
         }
     }
 }
