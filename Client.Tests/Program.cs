@@ -11,6 +11,12 @@ var client = clientFactory.CreateClient(new ClientInfo("Echo Client", "1.0.0"));
 await client.Connect();
 
 var toolInfos = await client.ListTools();
+Console.WriteLine("Available tools:");
+foreach (var toolInfo in toolInfos)
+{
+    Console.WriteLine(toolInfo.ToString());
+}
+
 //
 // var result = await client.CallTool(
 //     "echo"

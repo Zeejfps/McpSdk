@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using McpSharp.Protocol;
+using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
@@ -7,7 +9,7 @@ namespace McpSharp.Client
     {
         bool IsConnected { get; }
         Task Connect();
-        Task<IEnumerable<IToolInfo>> ListTools();
+        Task<IEnumerable<ToolInfo>> ListTools();
         Task<ICallToolResult> CallTool(string toolName);
     }
 }

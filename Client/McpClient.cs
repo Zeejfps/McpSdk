@@ -33,11 +33,11 @@ namespace McpSharp.Client
             IsConnected = true;
         }
 
-        public async Task<IEnumerable<IToolInfo>> ListTools()
+        public async Task<IEnumerable<ToolInfo>> ListTools()
         {
             var request = new ListToolsRequestPayload();
             var result = await _transport.SendMessage(request);
-            return Enumerable.Empty<IToolInfo>();
+            return result.Tools;
         }
 
         public Task<ICallToolResult> CallTool(string toolName)

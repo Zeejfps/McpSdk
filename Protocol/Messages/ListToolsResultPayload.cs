@@ -9,10 +9,4 @@
             Tools = tools;
         }
     }
-
-    public sealed class ToolInfo
-    {
-        public string Name { get; }
-        public string Description { get; }
-    }
 }

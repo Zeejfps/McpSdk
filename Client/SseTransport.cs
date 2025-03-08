@@ -56,7 +56,7 @@ namespace McpSharp.Client
 
         public async Task<ListToolsResultPayload> SendMessage(ListToolsRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var request = new JsonRpcRequest<int, ListToolsRequestPayload>(1, "tools/list", payload);
+            var request = new JsonRpcRequest<int, ListToolsRequestPayload>(2, "tools/list", payload);
             var requestAsJson = _json.Stringify(request);
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);

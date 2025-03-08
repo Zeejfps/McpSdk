@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using McpSharp.Client;
 using McpSharp.Protocol;
@@ -75,7 +74,20 @@ class SystemJson : IJson
 
     public string Stringify(JsonRpcRequest<int, ListToolsRequestPayload> jsonRpcRequest)
     {
-        throw new NotImplementedException();
+        using var memoryStream = new MemoryStream();
+        using var writer = new Utf8JsonWriter(memoryStream);
+        writer.WriteStartObject();
+        {
+            writer.WriteString("jsonrpc", jsonRpcRequest.JsonRpcVersion);
+            writer.WriteNumber("id", jsonRpcRequest.Id);
+            writer.WriteString("method", jsonRpcRequest.Method);
+        }
+        writer.WriteEndObject();
+        
+        writer.Flush();
+        
+        var jsonString = Encoding.UTF8.GetString(memoryStream.ToArray());
+        return jsonString;
     }
 
     public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponsePayload?> jsonRpcResponse)
@@ -132,8 +144,39 @@ class SystemJson : IJson
         jsonRpcResponse = new JsonRpcResponse<int, InitializeResponsePayload?>(rpcVersion, id, result, error);
     }
 
-    public void Parse(string jsonString, [UnscopedRef] out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse)
+    public void Parse(string jsonString, out JsonRpcResponse<int, ListToolsResultPayload?> jsonRpcResponse)
     {
-        throw new NotImplementedException();
+        using JsonDocument document = JsonDocument.Parse(jsonString);
+        var root = document.RootElement;
+        
+        var rpcVersion = root.GetProperty("jsonrpc").GetString();
+        var id = root.GetProperty("id").GetInt32();
+
+        ListToolsResultPayload? result = null;
+        JsonRpcResponseError? error = null;
+
+        if (root.TryGetProperty("result", out var resultObj))
+        {
+            var toolsObj = resultObj.GetProperty("tools");
+            var toolsCount = toolsObj.GetArrayLength();
+            var toolInfos = new ToolInfo[toolsCount];
+            for (var i = 0; i < toolsCount; i++)
+            {
+                var toolObj = toolsObj[i];
+                var toolName = toolObj.GetProperty("name").GetString();
+                var toolDescription = toolObj.GetProperty("description").GetString();
+                toolInfos[i] = new ToolInfo(toolName, toolDescription);
+            }
+            
+            result = new ListToolsResultPayload(toolInfos);
+        }
+        else if (root.TryGetProperty("error", out var errorObj))
+        {
+            var code = errorObj.GetProperty("code").GetInt32();
+            var message = errorObj.GetProperty("message").GetString();
+            error = new JsonRpcResponseError(code, message, null);
+        }
+        
+        jsonRpcResponse = new JsonRpcResponse<int, ListToolsResultPayload?>(rpcVersion, id, result, error);
     }
 }
