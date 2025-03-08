@@ -36,7 +36,7 @@ namespace McpSharp.Client
         public async Task<IEnumerable<IToolInfo>> ListTools()
         {
             var request = new ListToolsRequestPayload();
-            var result = await _transport.SendListToolsRequest(request);
+            var result = await _transport.SendMessage(request);
             return Enumerable.Empty<IToolInfo>();
         }
 
