@@ -6,7 +6,7 @@ using McpSharp.Client;
 internal class SystemHttpClientAdapter : ISseClient
 {
     private readonly HttpClient _httpClient;
-    private readonly ConcurrentQueue<SseMessage> _receivedMessages = new();
+    private readonly ConcurrentQueue<SseEvent> _receivedMessages = new();
     private readonly SseMessageReader _sseMessageReader;
 
     public SystemHttpClientAdapter()
@@ -26,9 +26,9 @@ internal class SystemHttpClientAdapter : ISseClient
         Console.WriteLine($"Message sent to: {url}");
     }
 
-    public async Task<ISseMessage> DequeueMessage(CancellationToken cancellationToken)
+    public async Task<ISseEvent> DequeueEvent(CancellationToken cancellationToken)
     {
-        SseMessage message;
+        SseEvent message;
         while (!_receivedMessages.TryDequeue(out message))
         {
             await Task.Delay(100, cancellationToken);
@@ -71,13 +71,13 @@ internal class SystemHttpClientAdapter : ISseClient
     }
 }
 
-public sealed class SseMessage : ISseMessage
+public sealed class SseEvent : ISseEvent
 {
     public string? Id { get; set; }
     public string Kind { get; }
     public string? Data { get; set; }
 
-    public SseMessage(string kind)
+    public SseEvent(string kind)
     {
         Kind = kind;
     }
@@ -96,10 +96,10 @@ public sealed class SseMessage : ISseMessage
 
 class SseMessageReader
 {
-    private SseMessage? _currentMessage;
-    private readonly ConcurrentQueue<SseMessage> _messages;
+    private SseEvent? _currentMessage;
+    private readonly ConcurrentQueue<SseEvent> _messages;
 
-    public SseMessageReader(ConcurrentQueue<SseMessage> messages)
+    public SseMessageReader(ConcurrentQueue<SseEvent> messages)
     {
         _messages = messages;
     }
@@ -121,7 +121,7 @@ class SseMessageReader
         if (line.StartsWith("event: "))
         {
             var kind = line.Substring(7);
-            _currentMessage = new SseMessage(kind);
+            _currentMessage = new SseEvent(kind);
         }
         else if (line.StartsWith("data: "))
         {

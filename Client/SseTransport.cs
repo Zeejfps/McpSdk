@@ -12,7 +12,8 @@ namespace McpSharp.Client
         private readonly ISseClient _sseClient;
         private readonly string _host;
         private readonly string _connectionUrl;
-        
+
+        private int _nextRequestId;
         private string _messagesUrl;
 
         public SseTransport(ISseClient sseClient, IJson json, string host)
@@ -31,18 +32,19 @@ namespace McpSharp.Client
 
         public async Task<InitializeResponsePayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var request = new JsonRpcRequest<int, InitializeRequestPayload>(1, "initialize", payload);
+            var requestId = Interlocked.Increment(ref _nextRequestId);
+            var request = new JsonRpcRequest<int, InitializeRequestPayload>(requestId, "initialize", payload);
             var requestAsJson = _json.Stringify(request);
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
 
-            var endpointMessage = await _sseClient.DequeueMessage(cancellationToken);
+            var endpointMessage = await _sseClient.DequeueEvent(cancellationToken);
             if (endpointMessage.Kind != "endpoint")
                 throw new Exception($"Expected endpoint message, got: {endpointMessage.Kind}");
 
             _messagesUrl = $"{_host}{endpointMessage.Data}";
             
-            var initializeResponseMessage = await _sseClient.DequeueMessage(cancellationToken);
+            var initializeResponseMessage = await _sseClient.DequeueEvent(cancellationToken);
             if (initializeResponseMessage.Kind != "message")
                 throw new Exception($"Expected message, got: {initializeResponseMessage.Kind}");
             
@@ -56,15 +58,16 @@ namespace McpSharp.Client
 
         public async Task<ListToolsResultPayload> SendMessage(ListToolsRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var request = new JsonRpcRequest<int, ListToolsRequestPayload>(2, "tools/list", payload);
+            var requestId = Interlocked.Increment(ref _nextRequestId);
+            var request = new JsonRpcRequest<int, ListToolsRequestPayload>(requestId, "tools/list", payload);
             var requestAsJson = _json.Stringify(request);
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
-            var responseSseMessage = await _sseClient.DequeueMessage(cancellationToken);
-            if (responseSseMessage.Kind != "message")
-                throw new Exception($"Expected message, got: {responseSseMessage.Kind}");
+            var sseEvent = await _sseClient.DequeueEvent(cancellationToken);
+            if (sseEvent.Kind != "message")
+                throw new Exception($"Expected event kind: message, got: {sseEvent.Kind}");
             
-            var responsePayloadAsJson = responseSseMessage.Data;
+            var responsePayloadAsJson = sseEvent.Data;
             _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
