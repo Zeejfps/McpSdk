@@ -2,7 +2,7 @@
 using McpSharp.Protocol;
 
 var json = new SystemJson();
-var httpSseClientFactory = new SystemSseClientFactory();
+var httpSseClientFactory = new SseClientFactory();
 
 var sseTransportFactory = new SseTransportFactory(json, httpSseClientFactory, "http://localhost:3000");
 var clientFactory = new ClientFactory(sseTransportFactory);
