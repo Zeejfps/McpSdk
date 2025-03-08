@@ -23,7 +23,7 @@ namespace McpSharp.Client
         {
             await _transport.Connect();
             var protocolVersion = "2024-11-05";
-            var message = new InitializeMessage(protocolVersion, _clientInfo)
+            var message = new InitializeRequestPayload(protocolVersion, _clientInfo)
                 .WithCapability(new RootsCapability(false))
                 .WithCapability(new SamplingCapability());
             var response = await _transport.SendMessage(message);
@@ -35,8 +35,8 @@ namespace McpSharp.Client
 
         public async Task<IEnumerable<IToolInfo>> ListTools()
         {
-            var request = new ListToolsRequest();
-            var result = await _transport.SendMessage(request);
+            var request = new ListToolsRequestPayload();
+            var result = await _transport.SendListToolsRequest(request);
             return Enumerable.Empty<IToolInfo>();
         }
 

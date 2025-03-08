@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using McpSharp.Client;
 using McpSharp.Protocol;
@@ -6,7 +7,7 @@ using McpSharp.Protocol.Messages;
 
 class SystemJson : IJson
 {
-    public string Stringify(JsonRpcRequest<int, InitializeMessage> jsonRpcRequest)
+    public string Stringify(JsonRpcRequest<int, InitializeRequestPayload> jsonRpcRequest)
     {
         using var memoryStream = new MemoryStream();
         using var writer = new Utf8JsonWriter(memoryStream);
@@ -72,12 +73,12 @@ class SystemJson : IJson
         return jsonString;
     }
 
-    public string Stringify(JsonRpcRequest<int, ListToolsRequest> jsonRpcRequest)
+    public string Stringify(JsonRpcRequest<int, ListToolsRequestPayload> jsonRpcRequest)
     {
         throw new NotImplementedException();
     }
 
-    public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponseMessage?> jsonRpcResponse)
+    public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponsePayload?> jsonRpcResponse)
     {
         // Load the JSON into a JsonDocument.
         using JsonDocument document = JsonDocument.Parse(jsonString);
@@ -86,7 +87,7 @@ class SystemJson : IJson
         var rpcVersion = root.GetProperty("jsonrpc").GetString();
         var id = root.GetProperty("id").GetInt32();
 
-        InitializeResponseMessage? result = null;
+        InitializeResponsePayload? result = null;
         JsonRpcResponseError? error = null;
         if (root.TryGetProperty("result", out var resultObj))
         {
@@ -119,7 +120,7 @@ class SystemJson : IJson
             var serverVersion = serverInfoObj.GetProperty("version").GetString();
 
             var serverInfo = new ServerInfo(serverName, serverVersion);
-            result = new InitializeResponseMessage(protocolVersion, capabilities, serverInfo);
+            result = new InitializeResponsePayload(protocolVersion, capabilities, serverInfo);
         }
         else if (root.TryGetProperty("error", out var errorObj))
         {
@@ -128,6 +129,11 @@ class SystemJson : IJson
             error = new JsonRpcResponseError(code, message, null);
         }
         
-        jsonRpcResponse = new JsonRpcResponse<int, InitializeResponseMessage?>(rpcVersion, id, result, error);
+        jsonRpcResponse = new JsonRpcResponse<int, InitializeResponsePayload?>(rpcVersion, id, result, error);
+    }
+
+    public void Parse(string jsonString, [UnscopedRef] out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse)
+    {
+        throw new NotImplementedException();
     }
 }

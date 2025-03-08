@@ -1,6 +1,6 @@
 ﻿namespace McpSharp.Protocol.Messages
 {
-    public sealed class ListToolsResult
+    public sealed class ListToolsRequestPayload
     {
         
     }

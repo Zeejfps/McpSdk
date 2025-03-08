@@ -5,9 +5,10 @@ namespace McpSharp.Client
 {
     public interface IJson
     {
-        string Stringify(JsonRpcRequest<int, InitializeMessage> jsonRpcRequest);
+        string Stringify(JsonRpcRequest<int, InitializeRequestPayload> jsonRpcRequest);
         string Stringify(JsonRpcNotification jsonRpcNotification);
-        string Stringify(JsonRpcRequest<int, ListToolsRequest> jsonRpcRequest);
-        void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
+        string Stringify(JsonRpcRequest<int, ListToolsRequestPayload> jsonRpcRequest);
+        void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponsePayload> jsonRpcResponse);
+        void Parse(string jsonString, out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse);
     }
 }

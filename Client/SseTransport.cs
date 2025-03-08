@@ -29,9 +29,9 @@ namespace McpSharp.Client
             await _sseClient.Connect(_connectionUrl);
         }
 
-        public async Task<InitializeResponseMessage> SendMessage(InitializeMessage message, CancellationToken cancellationToken = default)
+        public async Task<InitializeResponsePayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var request = new JsonRpcRequest<int, InitializeMessage>(1, "initialize", message);
+            var request = new JsonRpcRequest<int, InitializeRequestPayload>(1, "initialize", payload);
             var requestAsJson = _json.Stringify(request);
             
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
@@ -47,19 +47,29 @@ namespace McpSharp.Client
                 throw new Exception($"Expected message, got: {initializeResponseMessage.Kind}");
             
             var responsePayloadAsJson = initializeResponseMessage.Data;
-            _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponseMessage> jsonRpcResponse);
+            _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponsePayload> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
             
             return jsonRpcResponse.Result;
         }
 
-        public Task<ListToolsResult> SendMessage(ListToolsRequest payload, CancellationToken cancellationToken = default)
+        public async Task<ListToolsResultPayload> SendMessage(ListToolsRequestPayload payload, CancellationToken cancellationToken = default)
         {
-            var request = new JsonRpcRequest<int, ListToolsRequest>(1, "tools/list", payload);
+            var request = new JsonRpcRequest<int, ListToolsRequestPayload>(1, "tools/list", payload);
             var requestAsJson = _json.Stringify(request);
+            
+            await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
+            var responseSseMessage = await _sseClient.DequeueMessage(cancellationToken);
+            if (responseSseMessage.Kind != "message")
+                throw new Exception($"Expected message, got: {responseSseMessage.Kind}");
+            
+            var responsePayloadAsJson = responseSseMessage.Data;
+            _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse);
+            if (jsonRpcResponse.Error != null)
+                throw new ClientException(jsonRpcResponse.Error.ToString());
 
-            throw new NotImplementedException();
+            return jsonRpcResponse.Result;
         }
 
         public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
