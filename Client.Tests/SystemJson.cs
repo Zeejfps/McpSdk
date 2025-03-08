@@ -202,6 +202,18 @@ public static class JsonDomExtensions
                 objSchema.Properties.Add(propertyName, propertySchema);
             }
 
+            if (element.TryGetProperty("required", out var requiredObj))
+            {
+                var requiredPropertiesCout = requiredObj.GetArrayLength();
+                var requiredProperties = new string[requiredPropertiesCout];
+                for (var i = 0; i < requiredPropertiesCout; i++)
+                {
+                    var requiredProperty = requiredObj[i].GetString();
+                    requiredProperties[i] = requiredProperty!;
+                }
+                objSchema.Required = requiredProperties;
+            }
+
             if (element.TryGetProperty("description", out var descriptionProp))
             {
                 objSchema.Description = descriptionProp.GetString();
