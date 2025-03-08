@@ -44,6 +44,12 @@ namespace McpSharp.Protocol
                 sb.Append($"\"{lastRequiredProperty}\"");
                 sb.Append("]");
             }
+
+            if (!string.IsNullOrEmpty(Description))
+            {
+                sb.Append(", \"description\": ").Append('"').Append(Description).Append('"');
+            }
+            
             sb.Append("}");
             return sb.ToString();
         }
