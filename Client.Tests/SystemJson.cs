@@ -12,7 +12,7 @@ internal class SystemJson : IJson
     {
         using var reqWriter = BeginWrite(jsonRpcRequest);
 
-        var paramWriter = reqWriter.BeginWriteParams();
+        var paramWriter = reqWriter.WriteStartParams();
         {
             var parameters = jsonRpcRequest.Parameters;
             paramWriter.WriteString("protocolVersion", parameters.ProtocolVersion);
@@ -43,7 +43,7 @@ internal class SystemJson : IJson
             }
             paramWriter.WriteEndObject();
         }
-        reqWriter.EndWriteParams();
+        reqWriter.WriteEndParams();
         
         return reqWriter.EndWrite();
     }
@@ -52,11 +52,21 @@ internal class SystemJson : IJson
     {
         using var rpcWriter = BeginWrite(jsonRpcRequest);
 
-        var paramWriter = rpcWriter.BeginWriteParams();
+        var paramWriter = rpcWriter.WriteStartParams();
         {
-            
+            var parameters = jsonRpcRequest.Parameters;
+            paramWriter.WriteString("name", parameters.ToolName);
+            paramWriter.WriteStartObject("arguments");
+            {
+                var arguments = parameters.Arguments;
+                foreach (var (key, value) in arguments)
+                {
+                    paramWriter.WriteUnknown(key, value);
+                }
+            }
+            paramWriter.WriteEndObject();
         }
-        rpcWriter.EndWriteParams();
+        rpcWriter.WriteEndParams();
         
         return rpcWriter.EndWrite(); 
     }
@@ -180,61 +190,41 @@ internal class SystemJson : IJson
     }
 }
 
-public sealed class JsonRpcRequestWriter : IDisposable, IAsyncDisposable
-{
-    private readonly MemoryStream _memoryStream;
-    private readonly Utf8JsonWriter _jsonWriter;
-    
-    private JsonRpcRequestWriter(JsonRpcRequest<int> jsonRpcRequest)
-    {
-        _memoryStream = new MemoryStream();
-        _jsonWriter = new Utf8JsonWriter(_memoryStream);
-        
-        var writer = _jsonWriter;
-        writer.WriteStartObject();
-        writer.WriteString("jsonrpc", jsonRpcRequest.JsonRpcVersion);
-        writer.WriteNumber("id", jsonRpcRequest.Id);
-        writer.WriteString("method", jsonRpcRequest.Method);
-    }
-
-    public static JsonRpcRequestWriter BeginWrite(JsonRpcRequest<int> jsonRpcRequest)
-    {
-        return new JsonRpcRequestWriter(jsonRpcRequest);
-    }
-
-    public Utf8JsonWriter BeginWriteParams()
-    {
-        _jsonWriter.WriteStartObject("params");
-        return _jsonWriter;
-    }
-
-    public void EndWriteParams()
-    {
-        _jsonWriter.WriteEndObject();
-    }
-    
-    public string EndWrite()
-    {
-        _jsonWriter.WriteEndObject();
-        _jsonWriter.Flush();
-        return Encoding.UTF8.GetString(_memoryStream.ToArray());
-    }
-
-    public void Dispose()
-    {
-        _memoryStream.Dispose();
-        _jsonWriter.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await _memoryStream.DisposeAsync();
-        await _jsonWriter.DisposeAsync();
-    }
-}
-
 public static class JsonDomExtensions
 {
+    public static void WriteUnknown(this Utf8JsonWriter writer, string name, object value)
+    {
+        var valueType = value.GetType();
+        if (valueType.IsPrimitive || valueType == typeof(string))
+        {
+            writer.WritePrimitive(name, value);
+        }
+    }
+    
+    public static void WritePrimitive(this Utf8JsonWriter writer, string name, object value)
+    {
+        switch (value)
+        {
+            case int intValue:
+                writer.WriteNumber(name, intValue);
+                break;
+            case float floatValue:
+                writer.WriteNumber(name, floatValue);
+                break;
+            case double doubleValue:
+                writer.WriteNumber(name, doubleValue);
+                break;
+            case bool boolValue:
+                writer.WriteBoolean(name, boolValue);
+                break;
+            case string stringValue:
+                writer.WriteString(name, stringValue);
+                break;
+            default:
+                throw new ArgumentException($"Type is not a primitive, type: {value.GetType()}");
+        }
+    }
+    
     public static JsonSchema GetSchema(this JsonElement element)
     {
         var type = element.GetProperty("type").GetString();
