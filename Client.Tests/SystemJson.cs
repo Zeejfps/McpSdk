@@ -10,57 +10,55 @@ internal class SystemJson : IJson
 {
     public string Stringify(JsonRpcRequest<int, InitializeRequestPayload> jsonRpcRequest)
     {
-        using var memoryStream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(memoryStream);
-        writer.WriteStartObject();
+        using var reqWriter = BeginWrite(jsonRpcRequest);
+
+        var paramWriter = reqWriter.BeginWriteParams();
         {
-            writer.WriteString("jsonrpc", jsonRpcRequest.JsonRpcVersion);
-            writer.WriteNumber("id", jsonRpcRequest.Id);
-            writer.WriteString("method", jsonRpcRequest.Method);
-            writer.WriteStartObject("params");
+            var parameters = jsonRpcRequest.Parameters;
+            paramWriter.WriteString("protocolVersion", parameters.ProtocolVersion);
+            
+            paramWriter.WriteStartObject("capabilities");
             {
-                var parameters = jsonRpcRequest.Parameters;
-                writer.WriteString("protocolVersion", parameters.ProtocolVersion);
-                
-                writer.WriteStartObject("capabilities");
+                var capabilities = parameters.Capabilities;
+                if (capabilities.Roots != null)
                 {
-                    var capabilities = parameters.Capabilities;
-                    if (capabilities.Roots != null)
-                    {
-                        writer.WriteStartObject("roots");
-                        writer.WriteBoolean("listChanged", capabilities.Roots.IsListChangedNotificationSupported);
-                        writer.WriteEndObject();
-                    }
-
-                    if (capabilities.Sampling != null)
-                    {
-                        writer.WriteStartObject("sampling");
-                        writer.WriteEndObject();
-                    }
+                    paramWriter.WriteStartObject("roots");
+                    paramWriter.WriteBoolean("listChanged", capabilities.Roots.IsListChangedNotificationSupported);
+                    paramWriter.WriteEndObject();
                 }
-                writer.WriteEndObject();
 
-                writer.WriteStartObject("clientInfo");
+                if (capabilities.Sampling != null)
                 {
-                    var clientInfo = parameters.ClientInfo;
-                    writer.WriteString("name", clientInfo.Name);
-                    writer.WriteString("version", clientInfo.Version);
+                    paramWriter.WriteStartObject("sampling");
+                    paramWriter.WriteEndObject();
                 }
-                writer.WriteEndObject();
             }
-            writer.WriteEndObject();
-        }
-        writer.WriteEndObject();
-        
-        writer.Flush();
+            paramWriter.WriteEndObject();
 
-        var jsonString = Encoding.UTF8.GetString(memoryStream.ToArray());
-        return jsonString;
+            paramWriter.WriteStartObject("clientInfo");
+            {
+                var clientInfo = parameters.ClientInfo;
+                paramWriter.WriteString("name", clientInfo.Name);
+                paramWriter.WriteString("version", clientInfo.Version);
+            }
+            paramWriter.WriteEndObject();
+        }
+        reqWriter.EndWriteParams();
+        
+        return reqWriter.EndWrite();
     }
 
     public string Stringify(JsonRpcRequest<int, CallToolRequestPayload> jsonRpcRequest)
     {
-        throw new NotImplementedException();
+        using var rpcWriter = BeginWrite(jsonRpcRequest);
+
+        var paramWriter = rpcWriter.BeginWriteParams();
+        {
+            
+        }
+        rpcWriter.EndWriteParams();
+        
+        return rpcWriter.EndWrite(); 
     }
 
     public string Stringify(JsonRpcNotification jsonRpcNotification)
@@ -81,20 +79,13 @@ internal class SystemJson : IJson
 
     public string Stringify(JsonRpcRequest<int, ListToolsRequestPayload> jsonRpcRequest)
     {
-        using var memoryStream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(memoryStream);
-        writer.WriteStartObject();
-        {
-            writer.WriteString("jsonrpc", jsonRpcRequest.JsonRpcVersion);
-            writer.WriteNumber("id", jsonRpcRequest.Id);
-            writer.WriteString("method", jsonRpcRequest.Method);
-        }
-        writer.WriteEndObject();
-        
-        writer.Flush();
-        
-        var jsonString = Encoding.UTF8.GetString(memoryStream.ToArray());
-        return jsonString;
+        using var reqWriter = BeginWrite(jsonRpcRequest);
+        return reqWriter.EndWrite();
+    }
+
+    private JsonRpcRequestWriter BeginWrite(JsonRpcRequest<int> jsonRpcRequest)
+    {
+        return JsonRpcRequestWriter.BeginWrite(jsonRpcRequest);
     }
 
     public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResultPayload?> jsonRpcResponse)
@@ -186,6 +177,59 @@ internal class SystemJson : IJson
         }
         
         jsonRpcResponse = new JsonRpcResponse<int, ListToolsResultPayload?>(rpcVersion, id, result, error);
+    }
+}
+
+public sealed class JsonRpcRequestWriter : IDisposable, IAsyncDisposable
+{
+    private readonly MemoryStream _memoryStream;
+    private readonly Utf8JsonWriter _jsonWriter;
+    
+    private JsonRpcRequestWriter(JsonRpcRequest<int> jsonRpcRequest)
+    {
+        _memoryStream = new MemoryStream();
+        _jsonWriter = new Utf8JsonWriter(_memoryStream);
+        
+        var writer = _jsonWriter;
+        writer.WriteStartObject();
+        writer.WriteString("jsonrpc", jsonRpcRequest.JsonRpcVersion);
+        writer.WriteNumber("id", jsonRpcRequest.Id);
+        writer.WriteString("method", jsonRpcRequest.Method);
+    }
+
+    public static JsonRpcRequestWriter BeginWrite(JsonRpcRequest<int> jsonRpcRequest)
+    {
+        return new JsonRpcRequestWriter(jsonRpcRequest);
+    }
+
+    public Utf8JsonWriter BeginWriteParams()
+    {
+        _jsonWriter.WriteStartObject("params");
+        return _jsonWriter;
+    }
+
+    public void EndWriteParams()
+    {
+        _jsonWriter.WriteEndObject();
+    }
+    
+    public string EndWrite()
+    {
+        _jsonWriter.WriteEndObject();
+        _jsonWriter.Flush();
+        return Encoding.UTF8.GetString(_memoryStream.ToArray());
+    }
+
+    public void Dispose()
+    {
+        _memoryStream.Dispose();
+        _jsonWriter.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _memoryStream.DisposeAsync();
+        await _jsonWriter.DisposeAsync();
     }
 }
 
