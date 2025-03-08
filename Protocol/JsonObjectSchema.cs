@@ -13,7 +13,7 @@ namespace McpSharp.Protocol
         {
             var sb = new StringBuilder();
             sb.Append("{");
-            sb.Append($"\"type\": \"{Type}\"");
+            sb.Append($"\"type\":\"{Type}\"");
             if (Properties != null && Properties.Count > 0)
             {
                 sb.Append(", properties: {");
@@ -34,7 +34,7 @@ namespace McpSharp.Protocol
 
             if (Required != null && Required.Length > 0)
             {
-                sb.Append(", required: [");
+                sb.Append(", required:[");
                 for (var i = 0; i < Required.Length - 1; i++)
                 {
                     var requiredProperty = Required[i];

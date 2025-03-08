@@ -248,14 +248,14 @@ public static class JsonDomExtensions
         {
             var numberSchema = new JsonNumberSchema();
          
-            if (element.TryGetProperty("maximum", out var minimumProp))
-            {
-                numberSchema.Minimum = minimumProp.GetInt32();
-            }
-            
-            if (element.TryGetProperty("minimum", out var maximumProp))
+            if (element.TryGetProperty("maximum", out var maximumProp))
             {
                 numberSchema.Maximum = maximumProp.GetInt32();
+            }
+            
+            if (element.TryGetProperty("minimum", out var minimumProp))
+            {
+                numberSchema.Minimum = minimumProp.GetInt32();
             }
             
             if (element.TryGetProperty("description", out var descriptionProp))
