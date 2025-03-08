@@ -2,9 +2,9 @@
 {
     public sealed class ListToolsResultPayload
     {
-        public ToolInfo[] Tools { get; }
+        public Tool[] Tools { get; }
 
-        public ListToolsResultPayload(ToolInfo[] tools)
+        public ListToolsResultPayload(Tool[] tools)
         {
             Tools = tools;
         }

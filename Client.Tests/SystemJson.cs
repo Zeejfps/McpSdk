@@ -161,13 +161,14 @@ internal class SystemJson : IJson
         {
             var toolsObj = resultObj.GetProperty("tools");
             var toolsCount = toolsObj.GetArrayLength();
-            var toolInfos = new ToolInfo[toolsCount];
+            var toolInfos = new Tool[toolsCount];
             for (var i = 0; i < toolsCount; i++)
             {
                 var toolObj = toolsObj[i];
                 var toolName = toolObj.GetProperty("name").GetString();
                 var toolDescription = toolObj.GetProperty("description").GetString();
-                toolInfos[i] = new ToolInfo(toolName, toolDescription);
+                var inputSchema = toolObj.GetProperty("inputSchema").GetSchema();
+                toolInfos[i] = new Tool(toolName, toolDescription, inputSchema);
             }
             
             result = new ListToolsResultPayload(toolInfos);
@@ -180,5 +181,79 @@ internal class SystemJson : IJson
         }
         
         jsonRpcResponse = new JsonRpcResponse<int, ListToolsResultPayload?>(rpcVersion, id, result, error);
+    }
+}
+
+public static class JsonDomExtensions
+{
+    public static JsonSchema GetSchema(this JsonElement element)
+    {
+        var type = element.GetProperty("type").GetString();
+        if (type == "object")
+        {
+            var objSchema = new JsonObjectSchema();
+            
+            var propertiesObj = element.GetProperty("properties");
+            objSchema.Properties =  new Dictionary<string, JsonSchema>();
+            foreach (var propertyObj in propertiesObj.EnumerateObject())
+            {
+                var propertyName = propertyObj.Name;
+                var propertySchema = propertyObj.Value.GetSchema();
+                objSchema.Properties.Add(propertyName, propertySchema);
+            }
+
+            if (element.TryGetProperty("description", out var descriptionProp))
+            {
+                objSchema.Description = descriptionProp.GetString();
+            }
+            
+            return objSchema;
+        }
+        
+        if (type == "string")
+        {
+            var stringSchema = new JsonStringSchema();
+         
+            if (element.TryGetProperty("minLength", out var minLengthProp))
+            {
+                stringSchema.MinLength = minLengthProp.GetInt32();
+            }
+            
+            if (element.TryGetProperty("maxLength", out var maxLengthProp))
+            {
+                stringSchema.MaxLength = maxLengthProp.GetInt32();
+            }
+            
+            if (element.TryGetProperty("description", out var descriptionProp))
+            {
+                stringSchema.Description = descriptionProp.GetString();
+            }
+
+            return stringSchema;
+        }
+        
+        if (type == "number")
+        {
+            var numberSchema = new JsonNumberSchema();
+         
+            if (element.TryGetProperty("maximum", out var minimumProp))
+            {
+                numberSchema.Minimum = minimumProp.GetInt32();
+            }
+            
+            if (element.TryGetProperty("minimum", out var maximumProp))
+            {
+                numberSchema.Maximum = maximumProp.GetInt32();
+            }
+            
+            if (element.TryGetProperty("description", out var descriptionProp))
+            {
+                numberSchema.Description = descriptionProp.GetString();
+            }
+
+            return numberSchema;
+        }
+        
+        throw new Exception($"Unsupported type: {type}");
     }
 }

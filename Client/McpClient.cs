@@ -33,7 +33,7 @@ namespace McpSharp.Client
             IsConnected = true;
         }
 
-        public async Task<IEnumerable<ToolInfo>> ListTools()
+        public async Task<IEnumerable<Tool>> ListTools()
         {
             var request = new ListToolsRequestPayload();
             var result = await _transport.SendMessage(request);
