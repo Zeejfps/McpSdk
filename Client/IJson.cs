@@ -8,7 +8,7 @@ namespace McpSharp.Client
         string Stringify(JsonRpcRequest<int, InitializeRequestPayload> jsonRpcRequest);
         string Stringify(JsonRpcNotification jsonRpcNotification);
         string Stringify(JsonRpcRequest<int, ListToolsRequestPayload> jsonRpcRequest);
-        void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponsePayload> jsonRpcResponse);
+        void Parse(string jsonString, out JsonRpcResponse<int, InitializeResultPayload> jsonRpcResponse);
         void Parse(string jsonString, out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse);
     }
 }

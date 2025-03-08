@@ -92,7 +92,7 @@ internal class SystemJson : IJson
         return jsonString;
     }
 
-    public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResponsePayload?> jsonRpcResponse)
+    public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResultPayload?> jsonRpcResponse)
     {
         // Load the JSON into a JsonDocument.
         using JsonDocument document = JsonDocument.Parse(jsonString);
@@ -101,7 +101,7 @@ internal class SystemJson : IJson
         var rpcVersion = root.GetProperty("jsonrpc").GetString();
         var id = root.GetProperty("id").GetInt32();
 
-        InitializeResponsePayload? result = null;
+        InitializeResultPayload? result = null;
         JsonRpcResponseError? error = null;
         if (root.TryGetProperty("result", out var resultObj))
         {
@@ -134,7 +134,7 @@ internal class SystemJson : IJson
             var serverVersion = serverInfoObj.GetProperty("version").GetString();
 
             var serverInfo = new ServerInfo(serverName, serverVersion);
-            result = new InitializeResponsePayload(protocolVersion, capabilities, serverInfo);
+            result = new InitializeResultPayload(protocolVersion, capabilities, serverInfo);
         }
         else if (root.TryGetProperty("error", out var errorObj))
         {
@@ -143,7 +143,7 @@ internal class SystemJson : IJson
             error = new JsonRpcResponseError(code, message, null);
         }
         
-        jsonRpcResponse = new JsonRpcResponse<int, InitializeResponsePayload?>(rpcVersion, id, result, error);
+        jsonRpcResponse = new JsonRpcResponse<int, InitializeResultPayload?>(rpcVersion, id, result, error);
     }
 
     public void Parse(string jsonString, out JsonRpcResponse<int, ListToolsResultPayload?> jsonRpcResponse)

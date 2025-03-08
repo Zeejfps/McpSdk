@@ -30,7 +30,7 @@ namespace McpSharp.Client
             await _sseClient.Connect(_connectionUrl);
         }
 
-        public async Task<InitializeResponsePayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default)
+        public async Task<InitializeResultPayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default)
         {
             var requestId = Interlocked.Increment(ref _nextRequestId);
             var request = new JsonRpcRequest<int, InitializeRequestPayload>(requestId, "initialize", payload);
@@ -49,7 +49,7 @@ namespace McpSharp.Client
                 throw new Exception($"Expected message, got: {initializeResponseMessage.Kind}");
             
             var responsePayloadAsJson = initializeResponseMessage.Data;
-            _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResponsePayload> jsonRpcResponse);
+            _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, InitializeResultPayload> jsonRpcResponse);
             if (jsonRpcResponse.Error != null)
                 throw new ClientException(jsonRpcResponse.Error.ToString());
             

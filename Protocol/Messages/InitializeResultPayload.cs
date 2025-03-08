@@ -1,12 +1,12 @@
 ﻿namespace McpSharp.Protocol.Messages
 {
-    public sealed class InitializeResponsePayload
+    public sealed class InitializeResultPayload
     {
         public string ProtocolVersion { get; }
         public ServerCapabilities Capabilities { get; }
         public ServerInfo ServerInfo { get; }
 
-        public InitializeResponsePayload(string protocolVersion, ServerCapabilities capabilities, ServerInfo serverInfo)
+        public InitializeResultPayload(string protocolVersion, ServerCapabilities capabilities, ServerInfo serverInfo)
         {
             ProtocolVersion = protocolVersion;
             Capabilities = capabilities;

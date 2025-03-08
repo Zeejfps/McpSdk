@@ -7,7 +7,7 @@ namespace McpSharp.Client
     public interface ITransport
     {
         Task Connect();
-        Task<InitializeResponsePayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default);
+        Task<InitializeResultPayload> SendMessage(InitializeRequestPayload payload, CancellationToken cancellationToken = default);
         Task<ListToolsResultPayload> SendMessage(ListToolsRequestPayload payload, CancellationToken cancellationToken = default);
         Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default);
     }
