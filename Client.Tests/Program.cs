@@ -1,4 +1,5 @@
-﻿using McpSharp.Client;
+﻿using Client.Tests;
+using McpSharp.Client;
 using McpSharp.Protocol;
 
 var json = new SystemJson();

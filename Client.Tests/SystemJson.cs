@@ -4,7 +4,9 @@ using McpSharp.Client;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
 
-class SystemJson : IJson
+namespace Client.Tests;
+
+internal class SystemJson : IJson
 {
     public string Stringify(JsonRpcRequest<int, InitializeRequestPayload> jsonRpcRequest)
     {

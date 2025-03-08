@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using McpSharp.Client;
 
+namespace Client.Tests;
+
 internal class SseClient : ISseClient
 {
     private readonly HttpClient _httpClient;
