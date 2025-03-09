@@ -3,9 +3,9 @@ using McpSharp.Client;
 using McpSharp.Protocol;
 
 var json = new SystemJson();
-var httpSseClientFactory = new SseClientFactory();
+var sseClientFactory = new SseClientFactory();
 
-var sseTransportFactory = new SseTransportFactory(json, httpSseClientFactory, "http://localhost:3000");
+var sseTransportFactory = new SseTransportFactory(json, sseClientFactory, "http://localhost:3000");
 var clientFactory = new ClientFactory(sseTransportFactory);
 var client = clientFactory.CreateClient(new ClientInfo("Echo Client", "1.0.0"));
 
