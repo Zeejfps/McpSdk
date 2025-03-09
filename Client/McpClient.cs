@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
@@ -41,10 +39,10 @@ namespace McpSharp.Client
             return result.Tools;
         }
 
-        public async Task<ICallToolResult> CallTool(string toolName, Dictionary<string, object> parameters = null)
+        public async Task<CallToolResultPayload> CallTool(string toolName, Dictionary<string, object> parameters = null)
         {
             var requestPayload = new CallToolRequestPayload(toolName, parameters);
-            await _transport.SendMessage(requestPayload);
+            var response = await _transport.SendMessage(requestPayload);
             return null;
         }
     }

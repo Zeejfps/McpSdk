@@ -9,6 +9,6 @@ namespace McpSharp.Client
         bool IsConnected { get; }
         Task Connect();
         Task<IEnumerable<Tool>> ListTools();
-        Task<ICallToolResult> CallTool(string toolName, Dictionary<string, object> arguments = null);
+        Task<CallToolResultPayload> CallTool(string toolName, Dictionary<string, object> arguments = null);
     }
 }

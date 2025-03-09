@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 using McpSharp.Client;
 using McpSharp.Protocol;
@@ -187,6 +188,17 @@ internal class SystemJson : IJson
         }
         
         jsonRpcResponse = new JsonRpcResponse<int, ListToolsResultPayload?>(rpcVersion, id, result, error);
+    }
+
+    public void Parse(string jsonString, [UnscopedRef] out JsonRpcResponse<int, CallToolResultPayload> jsonRpcResponse)
+    {
+        using JsonDocument document = JsonDocument.Parse(jsonString);
+        var root = document.RootElement;
+
+        var rpcVersion = root.GetProperty("jsonrpc").GetString();
+        var id = root.GetProperty("id").GetInt32();
+
+        jsonRpcResponse = new JsonRpcResponse<int, CallToolResultPayload>(rpcVersion, id, null, null);
     }
 }
 

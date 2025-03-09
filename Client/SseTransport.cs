@@ -73,7 +73,7 @@ namespace McpSharp.Client
             return jsonRpcResponse.Result;
         }
 
-        public async Task SendMessage(CallToolRequestPayload payload, CancellationToken cancellationToken = default)
+        public async Task<CallToolResultPayload> SendMessage(CallToolRequestPayload payload, CancellationToken cancellationToken = default)
         {
             var request = CreateRequest("tools/call", payload);
             var requestAsJson = _json.Stringify(request);
@@ -83,10 +83,12 @@ namespace McpSharp.Client
             if (sseEvent.Kind != "message")
                 throw new Exception($"Expected event kind: message, got: {sseEvent.Kind}");
             
-            // var responsePayloadAsJson = sseEvent.Data;
-            // _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, ListToolsResultPayload> jsonRpcResponse);
-            // if (jsonRpcResponse.Error != null)
-            //     throw new ClientException(jsonRpcResponse.Error.ToString());
+            var responsePayloadAsJson = sseEvent.Data;
+            _json.Parse(responsePayloadAsJson, out JsonRpcResponse<int, CallToolResultPayload> jsonRpcResponse);
+            if (jsonRpcResponse.Error != null)
+                throw new ClientException(jsonRpcResponse.Error.ToString());
+
+            return jsonRpcResponse.Result;
         }
 
         public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
