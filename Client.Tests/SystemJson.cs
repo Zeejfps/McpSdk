@@ -222,7 +222,11 @@ internal class SystemJson : IJson
                         contentItem = new ImageContent(mimeType, data);
                         break;
                     case "resource":
-                        contentItem = new ResourceContent();
+                        var resourceObj = contentItemObj.GetProperty("resource");
+                        var uri = resourceObj.GetProperty("uri").GetString();
+                        mimeType = resourceObj.GetProperty("mimeType").GetString();
+                        text = resourceObj.GetProperty("text").GetString();
+                        contentItem = new ResourceContent(uri, mimeType, text);
                         break;
                 }
                 content[i] = contentItem;

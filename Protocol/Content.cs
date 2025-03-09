@@ -38,12 +38,24 @@ namespace McpSharp.Protocol
 
     public sealed class ResourceContent : Content
     {
+        public ResourceContent(string uri, string mimeType, string text)
+        {
+            Resource = new Resource(uri, mimeType, text);
+        }
+
         public override ContentKind Kind => ContentKind.Resource;
         public Resource Resource { get; }
     }
 
     public sealed class Resource
     {
+        public Resource(string uri, string mimeType, string text)
+        {
+            Uri = uri;
+            MimeType = mimeType;
+            Text = text;
+        }
+
         public string Uri { get; }
         public string MimeType { get; }
         public string Text { get; }
