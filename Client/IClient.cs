@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
+using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {

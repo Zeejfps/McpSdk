@@ -109,7 +109,6 @@ internal class SystemJson : IJson
         var id = root.GetProperty("id").GetInt32();
 
         InitializeResultPayload? result = null;
-        JsonRpcResponseError? error = null;
         if (root.TryGetProperty("result", out var resultObj))
         {
             var protocolVersion = resultObj.GetProperty("protocolVersion").GetString();
@@ -143,13 +142,8 @@ internal class SystemJson : IJson
             var serverInfo = new ServerInfo(serverName, serverVersion);
             result = new InitializeResultPayload(protocolVersion, capabilities, serverInfo);
         }
-        else if (root.TryGetProperty("error", out var errorObj))
-        {
-            var code = errorObj.GetProperty("code").GetInt32();
-            var message = errorObj.GetProperty("message").GetString();
-            error = new JsonRpcResponseError(code, message, null);
-        }
-        
+
+        var error = TryParseError(root);
         jsonRpcResponse = new JsonRpcResponse<int, InitializeResultPayload?>(rpcVersion, id, result, error);
     }
 
@@ -162,7 +156,6 @@ internal class SystemJson : IJson
         var id = root.GetProperty("id").GetInt32();
 
         ListToolsResultPayload? result = null;
-        JsonRpcResponseError? error = null;
 
         if (root.TryGetProperty("result", out var resultObj))
         {
@@ -180,13 +173,8 @@ internal class SystemJson : IJson
             
             result = new ListToolsResultPayload(toolInfos);
         }
-        else if (root.TryGetProperty("error", out var errorObj))
-        {
-            var code = errorObj.GetProperty("code").GetInt32();
-            var message = errorObj.GetProperty("message").GetString();
-            error = new JsonRpcResponseError(code, message, null);
-        }
-        
+
+        var error = TryParseError(root);
         jsonRpcResponse = new JsonRpcResponse<int, ListToolsResultPayload?>(rpcVersion, id, result, error);
     }
 
@@ -198,7 +186,50 @@ internal class SystemJson : IJson
         var rpcVersion = root.GetProperty("jsonrpc").GetString();
         var id = root.GetProperty("id").GetInt32();
 
-        jsonRpcResponse = new JsonRpcResponse<int, CallToolResultPayload>(rpcVersion, id, null, null);
+        TryParseResult(root, out CallToolResultPayload result);
+        var error = TryParseError(root);
+        jsonRpcResponse = new JsonRpcResponse<int, CallToolResultPayload>(rpcVersion, id, result, error);
+    }
+
+    private bool TryParseResult(JsonElement root, out CallToolResultPayload result)
+    {
+        if (!root.TryGetProperty("result", out var resultObj))
+        {
+            result = null;
+            return false;
+        }
+
+        Content? content = null;
+        if (root.TryGetProperty("content", out var contentObj))
+        {
+            var type = contentObj.GetProperty("type").GetString();
+            switch (type)
+            {
+                case "text":
+                    content = new TextContent();
+                    break;
+                case "image":
+                    content = new ImageContent();
+                    break;
+                case "resource":
+                    content = new ResourceContent();
+                    break;
+            }
+        }
+
+        var isError = resultObj.GetProperty("isError").GetBoolean();
+        result = new CallToolResultPayload(content, isError);
+        return true;
+    }
+
+    private JsonRpcResponseError? TryParseError(JsonElement root)
+    {
+        if (!root.TryGetProperty("error", out var errorObj))
+            return null;
+
+        var code = errorObj.GetProperty("code").GetInt32();
+        var message = errorObj.GetProperty("message").GetString();
+        return new JsonRpcResponseError(code, message, null);
     }
 }
 

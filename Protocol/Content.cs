@@ -1,26 +1,33 @@
 namespace McpSharp.Protocol
 {
+    public enum ContentKind
+    {
+        Text,
+        Image,
+        Resource
+    }
+
     public abstract class Content
     {
-        public abstract string Type { get; }
+        public abstract ContentKind Kind { get; }
     }
 
     public sealed class TextContent : Content
     {
-        public override string Type => "text";
+        public override ContentKind Kind => ContentKind.Text;
         public string Text { get; }
     }
 
     public sealed class ImageContent : Content
     {
-        public override string Type => "image";
+        public override ContentKind Kind => ContentKind.Image;
         public string Data { get; }
         public string MimeType { get; }
     }
 
     public sealed class ResourceContent : Content
     {
-        public override string Type => "resource";
+        public override ContentKind Kind => ContentKind.Resource;
         public Resource Resource { get; }
     }
 
