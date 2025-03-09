@@ -149,7 +149,7 @@ internal class SystemJson : IJson
 
     public void Parse(string jsonString, out JsonRpcResponse<int, ListToolsResultPayload?> jsonRpcResponse)
     {
-        using JsonDocument document = JsonDocument.Parse(jsonString);
+        using var document = JsonDocument.Parse(jsonString);
         var root = document.RootElement;
         
         var rpcVersion = root.GetProperty("jsonrpc").GetString();
@@ -209,7 +209,6 @@ internal class SystemJson : IJson
                 Content? contentItem = null;
                 var contentItemObj = contentArray[i];
                 var type = contentItemObj.GetProperty("type").GetString();
-                Console.WriteLine($"Content Type: {type}");
                 switch (type)
                 {
                     case "text":
