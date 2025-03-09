@@ -207,12 +207,14 @@ internal class SystemJson : IJson
             for (var i = 0; i < contentItemsCount; i++)
             {
                 Content? contentItem = null;
-                var type = contentArray[i].GetProperty("type").GetString();
+                var contentItemObj = contentArray[i];
+                var type = contentItemObj.GetProperty("type").GetString();
                 Console.WriteLine($"Content Type: {type}");
                 switch (type)
                 {
                     case "text":
-                        contentItem = new TextContent();
+                        var text = contentItemObj.GetProperty("text").GetString();
+                        contentItem = new TextContent(text);
                         break;
                     case "image":
                         contentItem = new ImageContent();

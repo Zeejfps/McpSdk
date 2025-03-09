@@ -14,6 +14,11 @@ namespace McpSharp.Protocol
 
     public sealed class TextContent : Content
     {
+        public TextContent(string text)
+        {
+            Text = text;
+        }
+
         public override ContentKind Kind => ContentKind.Text;
         public string Text { get; }
     }
