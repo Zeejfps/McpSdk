@@ -199,22 +199,34 @@ internal class SystemJson : IJson
             return false;
         }
 
-        Content? content = null;
-        if (root.TryGetProperty("content", out var contentObj))
+        Content[] content;
+        if (resultObj.TryGetProperty("content", out var contentArray))
         {
-            var type = contentObj.GetProperty("type").GetString();
-            switch (type)
+            var contentItemsCount = contentArray.GetArrayLength();
+            content = new Content[contentItemsCount];
+            for (var i = 0; i < contentItemsCount; i++)
             {
-                case "text":
-                    content = new TextContent();
-                    break;
-                case "image":
-                    content = new ImageContent();
-                    break;
-                case "resource":
-                    content = new ResourceContent();
-                    break;
+                Content? contentItem = null;
+                var type = contentArray[i].GetProperty("type").GetString();
+                Console.WriteLine($"Content Type: {type}");
+                switch (type)
+                {
+                    case "text":
+                        contentItem = new TextContent();
+                        break;
+                    case "image":
+                        contentItem = new ImageContent();
+                        break;
+                    case "resource":
+                        contentItem = new ResourceContent();
+                        break;
+                }
+                content[i] = contentItem;
             }
+        }
+        else
+        {
+            content = [];
         }
 
         var isError = false;

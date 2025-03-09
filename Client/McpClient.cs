@@ -43,7 +43,7 @@ namespace McpSharp.Client
         {
             var requestPayload = new CallToolRequestPayload(toolName, parameters);
             var response = await _transport.SendMessage(requestPayload);
-            return null;
+            return response;
         }
     }
 }

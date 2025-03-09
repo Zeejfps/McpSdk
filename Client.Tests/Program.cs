@@ -27,4 +27,11 @@ var result = await client.CallTool(
     }
 );
 
-Console.WriteLine(result.Content.Kind);
+foreach (var content in result.Content)
+{
+    Console.WriteLine(content.Kind);
+    if (content is TextContent textContent)
+    {
+        Console.WriteLine(textContent.Text);
+    }
+}
