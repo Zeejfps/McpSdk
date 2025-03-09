@@ -25,6 +25,12 @@ namespace McpSharp.Protocol
 
     public sealed class ImageContent : Content
     {
+        public ImageContent(string mimeType, string data)
+        {
+            MimeType = mimeType;
+            Data = data;
+        }
+
         public override ContentKind Kind => ContentKind.Image;
         public string Data { get; }
         public string MimeType { get; }

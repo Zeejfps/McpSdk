@@ -102,7 +102,7 @@ internal class SystemJson : IJson
     public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResultPayload?> jsonRpcResponse)
     {
         // Load the JSON into a JsonDocument.
-        using JsonDocument document = JsonDocument.Parse(jsonString);
+        using var document = JsonDocument.Parse(jsonString);
         var root = document.RootElement;
         
         var rpcVersion = root.GetProperty("jsonrpc").GetString();
@@ -217,7 +217,9 @@ internal class SystemJson : IJson
                         contentItem = new TextContent(text);
                         break;
                     case "image":
-                        contentItem = new ImageContent();
+                        var data = contentItemObj.GetProperty("data").GetString();
+                        var mimeType = contentItemObj.GetProperty("mimeType").GetString();
+                        contentItem = new ImageContent(mimeType, data);
                         break;
                     case "resource":
                         contentItem = new ResourceContent();
