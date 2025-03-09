@@ -217,7 +217,11 @@ internal class SystemJson : IJson
             }
         }
 
-        var isError = resultObj.GetProperty("isError").GetBoolean();
+        var isError = false;
+        if (root.TryGetProperty("error", out var errorObj))
+        {
+            isError = errorObj.GetBoolean();
+        }
         result = new CallToolResultPayload(content, isError);
         return true;
     }

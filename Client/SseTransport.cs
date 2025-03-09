@@ -41,7 +41,7 @@ namespace McpSharp.Client
             if (endpointMessage.Kind != "endpoint")
                 throw new Exception($"Expected endpoint message, got: {endpointMessage.Kind}");
 
-            _messagesUrl = $"{_host}{endpointMessage.Data}";
+            _messagesUrl = $"{_host}/{endpointMessage.Data}";
             
             var initializeResponseMessage = await _sseClient.DequeueEvent(cancellationToken);
             if (initializeResponseMessage.Kind != "message")

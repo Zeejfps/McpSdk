@@ -26,3 +26,5 @@ var result = await client.CallTool(
         {"longitude", 51.5}
     }
 );
+
+Console.WriteLine(result.Content.Kind);

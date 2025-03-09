@@ -21,11 +21,10 @@ internal class SseClient : ISseClient
 
     public async Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"Sending: {jsonBody}");
+        Console.WriteLine($"Sending: {jsonBody} to {url}");
         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(url, content, cancellationToken);
         response.EnsureSuccessStatusCode();
-        Console.WriteLine($"Message sent to: {url}");
     }
 
     public async Task<ISseEvent> DequeueEvent(CancellationToken cancellationToken)
