@@ -98,6 +98,39 @@ namespace McpSharp.Client
             await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
         }
 
+        public async Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        {
+            var jsonRpcRequest = WriteJsonRpcRequest(method, payload);
+            await _sseClient.SendMessage(_messagesUrl, jsonRpcRequest, cancellationToken);
+            var sseEvent = await _sseClient.DequeueEvent(cancellationToken);
+            return ReadResult(sseEvent.Data);
+        }
+
+        private string WriteJsonRpcRequest(string method, Action<IJsonWriter> payload)
+        {
+            var id = NextRequestId();
+            var writer = _json.Writer();
+            writer.Write("jsonrpc", "2.0");
+            writer.Write("id", id);
+            writer.Write("method", method);
+            writer.Write("params", payload);
+            return writer.ToString();
+        }
+
+        private IJsonObject ReadResult(string text)
+        {
+            var response = _json.Parse(text);
+            var errorProp = response["error"];
+            if (errorProp != null)
+            {
+                var errorObj = errorProp.AsObject();
+                var code = errorObj["code"].AsInt();
+                var message = errorObj["message"].AsString();
+                throw new ClientException($"Error ({code}): {message}");
+            }
+            return response["result"].AsObject();
+        }
+
         private int NextRequestId()
         {
             return Interlocked.Increment(ref _nextRequestId);

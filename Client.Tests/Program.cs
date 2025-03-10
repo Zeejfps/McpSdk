@@ -20,18 +20,30 @@ foreach (var toolInfo in toolInfos)
 
 var result = await client.CallTool(
     "get-forecast",
-    new Dictionary<string, object>
+    args =>
     {
-        {"latitude", 51.5},
-        {"longitude", 51.5}
+        args.Write("latitude", 51.5);
+        args.Write("longitude", 51.5);
+        args.Write("items", [
+            obj =>
+            {
+                obj.Write("afrd", 3);
+            },
+            obj =>
+            {
+                obj.Write("awdf", 1);
+            }
+        ]);
     }
 );
 
-foreach (var content in result.Content)
+var contents = result["content"].AsObjectArray();
+
+foreach (var content in contents)
 {
-    Console.WriteLine(content.Kind);
-    if (content is TextContent textContent)
+    var type = content["type"].AsString();
+    if (type == "text")
     {
-        Console.WriteLine(textContent.Text);
+        var text = content["text"].AsString();
     }
 }

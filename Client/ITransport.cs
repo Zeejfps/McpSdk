@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol.Messages;
 
@@ -11,5 +12,7 @@ namespace McpSharp.Client
         Task<ListToolsResultPayload> SendMessage(ListToolsRequestPayload payload, CancellationToken cancellationToken = default);
         Task<CallToolResultPayload> SendMessage(CallToolRequestPayload payload, CancellationToken cancellationToken = default);
         Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default);
+        
+        Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
     }
 }

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
-using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
@@ -10,6 +10,6 @@ namespace McpSharp.Client
         bool IsConnected { get; }
         Task Connect();
         Task<IEnumerable<Tool>> ListTools();
-        Task<CallToolResultPayload> CallTool(string toolName, Dictionary<string, object> arguments = null);
+        Task<IJsonObject> CallTool(string toolName, Action<IJsonWriter> args);
     }
 }

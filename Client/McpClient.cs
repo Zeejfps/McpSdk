@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
@@ -39,11 +40,16 @@ namespace McpSharp.Client
             return result.Tools;
         }
 
-        public async Task<CallToolResultPayload> CallTool(string toolName, Dictionary<string, object> parameters = null)
+        public async Task<IJsonObject> CallTool(string toolName, Action<IJsonWriter> args)
         {
-            var requestPayload = new CallToolRequestPayload(toolName, parameters);
-            var response = await _transport.SendMessage(requestPayload);
-            return response;
+            return await _transport.SendMessage("tools/call", payload =>
+            {
+                payload.Write("name", toolName);
+                payload.Write("arguments", bodyWriter =>
+                {
+                    args?.Invoke(bodyWriter);
+                });
+            });
         }
     }
 }
