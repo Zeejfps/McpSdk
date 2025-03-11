@@ -49,7 +49,6 @@ namespace McpSdk.Protocol
                 foreach (var writeInputs in _inputs)
                     writeInputs(props);
             });
-            Console.WriteLine(_inputSchema.ToString());
             return new Tool(_json, _name, _description, _inputSchema);
         }
     }
