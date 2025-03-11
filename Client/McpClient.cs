@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 
@@ -13,7 +12,19 @@ namespace McpSharp.Client
         public McpClient(ITransport transport, ClientInfo clientInfo)
         {
             _transport = transport;
+            _transport.RequestReceived += OnRequestReceived;
+            _transport.NotificationReceived += OnNotificationReceived;
             _clientInfo = clientInfo;
+        }
+
+        private void OnRequestReceived(string method, IJsonObject args)
+        {
+            
+        }
+
+        private void OnNotificationReceived(string notification)
+        {
+            
         }
 
         public bool IsConnected { get; private set; }
@@ -22,7 +33,7 @@ namespace McpSharp.Client
         {
             await _transport.Connect();
             var clientProtocolVersion = "2024-11-05";
-            var response = await _transport.SendMessage("initialize", payload =>
+            var response = await _transport.SendRequest("initialize", payload =>
             {
                 payload.Write("protocolVersion", "2024-11-05");
                 payload.Write("capabilities", capabilities =>
@@ -47,13 +58,13 @@ namespace McpSharp.Client
 
         public async Task<ListToolsResult> ListTools()
         {
-            var result = await _transport.SendMessage("tools/list", payload => { });
+            var result = await _transport.SendRequest("tools/list", payload => { });
             return new ListToolsResult(result);
         }
 
         public async Task<CallToolResult> CallTool(string toolName, Action<IJsonWriter> args)
         {
-            var result = await _transport.SendMessage("tools/call", payload =>
+            var result = await _transport.SendRequest("tools/call", payload =>
             {
                 payload.Write("name", toolName);
                 payload.Write("arguments", bodyWriter =>

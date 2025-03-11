@@ -26,6 +26,9 @@ namespace McpSharp.Client
             _messagesUrl = $"{host}/messages";
         }
 
+        public event RequestReceivedCallback RequestReceived;
+        public event NotificationReceivedCallback NotificationReceived;
+
         public async Task Connect(CancellationToken cancellationToken = default)
         {
             _sseClient.EventReceived += OnSseEventReceived;
@@ -76,7 +79,7 @@ namespace McpSharp.Client
             await _sseClient.SendMessage(_messagesUrl, request, cancellationToken);
         }
 
-        public async Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        public async Task<IJsonObject> SendRequest(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
             var request = _json.Stringify(req =>
