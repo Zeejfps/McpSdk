@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace McpSharp.Protocol
 {
-    public delegate void RequestReceivedCallback(int messageId, string method, IJsonObject args);
+    public delegate void RequestReceivedCallback(int requestId, string method, IJsonObject methodParams);
     public delegate void NotificationReceivedCallback(string notification);
     
     public interface ITransport
@@ -14,7 +14,7 @@ namespace McpSharp.Protocol
         Task Connect(CancellationToken cancellationToken = default);
         Task SendNotification(string notification, CancellationToken cancellationToken = default);
         Task<IJsonObject> SendRequest(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
-        Task SendOkResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
-        Task SendErrorResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
+        Task SendOkResponse(int requestId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
+        Task SendErrorResponse(int requestId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
     }
 }

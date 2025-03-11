@@ -54,23 +54,23 @@ namespace McpSharp.Client
             return ReadResult(response);
         }
 
-        public async Task SendOkResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        public async Task SendOkResponse(int requestId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", messageId);
+                req.Write("id", requestId);
                 req.Write("result", payload);
             });
             await Send(response, cancellationToken);
         }
         
-        public async Task SendErrorResponse(int messageId, Action<IJsonWriter> error, CancellationToken cancellationToken = default)
+        public async Task SendErrorResponse(int requestId, Action<IJsonWriter> error, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", messageId);
+                req.Write("id", requestId);
                 req.Write("error", error);
             });
             await Send(response, cancellationToken);
