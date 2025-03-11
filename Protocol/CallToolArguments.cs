@@ -6,11 +6,11 @@
         {
             JsonObject = jsonObject;
             ToolName = jsonObject["name"].AsString();
-            Arguments = jsonObject["arguments"].AsObject();
+            ToolArguments = jsonObject["arguments"].AsObject();
         }
         
         public string ToolName { get; }
-        public IJsonObject Arguments { get; }
+        public IJsonObject ToolArguments { get; }
         public override IJsonObject JsonObject { get; }
     }
 }
