@@ -23,7 +23,7 @@ namespace McpSharp.Client
             _arguments = arguments;
         }
 
-        protected override Task OnConnect(CancellationToken cancellationToken = default)
+        protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             var processStartInfo = new ProcessStartInfo
             {

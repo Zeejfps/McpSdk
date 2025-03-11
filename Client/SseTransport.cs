@@ -32,7 +32,7 @@ namespace McpSharp.Client
             }
         }
 
-        protected override async Task OnConnect(CancellationToken cancellationToken = default)
+        protected override async Task OnStart(CancellationToken cancellationToken = default)
         {
             _sseClient.EventReceived += OnSseEventReceived;
             await _sseClient.Connect(_connectionUrl, cancellationToken);

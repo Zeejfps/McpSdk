@@ -101,7 +101,7 @@ namespace McpSharp.Client
             if (IsConnected)
                 throw new Exception("Client is already connected");
             
-            await _transport.Connect();
+            await _transport.Start();
             _transport.RequestReceived += OnRequestReceived;
             _transport.NotificationReceived += OnNotificationReceived;
             

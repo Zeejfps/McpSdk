@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using McpSharp.Protocol;
 
-namespace McpSharp.Client
+namespace McpSharp.Protocol
 {
     public abstract class JsonRpcTransport : ITransport
     {
@@ -23,9 +22,9 @@ namespace McpSharp.Client
         public event RequestReceivedCallback RequestReceived;
         public event NotificationReceivedCallback NotificationReceived;
         
-        public Task Connect(CancellationToken cancellationToken = default)
+        public Task Start(CancellationToken cancellationToken = default)
         {
-            return OnConnect(cancellationToken);
+            return OnStart(cancellationToken);
         }
 
         public async Task SendNotification(string notification, CancellationToken cancellationToken = default)
@@ -113,7 +112,7 @@ namespace McpSharp.Client
             }
         }
         
-        protected abstract Task OnConnect(CancellationToken cancellationToken = default);
+        protected abstract Task OnStart(CancellationToken cancellationToken = default);
         protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken);
 
         private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
@@ -131,7 +130,7 @@ namespace McpSharp.Client
                 var errorObj = errorProp.AsObject();
                 var code = errorObj["code"].AsInt();
                 var message = errorObj["message"].AsString();
-                throw new ClientException($"Error ({code}): {message}");
+                throw new Exception($"Error ({code}): {message}");
             }
             return response["result"].AsObject();
         }
