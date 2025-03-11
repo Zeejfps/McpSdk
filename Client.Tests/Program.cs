@@ -1,5 +1,6 @@
 ﻿using Client.Tests;
 using McpSharp.Adapter.SseClient;
+using McpSharp.Adapter.System.Text.Json;
 using McpSharp.Client;
 using McpSharp.Protocol;
 
