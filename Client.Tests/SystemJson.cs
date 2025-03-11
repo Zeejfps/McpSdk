@@ -1,79 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using McpSharp.Protocol;
-using McpSharp.Protocol.Messages;
 
 namespace Client.Tests;
 
 internal class SystemJson : IJson
 {
-
-    public string Stringify(JsonRpcNotification jsonRpcNotification)
-    {
-        using var memoryStream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(memoryStream);
-        
-        writer.WriteStartObject();
-        writer.WriteString("jsonrpc", jsonRpcNotification.JsonRpcVersion);
-        writer.WriteString("method", jsonRpcNotification.Method);
-        writer.WriteEndObject();
-        
-        writer.Flush();
-        
-        var jsonString = Encoding.UTF8.GetString(memoryStream.ToArray());
-        return jsonString;
-    }
-    
-    public void Parse(string jsonString, out JsonRpcResponse<int, InitializeResultPayload?> jsonRpcResponse)
-    {
-        // Load the JSON into a JsonDocument.
-        using var document = JsonDocument.Parse(jsonString);
-        var root = document.RootElement;
-        
-        var rpcVersion = root.GetProperty("jsonrpc").GetString();
-        var id = root.GetProperty("id").GetInt32();
-
-        InitializeResultPayload? result = null;
-        if (root.TryGetProperty("result", out var resultObj))
-        {
-            var protocolVersion = resultObj.GetProperty("protocolVersion").GetString();
-            
-            var capabilitiesObj = resultObj.GetProperty("capabilities");
-            var capabilities = new ServerCapabilities();
-            
-            if (capabilitiesObj.TryGetProperty("prompts", out var prompts))
-            {
-                var promptsListChanged = false;
-                if (prompts.TryGetProperty("listChanged", out var listChangedProp))
-                {
-                    promptsListChanged = listChangedProp.GetBoolean();
-                }
-                capabilities.Prompts = new PromptsCapability(promptsListChanged);
-            }
-
-            if (capabilitiesObj.TryGetProperty("tools", out var toolsObj))
-            {
-                var toolsListChanged = false;
-                if (toolsObj.TryGetProperty("listChanged", out var listChangedProp))
-                    toolsListChanged = listChangedProp.GetBoolean();
-                
-                capabilities.Tools = new ToolsCapability(toolsListChanged);
-            }
-            
-            var serverInfoObj = resultObj.GetProperty("serverInfo");
-            var serverName = serverInfoObj.GetProperty("name").GetString();
-            var serverVersion = serverInfoObj.GetProperty("version").GetString();
-
-            var serverInfo = new ServerInfo(serverName, serverVersion);
-            result = new InitializeResultPayload(protocolVersion, capabilities, serverInfo);
-        }
-
-        var error = TryParseError(root);
-        jsonRpcResponse = new JsonRpcResponse<int, InitializeResultPayload?>(rpcVersion, id, result, error);
-    }
-
     public IJsonObject Parse(string text)
     {
         var document = JsonDocument.Parse(text);
@@ -90,16 +22,6 @@ internal class SystemJson : IJson
         writer.Flush();
         var jsonString = Encoding.UTF8.GetString(memory.ToArray());
         return jsonString;
-    }
-    
-    private JsonRpcResponseError? TryParseError(JsonElement root)
-    {
-        if (!root.TryGetProperty("error", out var errorObj))
-            return null;
-
-        var code = errorObj.GetProperty("code").GetInt32();
-        var message = errorObj.GetProperty("message").GetString();
-        return new JsonRpcResponseError(code, message, null);
     }
 }
 

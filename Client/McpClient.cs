@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
-using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
@@ -42,7 +41,7 @@ namespace McpSharp.Client
             if (serverProtocolVersion != clientProtocolVersion)
                 throw new ClientException($"Invalid protocol version. Expected {clientProtocolVersion}, got {serverProtocolVersion}");
             
-            await _transport.SendNotification(new InitializedNotification());
+            await _transport.SendNotification("initialized");
             IsConnected = true;
         }
 

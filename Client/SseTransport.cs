@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
-using McpSharp.Protocol.Messages;
 
 namespace McpSharp.Client
 {
@@ -56,11 +55,14 @@ namespace McpSharp.Client
             return _waitForMessageTsc.Task;
         }
         
-        public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
+        public async Task SendNotification(string notification, CancellationToken cancellationToken = default)
         {
-            var request = new JsonRpcNotification("initialized");
-            var requestAsJson = _json.Stringify(request);
-            await _sseClient.SendMessage(_messagesUrl, requestAsJson, cancellationToken);
+            var request = _json.Stringify(req =>
+            {
+                req.Write("jsonrpc", "2.0");
+                req.Write("method", notification);
+            });
+            await _sseClient.SendMessage(_messagesUrl, request, cancellationToken);
         }
 
         public async Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)

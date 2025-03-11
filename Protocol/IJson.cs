@@ -4,7 +4,6 @@ namespace McpSharp.Protocol
 {
     public interface IJson
     {
-        string Stringify(JsonRpcNotification jsonRpcNotification);
         IJsonObject Parse(string text);
         string Stringify(Action<IJsonWriter> json);
     }
