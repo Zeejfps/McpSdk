@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace McpSharp.Adapter.Newtonsoft.Json
+namespace McpSdk.Adapter.Newtonsoft.Json
 {
     public sealed class NewtonsoftJson : IJson
     {

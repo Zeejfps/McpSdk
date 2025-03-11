@@ -1,8 +1,8 @@
 ﻿using System.Linq;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 using Newtonsoft.Json.Linq;
 
-namespace McpSharp.Adapter.Newtonsoft.Json
+namespace McpSdk.Adapter.Newtonsoft.Json
 {
     internal sealed class JTokenToJsonPropertyAdapter : IJsonProperty
     {

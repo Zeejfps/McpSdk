@@ -5,9 +5,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using McpSharp.Client;
+using McpSdk.Client;
 
-namespace McpSharp.Adapter.SseClient
+namespace McpSdk.Adapter.SseClient
 {
     internal sealed class SseClient : ISseClient
     {

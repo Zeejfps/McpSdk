@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace McpSharp.Server
+namespace McpSdk.Server
 {
     public sealed class ServerBuilder
     {

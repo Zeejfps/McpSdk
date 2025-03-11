@@ -1,6 +1,4 @@
-﻿using McpSharp.Server;
-
-namespace Server.Tests;
+﻿namespace McpSdk.Server.Tests;
 
 public sealed class TestToolFactory : IToolFactory
 {

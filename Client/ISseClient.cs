@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace McpSharp.Client
+namespace McpSdk.Client
 {
     public interface ISseEvent
     {

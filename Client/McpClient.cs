@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 
-namespace McpSharp.Client
+namespace McpSdk.Client
 {
     internal sealed class McpClient : IClient
     {

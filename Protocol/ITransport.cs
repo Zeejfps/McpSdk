@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace McpSharp.Protocol
+namespace McpSdk.Protocol
 {
     public delegate void RequestReceivedCallback(int requestId, string method, IJsonObject methodParams);
     public delegate void NotificationReceivedCallback(string notification);

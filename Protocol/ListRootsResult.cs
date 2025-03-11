@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace McpSharp.Protocol
+namespace McpSdk.Protocol
 {
     public sealed class ListRootsResult : JsonObjectWrapper
     {

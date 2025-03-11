@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <AssemblyName>McpSharp.Adapter.SseClient</AssemblyName>
-        <RootNamespace>McpSharp.Adapter.SseClient</RootNamespace>
+        <AssemblyName>McpSdk.Adapter.SseClient</AssemblyName>
+        <RootNamespace>McpSdk.Adapter.SseClient</RootNamespace>
         <LangVersion>8</LangVersion>
     </PropertyGroup>
 

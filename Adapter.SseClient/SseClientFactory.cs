@@ -1,6 +1,6 @@
-﻿using McpSharp.Client;
+﻿using McpSdk.Client;
 
-namespace McpSharp.Adapter.SseClient
+namespace McpSdk.Adapter.SseClient
 {
     public class SseClientFactory : ISseClientFactory
     {

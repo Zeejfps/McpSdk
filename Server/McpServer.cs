@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace McpSharp.Server
+namespace McpSdk.Server
 {
     internal sealed class McpServer : IServer
     {

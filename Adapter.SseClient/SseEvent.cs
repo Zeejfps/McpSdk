@@ -1,7 +1,7 @@
 ﻿using System.Text;
-using McpSharp.Client;
+using McpSdk.Client;
 
-namespace McpSharp.Adapter.SseClient
+namespace McpSdk.Adapter.SseClient
 {
     internal sealed class SseEvent : ISseEvent
     {

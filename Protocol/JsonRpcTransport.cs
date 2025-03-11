@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace McpSharp.Protocol
+namespace McpSdk.Protocol
 {
     public abstract class JsonRpcTransport : ITransport
     {

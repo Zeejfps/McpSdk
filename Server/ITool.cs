@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 
-namespace McpSharp.Server
+namespace McpSdk.Server
 {
     public interface ITool
     {

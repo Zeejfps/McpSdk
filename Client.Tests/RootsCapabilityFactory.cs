@@ -1,7 +1,6 @@
-﻿using McpSharp.Client;
-using McpSharp.Protocol;
+﻿using McpSdk.Protocol;
 
-namespace Client.Tests;
+namespace McpSdk.Client.Tests;
 
 public sealed class RootsCapabilityFactory : IRootsCapabilityFactory
 {

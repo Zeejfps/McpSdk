@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 
-namespace McpSharp.Adapter.System.Text.Json;
+namespace McpSdk.Adapter.System.Text.Json;
 
 internal sealed class JsonElementToJsonObjectAdapter : IJsonObject
 {

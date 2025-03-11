@@ -1,9 +1,8 @@
-﻿using Client.Tests;
-using McpSharp.Adapter.Newtonsoft.Json;
-using McpSharp.Adapter.SseClient;
-using McpSharp.Adapter.System.Text.Json;
-using McpSharp.Client;
-using McpSharp.Protocol;
+﻿using McpSdk.Adapter.Newtonsoft.Json;
+using McpSdk.Adapter.SseClient;
+using McpSdk.Client;
+using McpSdk.Client.Tests;
+using McpSdk.Protocol;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var sseClientFactory = new SseClientFactory();

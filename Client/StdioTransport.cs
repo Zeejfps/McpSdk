@@ -3,9 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 
-namespace McpSharp.Client
+namespace McpSdk.Client
 {
     internal sealed class StdioTransport : JsonRpcTransport
     {

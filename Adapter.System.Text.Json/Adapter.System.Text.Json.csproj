@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <AssemblyName>McpSharp.Adapter.System.Text.Json</AssemblyName>
-        <RootNamespace>McpSharp.Adapter.System.Text.Json</RootNamespace>
+        <AssemblyName>McpSdk.Adapter.System.Text.Json</AssemblyName>
+        <RootNamespace>McpSdk.Adapter.System.Text.Json</RootNamespace>
         <LangVersion>default</LangVersion>
     </PropertyGroup>
 

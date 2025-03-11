@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace McpSharp.Protocol
+namespace McpSdk.Protocol
 {
     public interface IJson
     {

@@ -1,8 +1,8 @@
 ﻿using System;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 using Newtonsoft.Json;
 
-namespace McpSharp.Adapter.Newtonsoft.Json
+namespace McpSdk.Adapter.Newtonsoft.Json
 {
     internal sealed class JsonTextWriterAdapter : IJsonWriter
     {

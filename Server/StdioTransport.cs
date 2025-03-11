@@ -2,9 +2,9 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 
-namespace McpSharp.Server
+namespace McpSdk.Server
 {
     public sealed class StdioTransport : JsonRpcTransport
     {

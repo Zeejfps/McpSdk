@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace McpSharp.Client
+namespace McpSdk.Client
 {
     public class ClientException : Exception
     {

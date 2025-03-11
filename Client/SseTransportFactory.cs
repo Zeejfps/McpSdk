@@ -1,6 +1,6 @@
-﻿using McpSharp.Protocol;
+﻿using McpSdk.Protocol;
 
-namespace McpSharp.Client
+namespace McpSdk.Client
 {
     internal sealed class SseTransportFactory : ITransportFactory
     {

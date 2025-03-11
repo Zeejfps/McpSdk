@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace McpSharp.Protocol
+namespace McpSdk.Protocol
 {
     public sealed class JsonObjectSchema : JsonSchema
     {

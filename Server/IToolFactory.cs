@@ -1,4 +1,4 @@
-﻿namespace McpSharp.Server
+﻿namespace McpSdk.Server
 {
     public interface IToolFactory
     {

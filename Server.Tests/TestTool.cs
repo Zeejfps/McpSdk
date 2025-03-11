@@ -1,7 +1,6 @@
-﻿using McpSharp.Protocol;
-using McpSharp.Server;
+﻿using McpSdk.Protocol;
 
-namespace Server.Tests;
+namespace McpSdk.Server.Tests;
 
 public class TestTool : ITool
 {

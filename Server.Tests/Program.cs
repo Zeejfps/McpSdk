@@ -1,5 +1,5 @@
-﻿using McpSharp.Server;
-using Server.Tests;
+﻿using McpSdk.Server;
+using McpSdk.Server.Tests;
 
 var testToolFactory = new TestToolFactory();
 

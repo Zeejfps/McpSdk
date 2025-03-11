@@ -1,7 +1,7 @@
 ﻿using System;
-using McpSharp.Protocol;
+using McpSdk.Protocol;
 
-namespace McpSharp.Client
+namespace McpSdk.Client
 {
     public sealed class ClientBuilder
     {

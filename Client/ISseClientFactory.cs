@@ -1,4 +1,4 @@
-﻿namespace McpSharp.Client
+﻿namespace McpSdk.Client
 {
     public interface ISseClientFactory
     {

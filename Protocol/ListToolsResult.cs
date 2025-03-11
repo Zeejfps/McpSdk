@@ -1,4 +1,4 @@
-﻿namespace McpSharp.Protocol
+﻿namespace McpSdk.Protocol
 {
     public sealed class ListToolsResult : JsonObjectWrapper
     {
