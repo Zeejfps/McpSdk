@@ -2,9 +2,9 @@
 
 namespace McpSdk.Protocol
 {
-    public sealed class CreateMessageParams : JsonObjectWrapper
+    public sealed class CreateMessageArguments : JsonObjectWrapper
     {
-        public CreateMessageParams(IJsonObject jsonObject)
+        public CreateMessageArguments(IJsonObject jsonObject)
         {
             Messages = jsonObject["messages"]
                 .AsObjectArray()

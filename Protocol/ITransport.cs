@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace McpSdk.Protocol
 {
-    public delegate void RequestReceivedCallback(int requestId, string method, IJsonObject methodParams);
+    public delegate void RequestReceivedCallback(int requestId, string method, IJsonObject arguments);
     public delegate void NotificationReceivedCallback(string notification);
     
     public interface ITransport

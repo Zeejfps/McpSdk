@@ -98,6 +98,12 @@ internal sealed class JsonWriter : IJsonWriter
         return this;
     }
 
+    public IJsonWriter Write(IJsonObject obj)
+    {
+        _jsonWriter.WriteRawValue(obj.ToString());
+        return this;
+    }
+
     public IJsonWriter Write(string propertyName, IJsonObject obj)
     {
         _jsonWriter.WritePropertyName(propertyName);

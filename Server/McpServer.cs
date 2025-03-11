@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 
@@ -23,11 +22,15 @@ namespace McpSdk.Server
             await _transport.Start();
         }
 
-        private void OnRequestReceived(int requestId, string method, IJsonObject methodParams)
+        private void OnRequestReceived(int requestId, string method, IJsonObject arguments)
         {
             if (method == "tools/list")
             {
-                OnListToolsRequestReceived(requestId, methodParams);
+                OnListToolsRequestReceived(requestId, arguments);
+            }
+            else if (method == "tools/call")
+            {
+                OnCallToolRequestReceived(requestId, arguments);
             }
         }
 
@@ -44,11 +47,30 @@ namespace McpSdk.Server
                 var result = await _tools.ListTools();
                 await _transport.SendOkResponse(requestId, payload =>
                 {
-                    var tools = result
-                        .Tools
-                        .Select(tool => tool.JsonObject)
-                        .ToArray();
-                    payload.Write("tools", tools);
+                    payload.Write(result.JsonObject);
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
+            }
+        }
+
+        private async void OnCallToolRequestReceived(int requestId, IJsonObject arguments)
+        {
+            try
+            {
+                if (_tools == null)
+                {
+                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
+                    return;
+                }
+                
+                var result = await _tools.CallTool(new CallToolArguments(arguments));
+                await _transport.SendOkResponse(requestId, payload =>
+                {
+                    payload.Write(result.JsonObject);
                 });
             }
             catch (Exception ex)

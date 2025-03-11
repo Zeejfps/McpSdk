@@ -6,6 +6,6 @@ namespace McpSdk.Server
     public interface IToolsCapability
     {
         Task<ListToolsResult> ListTools();
-        Task<CallToolResult> CallTool(string toolName);
+        Task<CallToolResult> CallTool(CallToolArguments arguments);
     }
 }

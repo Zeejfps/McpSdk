@@ -46,7 +46,7 @@ namespace McpSdk.Client
                 if (sampling == null)
                     return;
                 
-                var request = new CreateMessageParams(methodParams);
+                var request = new CreateMessageArguments(methodParams);
                 var result = await sampling.CreateMessages(request);
                 await _transport.SendOkResponse(requestId, payload =>
                 {

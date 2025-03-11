@@ -21,6 +21,7 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, float[] value);
         IJsonWriter Write(string propertyName, bool value);
         IJsonWriter Write(string propertyName, bool[] value);
+        IJsonWriter Write(IJsonObject obj);
         IJsonWriter Write(string propertyName, IJsonObject obj);
         IJsonWriter Write(string propertyName, IJsonObject[] objs);
         IJsonWriter Write(string propertyName, Action<IJsonWriter> obj);
