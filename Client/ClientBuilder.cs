@@ -5,11 +5,18 @@ namespace McpSharp.Client
 {
     public sealed class ClientBuilder
     {
+        private readonly IJson _json;
+        
         private string _name;
         private string _version;
         private ITransportFactory _transportFactory;
         private IRootsCapabilityFactory _rootsCapabilityFactory;
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
+
+        public ClientBuilder(IJson json)
+        {
+            _json = json;
+        }
 
         public ClientBuilder WithName(string name)
         {
@@ -22,8 +29,14 @@ namespace McpSharp.Client
             _version = version;
             return this;
         }
+
+        public ClientBuilder WithSseTransport(ISseClientFactory sseClientFactory, string host)
+        {
+            _transportFactory = new SseTransportFactory(_json, sseClientFactory, host);
+            return this;
+        }
         
-        public ClientBuilder WithTransport(ITransportFactory transportFactory)
+        public ClientBuilder WithCustomTransport(ITransportFactory transportFactory)
         {
             _transportFactory = transportFactory;
             return this;
@@ -56,9 +69,41 @@ namespace McpSharp.Client
                 throw new ArgumentNullException(nameof(transport), "Client transport cannot be null.");
 
             var rootsCapability = _rootsCapabilityFactory?.Create();
-            var samplingCapability = _samplingCapabilityFactory?.Create();
+
+            var samplingCapabilityController = new SamplingCapabilityController(_json);
+            var samplingCapability = _samplingCapabilityFactory?.Create(samplingCapabilityController);
             
             return new McpClient(transport, clientInfo, rootsCapability, samplingCapability);
+        }
+    }
+
+    internal sealed class SamplingCapabilityController : ISamplingCapabilityController
+    {
+        private readonly IJson _json;
+
+        public SamplingCapabilityController(IJson json)
+        {
+            _json = json;
+        }
+
+        public Content CreateTextContent(string text)
+        {
+            var jsonText = _json.Stringify(props =>
+            {
+                props.Write("type", "text");
+                props.Write("text", text);
+            });
+            return new TextContent(_json.Parse(jsonText));
+        }
+
+        public Content CreateImageContent(byte[] imageBytes)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ICreateMessagesResult CreateResult(string role, string model, string stopReason, Content content)
+        {
+            throw new NotImplementedException();
         }
     }
 }

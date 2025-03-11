@@ -6,12 +6,11 @@ var json = new SystemJson();
 var sseClientFactory = new SseClientFactory();
 var rootsCapabilityFactory = new RootsCapabilityFactory();
 var samplingCapabilityFactory = new SamplingCapabilityFactory();
-var sseTransportFactory = new SseTransportFactory(json, sseClientFactory, "http://localhost:3000");
 
-var client = new ClientBuilder()
+var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
-    .WithTransport(sseTransportFactory)
+    .WithSseTransport(sseClientFactory, "http://localhost:3000")
     .WithRootsCapability(rootsCapabilityFactory)
     .WithSamplingCapability(samplingCapabilityFactory)
     .Build();

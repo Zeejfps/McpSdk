@@ -15,4 +15,11 @@ namespace McpSharp.Client
     {
         Task<ICreateMessagesResult> CreateMessages(CreateMessageParams methodParams);
     }
+
+    public interface ISamplingCapabilityController
+    {
+        Content CreateTextContent(string text);
+        Content CreateImageContent(byte[] imageBytes);
+        ICreateMessagesResult CreateResult(string role, string model, string stopReason, Content content);
+    }
 }
