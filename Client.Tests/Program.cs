@@ -11,7 +11,8 @@ var samplingCapabilityFactory = new SamplingCapabilityFactory(json);
 var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
-    .WithSseTransport(sseClientFactory, "http://localhost:3000")
+    //.WithSseTransport(sseClientFactory, "http://localhost:3000")
+    .WithStdioTransport("bun", ["index.ts"])
     .WithRootsCapability(rootsCapabilityFactory)
     .WithSamplingCapability(samplingCapabilityFactory)
     .Build();

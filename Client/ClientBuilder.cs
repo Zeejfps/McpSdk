@@ -30,9 +30,9 @@ namespace McpSharp.Client
             return this;
         }
 
-        public ClientBuilder WithStdioTransport()
+        public ClientBuilder WithStdioTransport(string command, string[] args)
         {
-            _transportFactory = new StdioTransportFactory();
+            _transportFactory = new StdioTransportFactory(command, args);
             return this;
         }
 
