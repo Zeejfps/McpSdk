@@ -12,7 +12,7 @@ var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     //.WithSseTransport(sseClientFactory, "http://localhost:3000")
-    .WithStdioTransport("bun", ["index.ts"])
+    .WithStdioTransport("bun", ["\"E:\\SeriesAI\\3D Gen\\3d-gen-mcp-server\\index.ts\""])
     .WithRootsCapability(rootsCapabilityFactory)
     .WithSamplingCapability(samplingCapabilityFactory)
     .Build();

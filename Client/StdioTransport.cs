@@ -21,6 +21,7 @@ namespace McpSharp.Client
         private Process _process;
         private int _nextMessageId;
         private Task _readStdOutTask;
+        private Task _readStdErrTask;
         
         public StdioTransport(IJson json, string command, string arguments)
         {
@@ -50,6 +51,7 @@ namespace McpSharp.Client
 
             _standardIn = _process.StandardInput;
             _readStdOutTask = ReadStdOut(_process.StandardOutput);
+            _readStdErrTask = ReadStdErr(_process.StandardError);
             
             return Task.CompletedTask;
         }
@@ -71,6 +73,15 @@ namespace McpSharp.Client
             
                 _tscByMessageId.Remove(id);
                 tsc.TrySetResult(response);
+            }
+        }
+        
+        private async Task ReadStdErr(StreamReader standardErr)
+        {
+            string message;
+            while ((message = await standardErr.ReadLineAsync()) != null)
+            {
+                Console.WriteLine($"{message}");
             }
         }
         
