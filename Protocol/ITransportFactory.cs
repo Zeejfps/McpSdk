@@ -1,4 +1,4 @@
-﻿namespace McpSharp.Client
+﻿namespace McpSharp.Protocol
 {
     public interface ITransportFactory
     {
