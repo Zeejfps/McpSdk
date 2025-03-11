@@ -71,7 +71,7 @@ namespace McpSharp.Client
                 var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
                 await _transport.SendResponse(requestId, payload =>
                 {
-                    var roots = listRootsResult.Roots.Select<IRoot, Action<IJsonWriter>>(root =>
+                    var roots = listRootsResult.Roots.Select<Root, Action<IJsonWriter>>(root =>
                     {
                         return element =>
                         {

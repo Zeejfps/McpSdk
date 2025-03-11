@@ -1,4 +1,5 @@
 ﻿using McpSharp.Client;
+using McpSharp.Protocol;
 
 namespace Client.Tests;
 
@@ -14,7 +15,7 @@ internal sealed class RootsCapability : IRootsCapability
 {
     public event Action? ListChanged;
     public bool IsListChangedNotificationSupported => true;
-    public Task<IListRootsResult> ListRoots()
+    public Task<ListRootsResult> ListRoots()
     {
         throw new NotImplementedException();
     }

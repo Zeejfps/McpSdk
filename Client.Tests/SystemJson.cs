@@ -250,6 +250,17 @@ public sealed class JsonWriter : IJsonWriter
         return this;
     }
 
+    public IJsonWriter Write(string propertyName, IJsonObject[] objs)
+    {
+        _jsonWriter.WriteStartArray(propertyName);
+        foreach (var obj in objs)
+        {
+            _jsonWriter.WriteRawValue(obj.ToString());
+        }
+        _jsonWriter.WriteEndArray();
+        return this;
+    }
+
     public IJsonWriter Write(string propertyName, Action<IJsonWriter> obj)
     {
         _jsonWriter.WriteStartObject(propertyName);
