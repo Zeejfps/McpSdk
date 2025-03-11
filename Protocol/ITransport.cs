@@ -14,6 +14,7 @@ namespace McpSharp.Protocol
         Task Connect(CancellationToken cancellationToken = default);
         Task SendNotification(string notification, CancellationToken cancellationToken = default);
         Task<IJsonObject> SendRequest(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
-        Task SendResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
+        Task SendOkResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
+        Task SendErrorResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
     }
 }

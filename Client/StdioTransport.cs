@@ -9,7 +9,6 @@ namespace McpSharp.Client
 {
     internal sealed class StdioTransport : JsonRpcTransport
     {
-        
         private readonly string _command;
         private readonly string _arguments;
 
@@ -48,22 +47,22 @@ namespace McpSharp.Client
             return Task.CompletedTask;
         }
 
-        protected override Task Send(string requestAsJson, CancellationToken cancellationToken)
+        protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
-            return _standardIn.WriteLineAsync(requestAsJson);
+            await _standardIn.WriteLineAsync(requestAsJson).ConfigureAwait(false);
         }
 
         private async Task ReadStdOut(StreamReader standardOut)
         {
-            string responseAsJson;
-            while ((responseAsJson = await standardOut.ReadLineAsync()) != null)
-                OnResponseReceived(responseAsJson);
+            string messageAsJson;
+            while ((messageAsJson = await standardOut.ReadLineAsync().ConfigureAwait(false)) != null)
+                OnMessageReceived(messageAsJson);
         }
         
         private async Task ReadStdErr(StreamReader standardErr)
         {
             string message;
-            while ((message = await standardErr.ReadLineAsync()) != null)
+            while ((message = await standardErr.ReadLineAsync().ConfigureAwait(false)) != null)
             {
                 Console.WriteLine($"{message}");
             }

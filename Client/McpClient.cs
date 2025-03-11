@@ -48,7 +48,7 @@ namespace McpSharp.Client
                 
                 var request = new CreateMessageParams(methodParams);
                 var result = await sampling.CreateMessages(request);
-                await _transport.SendResponse(requestId, payload =>
+                await _transport.SendOkResponse(requestId, payload =>
                 {
                     payload.Write("role", result.Role);
                     payload.Write("model", result.Model);
@@ -69,7 +69,7 @@ namespace McpSharp.Client
                     return;
 
                 var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
-                await _transport.SendResponse(requestId, payload =>
+                await _transport.SendOkResponse(requestId, payload =>
                 {
                     var roots = listRootsResult.Roots.Select<Root, Action<IJsonWriter>>(root =>
                     {

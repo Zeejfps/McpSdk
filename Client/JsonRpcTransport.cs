@@ -6,7 +6,7 @@ using McpSharp.Protocol;
 
 namespace McpSharp.Client
 {
-    internal abstract class JsonRpcTransport : ITransport
+    public abstract class JsonRpcTransport : ITransport
     {
         private const string JsonRpcVersion = "2.0";
 
@@ -19,7 +19,6 @@ namespace McpSharp.Client
         {
             _json = json;
         }
-
         
         public event RequestReceivedCallback RequestReceived;
         public event NotificationReceivedCallback NotificationReceived;
@@ -55,7 +54,7 @@ namespace McpSharp.Client
             return ReadResult(response);
         }
 
-        public async Task SendResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        public async Task SendOkResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
@@ -66,21 +65,52 @@ namespace McpSharp.Client
             await Send(response, cancellationToken);
         }
         
-        protected void OnResponseReceived(string responseAsJson)
+        public async Task SendErrorResponse(int messageId, Action<IJsonWriter> error, CancellationToken cancellationToken = default)
         {
-            Console.WriteLine($"Received: {responseAsJson}");
+            var response = _json.Stringify(req =>
+            {
+                req.Write("jsonrpc", JsonRpcVersion);
+                req.Write("id", messageId);
+                req.Write("error", error);
+            });
+            await Send(response, cancellationToken);
+        }
+        
+        protected void OnMessageReceived(string messageAsJson)
+        {
+            Console.WriteLine($"Received: {messageAsJson}");
 
-            var response = _json.Parse(responseAsJson);
+            var response = _json.Parse(messageAsJson);
             var idProp = response["id"];
-            if (idProp == null) 
-                return;
-            
-            var id = idProp.AsInt();
-            if (!_tscByMessageId.TryGetValue(id, out var tsc))
-                return;
-            
-            _tscByMessageId.Remove(id);
-            tsc.TrySetResult(response);
+            var method = response["method"]?.AsString();
+
+            if (method != null)
+            {
+                if (idProp == null)
+                {
+                    NotificationReceived?.Invoke(method);
+                }
+                else
+                {
+                    var id = idProp.AsInt();
+                    var methodParams = response["params"]?.AsObject();
+                    RequestReceived?.Invoke(id, method, methodParams);
+                }
+            }
+            else
+            {
+                if (idProp == null)
+                {
+                    return;
+                }
+                
+                var id = idProp.AsInt();
+                if (!_tscByMessageId.TryGetValue(id, out var tsc))
+                    return;
+                
+                _tscByMessageId.Remove(id);
+                tsc.TrySetResult(response);
+            }
         }
         
         protected abstract Task OnConnect(CancellationToken cancellationToken = default);

@@ -28,7 +28,7 @@ namespace McpSharp.Client
             }
             else if (sseEvent.Kind == "message")
             {
-                OnResponseReceived(sseEvent.Data);
+                OnMessageReceived(sseEvent.Data);
             }
         }
 
