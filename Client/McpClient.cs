@@ -107,7 +107,11 @@ namespace McpSharp.Client
                             roots.Write("listChanged", _roots.IsListChangedNotificationSupported);
                         });
                     }
-                    payload.Write("sampling", sampling => { });
+
+                    if (_sampling != null)
+                    {
+                        payload.Write("sampling", sampling => { });
+                    }
                 });
                 payload.Write("clientInfo", clientInfo =>
                 {

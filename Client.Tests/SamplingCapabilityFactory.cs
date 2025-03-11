@@ -6,6 +6,11 @@ public sealed class SamplingCapabilityFactory : ISamplingCapabilityFactory
 {
     public ISamplingCapability Create()
     {
-        return null;
+        return new SamplingCapability();
     }
+}
+
+internal sealed class SamplingCapability : ISamplingCapability
+{
+    
 }
