@@ -3,6 +3,8 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>8</LangVersion>
+        <AssemblyName>McpSharp.Adapter.Newtonsoft.Json</AssemblyName>
+        <RootNamespace>McpSharp.Adapter.Newtonsoft.Json</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

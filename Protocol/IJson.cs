@@ -30,6 +30,7 @@ namespace McpSharp.Protocol
     public interface IJsonObject
     {
         IJsonProperty this[string propertyName] { get; }
+        string ToString();
     }
 
     public interface IJsonProperty
