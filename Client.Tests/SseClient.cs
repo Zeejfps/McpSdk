@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Text;
 using McpSharp.Client;
 
@@ -8,15 +7,20 @@ namespace Client.Tests;
 internal class SseClient : ISseClient
 {
     private readonly HttpClient _httpClient;
-    private readonly ConcurrentQueue<SseEvent> _receivedMessages = new();
     private readonly SseMessageReader _sseMessageReader;
-
+    
     private Task? _startListeningTask;
 
     public SseClient()
     {
         _httpClient = new HttpClient();
-        _sseMessageReader = new SseMessageReader(_receivedMessages);
+        _sseMessageReader = new SseMessageReader();
+    }
+    
+    public event Action<ISseEvent>? EventReceived
+    {
+        remove => _sseMessageReader.EventReceived -= value;
+        add => _sseMessageReader.EventReceived += value;
     }
 
     public async Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
@@ -25,16 +29,6 @@ internal class SseClient : ISseClient
         var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(url, content, cancellationToken);
         response.EnsureSuccessStatusCode();
-    }
-
-    public async Task<ISseEvent> DequeueEvent(CancellationToken cancellationToken)
-    {
-        SseEvent message;
-        while (!_receivedMessages.TryDequeue(out message))
-        {
-            await Task.Delay(100, cancellationToken);
-        }
-        return message;
     }
     
     public async Task Connect(string url, CancellationToken cancellationToken = default)
@@ -75,13 +69,9 @@ internal class SseClient : ISseClient
 class SseMessageReader
 {
     private SseEvent? _currentMessage;
-    private readonly ConcurrentQueue<SseEvent> _messages;
 
-    public SseMessageReader(ConcurrentQueue<SseEvent> messages)
-    {
-        _messages = messages;
-    }
-
+    public event Action<ISseEvent>? EventReceived;
+    
     public void ProcessLine(string? line)
     {
         Console.WriteLine($"Processing {line}");
@@ -89,7 +79,7 @@ class SseMessageReader
         {
             if (_currentMessage != null)
             {
-                _messages.Enqueue(_currentMessage);
+                EventReceived?.Invoke(_currentMessage);
                 _currentMessage = null;
             }
             

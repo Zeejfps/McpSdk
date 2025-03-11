@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace McpSharp.Client
@@ -12,8 +13,8 @@ namespace McpSharp.Client
     
     public interface ISseClient
     {
+        event Action<ISseEvent> EventReceived;
         Task Connect(string url, CancellationToken cancellationToken = default);
         Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default);
-        Task<ISseEvent> DequeueEvent(CancellationToken cancellationToken = default);
     }
 }

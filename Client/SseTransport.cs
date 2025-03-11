@@ -27,9 +27,35 @@ namespace McpSharp.Client
 
         public async Task Connect()
         {
+            _sseClient.EventReceived += OnSseEventReceived;
             await _sseClient.Connect(_connectionUrl);
         }
 
+        private void OnSseEventReceived(ISseEvent sseEvent)
+        {
+            if (sseEvent.Kind == "endpoint")
+            {
+                _messagesUrl = $"{_host}{sseEvent.Data}";
+            }
+            else if (sseEvent.Kind == "message")
+            {
+                OnMessageReceived(sseEvent.Data);
+            }
+        }
+
+        private void OnMessageReceived(string message)
+        {
+            _waitForMessageTsc?.TrySetResult(message);
+        }
+
+        private TaskCompletionSource<string> _waitForMessageTsc;
+        
+        private Task<string> WaitForJrpcResponse(CancellationToken cancellationToken = default)
+        {
+            _waitForMessageTsc = new TaskCompletionSource<string>();
+            return _waitForMessageTsc.Task;
+        }
+        
         public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
         {
             var request = new JsonRpcNotification("initialized");
@@ -39,18 +65,13 @@ namespace McpSharp.Client
 
         public async Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
         {
-            var jsonRpcRequest = WriteJsonRpcRequest(method, payload);
-            await _sseClient.SendMessage(_messagesUrl, jsonRpcRequest, cancellationToken);
-            var sseEvent = await _sseClient.DequeueEvent(cancellationToken);
-            if (sseEvent.Kind == "endpoint")
-            {
-                _messagesUrl = $"{_host}{sseEvent.Data}";
-                sseEvent = await _sseClient.DequeueEvent(cancellationToken);
-            }
-            return ReadResult(sseEvent.Data);
+            var request = WriteJrpcRequest(method, payload);
+            await _sseClient.SendMessage(_messagesUrl, request, cancellationToken);
+            var response = await WaitForJrpcResponse(cancellationToken);
+            return ReadResult(response);
         }
 
-        private string WriteJsonRpcRequest(string method, Action<IJsonWriter> payload)
+        private string WriteJrpcRequest(string method, Action<IJsonWriter> payload)
         {
             var id = NextRequestId();
             return _json.Stringify(writer =>
