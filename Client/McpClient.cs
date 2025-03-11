@@ -12,11 +12,12 @@ namespace McpSharp.Client
         private readonly IRootsCapability _roots;
         private readonly ISamplingCapability _sampling;
 
-        public McpClient(ITransport transport, ClientInfo clientInfo, IRootsCapability roots)
+        public McpClient(ITransport transport, ClientInfo clientInfo, IRootsCapability roots, ISamplingCapability sampling)
         {
             _transport = transport;
             _roots = roots;
             _clientInfo = clientInfo;
+            _sampling = sampling;
         }
 
         private void OnRootsListChanged()
@@ -33,7 +34,19 @@ namespace McpSharp.Client
             }
             else if (method == "sampling/createMessage")
             {
+                OnCreateMessageRequestReceived(requestId, args);
+            }
+        }
 
+        private async void OnCreateMessageRequestReceived(int requestId, IJsonObject args)
+        {
+            try
+            {
+                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
 
