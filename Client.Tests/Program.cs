@@ -27,15 +27,13 @@ var result = await client.CallTool(
 );
 
 Console.WriteLine(result);
-var contents = result["content"].AsObjectArray();
+var contents = result.Content;
 Console.WriteLine(contents.Length);
 
 foreach (var content in contents)
 {
-    var type = content["type"].AsString();
-    if (type == "text")
+    if (content is TextContent textContent)
     {
-        var text = content["text"].AsString();
-        Console.WriteLine(text);
+        Console.WriteLine(textContent.Text);
     }
 }

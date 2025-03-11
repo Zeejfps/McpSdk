@@ -2,6 +2,7 @@ namespace McpSharp.Protocol
 {
     public enum ContentKind
     {
+        Unknown,
         Text,
         Image,
         Resource
@@ -9,14 +10,26 @@ namespace McpSharp.Protocol
 
     public abstract class Content
     {
+        protected Content(IJsonObject jsonObject)
+        {
+            JsonObject = jsonObject;
+        }
+
         public abstract ContentKind Kind { get; }
+        
+        public IJsonObject JsonObject { get; }
+
+        public override string ToString()
+        {
+            return JsonObject.ToString();
+        }
     }
 
     public sealed class TextContent : Content
     {
-        public TextContent(string text)
+        public TextContent(IJsonObject jsonObject) : base(jsonObject)
         {
-            Text = text;
+            Text = jsonObject["text"].AsString();
         }
 
         public override ContentKind Kind => ContentKind.Text;
@@ -25,10 +38,10 @@ namespace McpSharp.Protocol
 
     public sealed class ImageContent : Content
     {
-        public ImageContent(string mimeType, string data)
+        public ImageContent(IJsonObject jsonObject) : base(jsonObject)
         {
-            MimeType = mimeType;
-            Data = data;
+            // MimeType = mimeType;
+            // Data = data;
         }
 
         public override ContentKind Kind => ContentKind.Image;
@@ -38,13 +51,22 @@ namespace McpSharp.Protocol
 
     public sealed class ResourceContent : Content
     {
-        public ResourceContent(string uri, string mimeType, string text)
+        public ResourceContent(IJsonObject jsonObject) : base(jsonObject)
         {
-            Resource = new Resource(uri, mimeType, text);
+            // Resource = new Resource(uri, mimeType, text);
         }
 
         public override ContentKind Kind => ContentKind.Resource;
         public Resource Resource { get; }
+    }
+
+    public sealed class UnknownContent : Content
+    {
+        public UnknownContent(IJsonObject jsonObject) : base(jsonObject)
+        {
+        }
+
+        public override ContentKind Kind => ContentKind.Unknown;
     }
 
     public sealed class Resource

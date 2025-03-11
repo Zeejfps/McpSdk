@@ -51,9 +51,9 @@ namespace McpSharp.Client
             return new ListToolsResult(result);
         }
 
-        public async Task<IJsonObject> CallTool(string toolName, Action<IJsonWriter> args)
+        public async Task<CallToolResult> CallTool(string toolName, Action<IJsonWriter> args)
         {
-            return await _transport.SendMessage("tools/call", payload =>
+            var result = await _transport.SendMessage("tools/call", payload =>
             {
                 payload.Write("name", toolName);
                 payload.Write("arguments", bodyWriter =>
@@ -61,6 +61,7 @@ namespace McpSharp.Client
                     args?.Invoke(bodyWriter);
                 });
             });
+            return new CallToolResult(result);
         }
     }
 }

@@ -9,6 +9,6 @@ namespace McpSharp.Client
         bool IsConnected { get; }
         Task Connect();
         Task<ListToolsResult> ListTools();
-        Task<IJsonObject> CallTool(string toolName, Action<IJsonWriter> args);
+        Task<CallToolResult> CallTool(string toolName, Action<IJsonWriter> args);
     }
 }
