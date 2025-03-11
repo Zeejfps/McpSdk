@@ -64,13 +64,19 @@ namespace McpSdk.Protocol
             await Send(response, cancellationToken);
         }
         
-        public async Task SendErrorResponse(int requestId, Action<IJsonWriter> error, CancellationToken cancellationToken = default)
+        public async Task SendErrorResponse(int requestId, ErrorCode code, string message, Action<IJsonWriter> data, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("id", requestId);
-                req.Write("error", error);
+                req.Write("error", error =>
+                {
+                    error.Write("code", (int)code);
+                    error.Write("message", message);
+                    if (data != null)
+                        error.Write("data", data);
+                });
             });
             await Send(response, cancellationToken);
         }

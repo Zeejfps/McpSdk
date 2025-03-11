@@ -15,6 +15,6 @@ namespace McpSdk.Protocol
         Task SendNotification(string notification, CancellationToken cancellationToken = default);
         Task<IJsonObject> SendRequest(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
         Task SendOkResponse(int requestId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
-        Task SendErrorResponse(int requestId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
+        Task SendErrorResponse(int requestId, ErrorCode code, string message, Action<IJsonWriter> data = null, CancellationToken cancellationToken = default);
     }
 }
