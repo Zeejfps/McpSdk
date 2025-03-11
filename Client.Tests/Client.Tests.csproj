@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Client\Client.csproj" />
-      <ProjectReference Include="..\SseClientAdapter\SseClientAdapter.csproj" />
+      <ProjectReference Include="..\Adapter.SseClient\Adapter.SseClient.csproj" />
     </ItemGroup>
 
 </Project>

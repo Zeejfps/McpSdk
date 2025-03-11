@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Tests", "Client.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Protocol", "Protocol\Protocol.csproj", "{8B69331C-4C2E-4DF0-BCFE-BBA176AEBF80}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SseClientAdapter", "SseClientAdapter\SseClientAdapter.csproj", "{B0C6F17D-E462-40DF-9932-1C8A6C6C5DD9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.SseClient", "Adapter.SseClient\Adapter.SseClient.csproj", "{B0C6F17D-E462-40DF-9932-1C8A6C6C5DD9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{ACA7E10F-D611-45D8-92CE-78EA7E644B7E}"
 EndProject
