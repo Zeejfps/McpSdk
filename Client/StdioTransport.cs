@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -14,12 +15,13 @@ namespace McpSharp.Client
         private readonly string _command;
         private readonly string _arguments;
         private readonly IJson _json;
-        
-        private StreamReader _standardOut;
+        private readonly Dictionary<int, TaskCompletionSource<IJsonObject>> _tscByMessageId = new Dictionary<int, TaskCompletionSource<IJsonObject>>();
+
         private StreamWriter _standardIn;
         private Process _process;
         private int _nextMessageId;
-
+        private Task _readStdOutTask;
+        
         public StdioTransport(IJson json, string command, string arguments)
         {
             _json = json;
@@ -46,12 +48,39 @@ namespace McpSharp.Client
             if (_process == null)
                 throw new ClientException("Failed to connect to the server.");
 
-            _standardOut = _process.StandardOutput;
             _standardIn = _process.StandardInput;
+            _readStdOutTask = ReadStdOut(_process.StandardOutput);
             
             return Task.CompletedTask;
         }
 
+        private async Task ReadStdOut(StreamReader standardOut)
+        {
+            string message;
+            while ((message = await standardOut.ReadLineAsync()) != null)
+            {
+                Console.WriteLine($"Received: {message}");
+                var response = _json.Parse(message);
+                var idProp = response["id"];
+                if (idProp == null) 
+                    return;
+            
+                var id = idProp.AsInt();
+                if (!_tscByMessageId.TryGetValue(id, out var tsc))
+                    return;
+            
+                _tscByMessageId.Remove(id);
+                tsc.TrySetResult(response);
+            }
+        }
+        
+        private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
+        {
+            var tsc = new TaskCompletionSource<IJsonObject>(cancellationToken);
+            _tscByMessageId[messageId] = tsc;
+            return tsc.Task;
+        }
+        
         public async Task SendNotification(string notification, CancellationToken cancellationToken = default)
         {
             var requestAsJson = _json.Stringify(request =>
@@ -74,8 +103,8 @@ namespace McpSharp.Client
             });
 
             await _standardIn.WriteLineAsync(request);
-            var responseAsJson = await _standardOut.ReadLineAsync();
-            return ReadResult(_json.Parse(responseAsJson));
+            var response = await WaitForResponse(id, cancellationToken);
+            return ReadResult(response);
         }
 
         public async Task SendResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
