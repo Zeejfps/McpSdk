@@ -32,8 +32,8 @@ var result = await client.CallTool(
     "get-forecast",
     toolArgs =>
     {
-        toolArgs.Write("latitude", 51.5);
-        toolArgs.Write("longitude", 51.5);
+        toolArgs.Write("latitude", 39.384358225955);
+        toolArgs.Write("longitude", -110.686663445063);
     }
 );
 

@@ -23,5 +23,10 @@ namespace McpSharp.Server
         {
             return this;
         }
+
+        public ServerBuilder WithTool(IToolFactory toolFactory)
+        {
+            return this;
+        }
     }
 }
