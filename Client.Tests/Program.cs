@@ -1,13 +1,23 @@
-﻿using System.Net.Http.Json;
-using Client.Tests;
+﻿using Client.Tests;
 using McpSharp.Client;
 using McpSharp.Protocol;
 
 var json = new SystemJson();
 var sseClientFactory = new SseClientFactory();
+var rootsCapabilityFactory = new RootsCapabilityFactory();
+var samplingCapabilityFactory = new SamplingCapabilityFactory();
 var sseTransportFactory = new SseTransportFactory(json, sseClientFactory, "http://localhost:3000");
 var clientFactory = new ClientFactory(sseTransportFactory);
+
 var client = clientFactory.Create(new ClientInfo("Echo Client", "1.0.0"));
+
+// var client = new ClientFactory()
+//     .WithName("Echo Client")
+//     .WithVersion("1.0.0")
+//     .WithTransport(sseTransportFactory)
+//     .WithRootsCapability(rootsCapabilityFactory)
+//     .WithSamplingCapability(samplingCapabilityFactory)
+//     .Build();
 
 await client.Connect();
 
