@@ -2,6 +2,6 @@
 {
     public interface IRootsCapabilityFactory
     {
-        IRootsCapability Create(IClient client);
+        IRootsCapability Create();
     }
 }

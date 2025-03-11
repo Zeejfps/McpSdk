@@ -4,8 +4,8 @@ namespace Client.Tests;
 
 public sealed class SamplingCapabilityFactory : ISamplingCapabilityFactory
 {
-    public ISamplingCapability Create(IClient client)
+    public ISamplingCapability Create()
     {
-        throw new NotImplementedException();
+        return null;
     }
 }

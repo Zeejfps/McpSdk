@@ -4,8 +4,8 @@ namespace Client.Tests;
 
 public sealed class RootsCapabilityFactory : IRootsCapabilityFactory
 {
-    public IRootsCapability Create(IClient client)
+    public IRootsCapability Create()
     {
-        throw new NotImplementedException();
+        return null;
     }
 }

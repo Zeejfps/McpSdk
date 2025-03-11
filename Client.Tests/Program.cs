@@ -7,17 +7,14 @@ var sseClientFactory = new SseClientFactory();
 var rootsCapabilityFactory = new RootsCapabilityFactory();
 var samplingCapabilityFactory = new SamplingCapabilityFactory();
 var sseTransportFactory = new SseTransportFactory(json, sseClientFactory, "http://localhost:3000");
-var clientFactory = new ClientFactory(sseTransportFactory);
 
-var client = clientFactory.Create(new ClientInfo("Echo Client", "1.0.0"));
-
-// var client = new ClientFactory()
-//     .WithName("Echo Client")
-//     .WithVersion("1.0.0")
-//     .WithTransport(sseTransportFactory)
-//     .WithRootsCapability(rootsCapabilityFactory)
-//     .WithSamplingCapability(samplingCapabilityFactory)
-//     .Build();
+var client = new ClientBuilder()
+    .WithName("Echo Client")
+    .WithVersion("1.0.0")
+    .WithTransport(sseTransportFactory)
+    .WithRootsCapability(rootsCapabilityFactory)
+    .WithSamplingCapability(samplingCapabilityFactory)
+    .Build();
 
 await client.Connect();
 
