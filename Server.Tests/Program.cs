@@ -1,13 +1,13 @@
 ﻿using McpSdk.Server;
 using McpSdk.Server.Tests;
 
-var testToolFactory = new TestToolFactory();
+var testToolFactory = new TestToolsCapabilityFactory();
 
 var server = new ServerBuilder()
     .WithName("Demo Server")
     .WithVersion("1.0.0")
     .WithStdioTransport()
-    .WithTool(testToolFactory)
+    .WithToolsCapability(testToolFactory)
     .Build();
     
 await server.Start();

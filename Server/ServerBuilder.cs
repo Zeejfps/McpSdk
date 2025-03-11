@@ -24,7 +24,7 @@ namespace McpSdk.Server
             return this;
         }
 
-        public ServerBuilder WithTool(IToolFactory toolFactory)
+        public ServerBuilder WithToolsCapability(IToolsCapabilityFactory toolsCapabilityFactory)
         {
             return this;
         }
