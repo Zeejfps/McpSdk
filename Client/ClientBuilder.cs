@@ -32,7 +32,7 @@ namespace McpSharp.Client
 
         public ClientBuilder WithStdioTransport(string command, string[] args)
         {
-            _transportFactory = new StdioTransportFactory(command, args);
+            _transportFactory = new StdioTransportFactory(_json, command, args);
             return this;
         }
 
