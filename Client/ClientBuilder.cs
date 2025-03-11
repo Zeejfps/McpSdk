@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using McpSharp.Protocol;
 
 namespace McpSharp.Client
@@ -86,19 +87,14 @@ namespace McpSharp.Client
             _json = json;
         }
 
-        public Content CreateTextContent(string text)
+        public TextContent CreateTextContent(string text)
         {
-            var jsonText = _json.Stringify(props =>
-            {
-                props.Write("type", "text");
-                props.Write("text", text);
-            });
-            return new TextContent(_json.Parse(jsonText));
+            return TextContent.Create(_json, text);
         }
 
-        public Content CreateImageContent(byte[] imageBytes)
+        public ImageContent CreateImageContent(string mimeType, byte[] imageBytes)
         {
-            throw new NotImplementedException();
+            return ImageContent.Create(_json, mimeType, imageBytes);
         }
 
         public CreateMessagesResult CreateResult(string role, string model, string stopReason, Content content)

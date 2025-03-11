@@ -1,3 +1,5 @@
+using System;
+
 namespace McpSharp.Protocol
 {
     public enum ContentKind
@@ -26,6 +28,15 @@ namespace McpSharp.Protocol
 
         public override ContentKind Kind => ContentKind.Text;
         public string Text { get; }
+        public static TextContent Create(IJson json, string text)
+        {
+            var obj = json.Build(props =>
+            {
+                props.Write("type", "text");
+                props.Write("text", text);
+            });
+            return new TextContent(obj);
+        }
     }
 
     public sealed class ImageContent : Content
@@ -34,6 +45,17 @@ namespace McpSharp.Protocol
         {
             MimeType = jsonObject["mimeType"].AsString();
             Data = jsonObject["data"].AsString();
+        }
+
+        public static ImageContent Create(IJson json, string mimeType, byte[] data)
+        {
+            var obj = json.Build(props =>
+            {
+                props.Write("type", "image");
+                props.Write("mimeType", mimeType);
+                props.Write("data", "base64EncodedData");
+            });
+            return new ImageContent(obj);
         }
 
         public override ContentKind Kind => ContentKind.Image;

@@ -4,6 +4,7 @@ namespace McpSharp.Protocol
 {
     public interface IJson
     {
+        IJsonObject Build(Action<IJsonWriter> props);
         IJsonObject Parse(string text);
         string Stringify(Action<IJsonWriter> json);
     }

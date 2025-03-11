@@ -6,6 +6,12 @@ namespace Client.Tests;
 
 internal class SystemJson : IJson
 {
+    public IJsonObject Build(Action<IJsonWriter> props)
+    {
+        var json = Stringify(props);
+        return Parse(json);
+    }
+
     public IJsonObject Parse(string text)
     {
         var document = JsonDocument.Parse(text);
