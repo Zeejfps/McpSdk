@@ -2,9 +2,9 @@
 using System.Text;
 using McpSharp.Client;
 
-namespace Client.Tests;
+namespace SseClientAdapter;
 
-internal class SseClient : ISseClient
+internal sealed class SseClient : ISseClient
 {
     private readonly HttpClient _httpClient;
     private readonly SseMessageReader _sseMessageReader;

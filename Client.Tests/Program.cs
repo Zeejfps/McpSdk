@@ -1,6 +1,7 @@
 ﻿using Client.Tests;
 using McpSharp.Client;
 using McpSharp.Protocol;
+using SseClientAdapter;
 
 var json = new SystemJson();
 var sseClientFactory = new SseClientFactory();

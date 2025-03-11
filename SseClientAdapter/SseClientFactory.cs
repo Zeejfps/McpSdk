@@ -1,8 +1,8 @@
 ﻿using McpSharp.Client;
 
-namespace Client.Tests;
+namespace SseClientAdapter;
 
-internal class SseClientFactory : ISseClientFactory
+public class SseClientFactory : ISseClientFactory
 {
     public ISseClient Create()
     {

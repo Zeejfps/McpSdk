@@ -1,9 +1,9 @@
 ﻿using System.Text;
 using McpSharp.Client;
 
-namespace Client.Tests;
+namespace SseClientAdapter;
 
-sealed class SseEvent : ISseEvent
+internal sealed class SseEvent : ISseEvent
 {
     public string? Id { get; set; }
     public string Kind { get; }
