@@ -69,8 +69,8 @@ sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public string[] AsStringArray()
     {
-        string[] array = new string?[_element.GetArrayLength()];
-        for (int i = 0; i < array.Length; i++)
+        var array = new string?[_element.GetArrayLength()];
+        for (var i = 0; i < array.Length; i++)
         {
             array[i] = _element[i].GetString();
         }
@@ -84,7 +84,12 @@ sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public double[] AsDoubleArray()
     {
-        throw new NotImplementedException();
+        var array = new double[_element.GetArrayLength()];
+        for (var i = 0; i < array.Length; i++)
+        {
+            array[i] = _element[i].GetDouble();
+        }
+        return array;
     }
 
     public int AsInt()
@@ -94,7 +99,12 @@ sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public int[] AsIntArray()
     {
-        throw new NotImplementedException();
+        var array = new int[_element.GetArrayLength()];
+        for (var i = 0; i < array.Length; i++)
+        {
+            array[i] = _element[i].GetInt32();
+        }
+        return array;
     }
 
     public float AsFloat()
@@ -224,6 +234,13 @@ public sealed class JsonWriter : IJsonWriter
             _jsonWriter.WriteBooleanValue(element);
         }
         _jsonWriter.WriteEndArray();
+        return this;
+    }
+
+    public IJsonWriter Write(string propertyName, IJsonObject obj)
+    {
+        _jsonWriter.WritePropertyName(propertyName);
+        _jsonWriter.WriteRawValue(obj.ToString());
         return this;
     }
 

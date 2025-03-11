@@ -8,21 +8,13 @@ namespace McpSharp.Protocol
         Resource
     }
 
-    public abstract class Content
+    public abstract class Content : JsonObjectWrapper
     {
-        protected Content(IJsonObject jsonObject)
+        protected Content(IJsonObject jsonObject) : base(jsonObject)
         {
-            JsonObject = jsonObject;
         }
 
         public abstract ContentKind Kind { get; }
-        
-        public IJsonObject JsonObject { get; }
-
-        public override string ToString()
-        {
-            return JsonObject.ToString();
-        }
     }
 
     public sealed class TextContent : Content

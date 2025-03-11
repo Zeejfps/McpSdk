@@ -8,6 +8,7 @@ namespace McpSharp.Client
         string Role { get; }
         string Model { get; }
         string StopReason { get; }
+        Content Content { get; }
     }
     
     public interface ISamplingCapability
