@@ -8,6 +8,8 @@ namespace McpSharp.Client
     {
         private readonly ITransport _transport;
         private readonly ClientInfo _clientInfo;
+        private readonly IRootsCapability _roots;
+        private readonly ISamplingCapability _sampling;
 
         public McpClient(ITransport transport, ClientInfo clientInfo)
         {
@@ -17,9 +19,27 @@ namespace McpSharp.Client
             _clientInfo = clientInfo;
         }
 
-        private void OnRequestReceived(int requestId, string method, IJsonObject args)
+        private async void OnRequestReceived(int requestId, string method, IJsonObject args)
         {
-            
+            try
+            {
+                if (method == "roots/list")
+                {
+                    if (_roots == null)
+                        return;
+
+                    var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
+                    // _transport.SendResponse(requestId, listRootsResult.Write);
+                }
+                else if (method == "sampling/createMessage")
+                {
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);   
+            }
         }
 
         private void OnNotificationReceived(string notification)

@@ -96,7 +96,7 @@ namespace McpSharp.Client
             return ReadResult(response);
         }
 
-        public async Task SendResponse(int messageId, string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        public async Task SendResponse(int messageId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
