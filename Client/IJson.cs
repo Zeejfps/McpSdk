@@ -15,8 +15,7 @@ namespace McpSharp.Client
         void Parse(string jsonString, out JsonRpcResponse<int, CallToolResultPayload> jsonRpcResponse);
 
         IJsonObject Parse(string text);
-        
-        IJsonWriter Writer();
+        string Stringify(Action<IJsonWriter> json);
     }
     
     public interface IJsonWriter

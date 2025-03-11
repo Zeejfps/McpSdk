@@ -109,12 +109,13 @@ namespace McpSharp.Client
         private string WriteJsonRpcRequest(string method, Action<IJsonWriter> payload)
         {
             var id = NextRequestId();
-            var writer = _json.Writer();
-            writer.Write("jsonrpc", "2.0");
-            writer.Write("id", id);
-            writer.Write("method", method);
-            writer.Write("params", payload);
-            return writer.ToString();
+            return _json.Stringify(writer =>
+            {
+                writer.Write("jsonrpc", "2.0");
+                writer.Write("id", id);
+                writer.Write("method", method);
+                writer.Write("params", payload);
+            });
         }
 
         private IJsonObject ReadResult(string text)
