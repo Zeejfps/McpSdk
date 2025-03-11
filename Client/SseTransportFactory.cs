@@ -2,7 +2,7 @@
 
 namespace McpSharp.Client
 {
-    public sealed class SseTransportFactory : ITransportFactory
+    internal sealed class SseTransportFactory : ITransportFactory
     {
         private readonly IJson _json;
         private readonly ISseClientFactory _sseClientFactory;
