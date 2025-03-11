@@ -91,7 +91,7 @@ namespace McpSharp.Client
 
         private void OnNotificationReceived(string notification)
         {
-            
+            Console.WriteLine($"Notification Received: {notification}");
         }
 
         public bool IsConnected { get; private set; }
