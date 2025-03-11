@@ -4,7 +4,7 @@ namespace McpSharp.Protocol
 {
     public sealed class CreateMessageParams : JsonObjectWrapper
     {
-        public CreateMessageParams(IJsonObject jsonObject) : base(jsonObject)
+        public CreateMessageParams(IJsonObject jsonObject)
         {
             Messages = jsonObject["messages"]
                 .AsObjectArray()
@@ -14,11 +14,13 @@ namespace McpSharp.Protocol
             Preferences = new ModelPreferences(jsonObject);
             SystemPrompt = jsonObject["systemPrompt"]?.AsString();    
             MaxTokens = jsonObject["maxTokens"]?.AsInt();
+            JsonObject = jsonObject;
         }
         
         public ModelPreferences Preferences { get; }
         public SamplingMessage[] Messages { get; }
         public string SystemPrompt { get; }
         public int? MaxTokens { get; }
+        public override IJsonObject JsonObject { get; }
     }
 }

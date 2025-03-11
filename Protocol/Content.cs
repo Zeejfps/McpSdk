@@ -12,76 +12,82 @@ namespace McpSharp.Protocol
 
     public abstract class Content : JsonObjectWrapper
     {
-        protected Content(IJsonObject jsonObject) : base(jsonObject)
-        {
-        }
-
         public abstract ContentKind Kind { get; }
     }
 
     public sealed class TextContent : Content
     {
-        public TextContent(IJsonObject jsonObject) : base(jsonObject)
+        public TextContent(IJsonObject jsonObject)
         {
             Text = jsonObject["text"].AsString();
+            JsonObject = jsonObject;
         }
 
-        public override ContentKind Kind => ContentKind.Text;
-        public string Text { get; }
-        public static TextContent Create(IJson json, string text)
+        public TextContent(IJson json, string text)
         {
-            var obj = json.Build(props =>
+            Text = text;
+            JsonObject = json.Build(props =>
             {
                 props.Write("type", "text");
                 props.Write("text", text);
             });
-            return new TextContent(obj);
         }
+
+        public override IJsonObject JsonObject { get; }
+        public override ContentKind Kind => ContentKind.Text;
+        public string Text { get; }
     }
 
     public sealed class ImageContent : Content
     {
-        public ImageContent(IJsonObject jsonObject) : base(jsonObject)
+        public ImageContent(IJsonObject jsonObject)
         {
             MimeType = jsonObject["mimeType"].AsString();
             Data = jsonObject["data"].AsString();
+            JsonObject = jsonObject;
         }
 
-        public static ImageContent Create(IJson json, string mimeType, byte[] data)
+        public ImageContent(IJson json, string mimeType, byte[] data)
         {
-            var obj = json.Build(props =>
+            MimeType = mimeType;
+            Data = Convert.ToBase64String(data);
+            JsonObject = json.Build(props =>
             {
                 props.Write("type", "image");
                 props.Write("mimeType", mimeType);
-                props.Write("data", "base64EncodedData");
+                props.Write("data", Data);
             });
-            return new ImageContent(obj);
         }
 
         public override ContentKind Kind => ContentKind.Image;
         public string Data { get; }
         public string MimeType { get; }
+        public override IJsonObject JsonObject { get; }
     }
 
     public sealed class ResourceContent : Content
     {
-        public ResourceContent(IJsonObject jsonObject) : base(jsonObject)
+        public ResourceContent(IJsonObject jsonObject)
         {
             var resourceObj = jsonObject["resource"].AsObject();
             Resource = new Resource(resourceObj);
+            JsonObject = jsonObject;
         }
 
         public override ContentKind Kind => ContentKind.Resource;
         public Resource Resource { get; }
+        public override IJsonObject JsonObject { get; }
     }
 
     public sealed class UnknownContent : Content
     {
-        public UnknownContent(IJsonObject jsonObject) : base(jsonObject)
+        public UnknownContent(IJsonObject jsonObject)
         {
+            JsonObject = jsonObject;
         }
 
         public override ContentKind Kind => ContentKind.Unknown;
+        public override IJsonObject JsonObject { get; }
     }
 
     public sealed class Resource

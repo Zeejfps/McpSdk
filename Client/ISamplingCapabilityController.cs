@@ -6,6 +6,6 @@ namespace McpSharp.Client
     {
         TextContent CreateTextContent(string text);
         ImageContent CreateImageContent(string mimeType, byte[] imageBytes);
-        CreateMessagesResult CreateResult(string role, string model, string stopReason, Content content);
+        CreateMessagesResult CreateResult(string role, string model, Content content, string stopReason);
     }
 }

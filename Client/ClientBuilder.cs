@@ -89,17 +89,17 @@ namespace McpSharp.Client
 
         public TextContent CreateTextContent(string text)
         {
-            return TextContent.Create(_json, text);
+            return new TextContent(_json, text);
         }
 
         public ImageContent CreateImageContent(string mimeType, byte[] imageBytes)
         {
-            return ImageContent.Create(_json, mimeType, imageBytes);
+            return new ImageContent(_json, mimeType, imageBytes);
         }
 
-        public CreateMessagesResult CreateResult(string role, string model, string stopReason, Content content)
+        public CreateMessagesResult CreateResult(string role, string model, Content content, string stopReason)
         {
-            throw new NotImplementedException();
+            return new CreateMessagesResult(_json, role, model, content, stopReason);
         }
     }
 }

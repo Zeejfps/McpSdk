@@ -4,7 +4,7 @@ namespace McpSharp.Protocol
 {
     public sealed class ModelPreferences : JsonObjectWrapper
     {
-        public ModelPreferences(IJsonObject jsonObject) : base(jsonObject)
+        public ModelPreferences(IJsonObject jsonObject)
         {
             Hints = jsonObject["hints"]?
                 .AsObjectArray()
@@ -12,10 +12,12 @@ namespace McpSharp.Protocol
                 .ToArray();
             IntelligencePriority = jsonObject["intelligencePriority"]?.AsFloat();
             SpeedPriority = jsonObject["speedPriority"]?.AsFloat();
+            JsonObject = jsonObject;
         }
 
         public ModelHint[] Hints { get; }
         public float? IntelligencePriority { get; }
         public float? SpeedPriority { get; }
+        public override IJsonObject JsonObject { get; }
     }
 }

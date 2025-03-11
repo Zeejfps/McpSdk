@@ -2,7 +2,7 @@
 {
     public sealed class ListToolsResult : JsonObjectWrapper
     {
-        public ListToolsResult(IJsonObject jsonObject) : base(jsonObject)
+        public ListToolsResult(IJsonObject jsonObject)
         {
             var toolsArray = jsonObject["tools"].AsObjectArray();
             var toolsCount = toolsArray.Length;
@@ -13,8 +13,10 @@
                 tools[i] = new Tool(toolObj);
             }
             Tools = tools;
+            JsonObject = jsonObject;
         }
         
         public Tool[] Tools { get; }
+        public override IJsonObject JsonObject { get; }
     }
 }

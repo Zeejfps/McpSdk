@@ -23,6 +23,6 @@ internal sealed class SamplingCapability : ISamplingCapability
     public async Task<CreateMessagesResult> CreateMessages(CreateMessageParams methodParams)
     {
         var content = _controller.CreateTextContent("Hello World");
-        return _controller.CreateResult("asdf", "model", "asf", content);
+        return _controller.CreateResult("system", "model", content, "asf");
     }
 }
