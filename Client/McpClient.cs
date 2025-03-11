@@ -17,7 +17,7 @@ namespace McpSharp.Client
             _clientInfo = clientInfo;
         }
 
-        private void OnRequestReceived(string method, IJsonObject args)
+        private void OnRequestReceived(int requestId, string method, IJsonObject args)
         {
             
         }

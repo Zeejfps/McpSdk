@@ -8,6 +8,8 @@ namespace McpSharp.Client
 {
     internal sealed class SseTransport : ITransport
     {
+        private const string JsonRpcVersion = "2.0";
+        
         private readonly IJson _json;
         private readonly ISseClient _sseClient;
         private readonly string _host;
@@ -73,7 +75,7 @@ namespace McpSharp.Client
         {
             var request = _json.Stringify(req =>
             {
-                req.Write("jsonrpc", "2.0");
+                req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("method", notification);
             });
             await _sseClient.SendMessage(_messagesUrl, request, cancellationToken);
@@ -84,7 +86,7 @@ namespace McpSharp.Client
             var id = NextRequestId();
             var request = _json.Stringify(req =>
             {
-                req.Write("jsonrpc", "2.0");
+                req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("id", id);
                 req.Write("method", method);
                 req.Write("params", payload);
@@ -93,7 +95,18 @@ namespace McpSharp.Client
             var response = await WaitForResponse(id, cancellationToken).ConfigureAwait(false);
             return ReadResult(response);
         }
-        
+
+        public async Task SendResponse(int messageId, string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        {
+            var response = _json.Stringify(req =>
+            {
+                req.Write("jsonrpc", JsonRpcVersion);
+                req.Write("id", messageId);
+                req.Write("result", payload);
+            });
+            await _sseClient.SendMessage(_messagesUrl, response, cancellationToken);
+        }
+
         private IJsonObject ReadResult(IJsonObject response)
         {
             var errorProp = response["error"];
