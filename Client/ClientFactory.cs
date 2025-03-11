@@ -14,7 +14,7 @@ namespace McpSharp.Client
         public IClient Create(ClientInfo clientInfo)
         {
             var connection = _transportFactory.Create();
-            return new McpClient(connection, clientInfo);
+            return new McpClient(connection, clientInfo, null);
         }
     }
 }

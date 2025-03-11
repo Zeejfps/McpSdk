@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 
@@ -11,34 +12,56 @@ namespace McpSharp.Client
         private readonly IRootsCapability _roots;
         private readonly ISamplingCapability _sampling;
 
-        public McpClient(ITransport transport, ClientInfo clientInfo)
+        public McpClient(ITransport transport, ClientInfo clientInfo, IRootsCapability roots)
         {
             _transport = transport;
-            _transport.RequestReceived += OnRequestReceived;
-            _transport.NotificationReceived += OnNotificationReceived;
+            _roots = roots;
             _clientInfo = clientInfo;
         }
 
-        private async void OnRequestReceived(int requestId, string method, IJsonObject args)
+        private void OnRootsListChanged()
+        {
+            _transport.SendNotification("notifications/roots/list_changed");
+        }
+
+        private void OnRequestReceived(int requestId, string method, IJsonObject args)
+        {
+            Console.WriteLine($"Request Received: {method}");
+            if (method == "roots/list")
+            {
+                OnListRootsRequestReceived(requestId, args);
+            }
+            else if (method == "sampling/createMessage")
+            {
+
+            }
+        }
+
+        private async void OnListRootsRequestReceived(int requestId, IJsonObject args)
         {
             try
             {
-                if (method == "roots/list")
-                {
-                    if (_roots == null)
-                        return;
+                if (_roots == null)
+                    return;
 
-                    var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
-                    // _transport.SendResponse(requestId, listRootsResult.Write);
-                }
-                else if (method == "sampling/createMessage")
+                var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
+                await _transport.SendResponse(requestId, payload =>
                 {
+                    var roots = listRootsResult.Roots.Select<IRoot, Action<IJsonWriter>>(root =>
+                    {
+                        return element =>
+                        {
+                            element.Write("uri", root.Uri);
+                            element.Write("name", root.Name);
+                        };
+                    }).ToArray();
 
-                }
+                    payload.Write("roots", roots);
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);   
+                Console.WriteLine(ex.Message);
             }
         }
 
@@ -51,14 +74,26 @@ namespace McpSharp.Client
         
         public async Task Connect()
         {
+            if (IsConnected)
+                throw new Exception("Client is already connected");
+            
             await _transport.Connect();
+            _transport.RequestReceived += OnRequestReceived;
+            _transport.NotificationReceived += OnNotificationReceived;
+            
             var clientProtocolVersion = "2024-11-05";
             var response = await _transport.SendRequest("initialize", payload =>
             {
                 payload.Write("protocolVersion", "2024-11-05");
                 payload.Write("capabilities", capabilities =>
                 {
-                    payload.Write("roots", roots => { });
+                    if (_roots != null)
+                    {
+                        payload.Write("roots", roots =>
+                        {
+                            roots.Write("listChanged", _roots.IsListChangedNotificationSupported);
+                        });
+                    }
                     payload.Write("sampling", sampling => { });
                 });
                 payload.Write("clientInfo", clientInfo =>
@@ -73,6 +108,10 @@ namespace McpSharp.Client
                 throw new ClientException($"Invalid protocol version. Expected {clientProtocolVersion}, got {serverProtocolVersion}");
             
             await _transport.SendNotification("initialized");
+            
+            if (_roots != null && _roots.IsListChangedNotificationSupported)
+                _roots.ListChanged += OnRootsListChanged;
+            
             IsConnected = true;
         }
 

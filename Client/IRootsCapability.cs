@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using McpSharp.Protocol;
 
 namespace McpSharp.Client
 {
