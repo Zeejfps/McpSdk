@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.System.Text.Json", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Tests", "Server.Tests\Server.Tests.csproj", "{BB6FD50C-A16D-4701-9D24-D535486C6D64}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.Newtonsoft.Json", "Adapter.Newtonsoft.Json\Adapter.Newtonsoft.Json.csproj", "{B35314B3-8EEA-478A-8A45-B9AD5AF2B9D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{BB6FD50C-A16D-4701-9D24-D535486C6D64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB6FD50C-A16D-4701-9D24-D535486C6D64}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB6FD50C-A16D-4701-9D24-D535486C6D64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B35314B3-8EEA-478A-8A45-B9AD5AF2B9D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B35314B3-8EEA-478A-8A45-B9AD5AF2B9D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B35314B3-8EEA-478A-8A45-B9AD5AF2B9D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B35314B3-8EEA-478A-8A45-B9AD5AF2B9D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
