@@ -30,6 +30,12 @@ namespace McpSharp.Client
             return this;
         }
 
+        public ClientBuilder WithStdioTransport()
+        {
+            _transportFactory = new StdioTransportFactory();
+            return this;
+        }
+
         public ClientBuilder WithSseTransport(ISseClientFactory sseClientFactory, string host)
         {
             _transportFactory = new SseTransportFactory(_json, sseClientFactory, host);
