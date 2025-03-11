@@ -1,10 +1,11 @@
 ﻿using Client.Tests;
+using McpSharp.Adapter.Newtonsoft.Json;
 using McpSharp.Adapter.SseClient;
 using McpSharp.Adapter.System.Text.Json;
 using McpSharp.Client;
 using McpSharp.Protocol;
 
-var json = new SystemJson();
+var json = new NewtonsoftJson();//new SystemJson();
 var sseClientFactory = new SseClientFactory();
 var rootsCapabilityFactory = new RootsCapabilityFactory(json);
 var samplingCapabilityFactory = new SamplingCapabilityFactory(json);
