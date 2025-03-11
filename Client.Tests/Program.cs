@@ -1,4 +1,5 @@
-﻿using Client.Tests;
+﻿using System.Net.Http.Json;
+using Client.Tests;
 using McpSharp.Client;
 using McpSharp.Protocol;
 
@@ -35,5 +36,9 @@ foreach (var content in contents)
     if (content is TextContent textContent)
     {
         Console.WriteLine(textContent.Text);
+    }
+    else if (content is ImageContent imageContent)
+    {
+        Console.WriteLine(imageContent.MimeType);
     }
 }

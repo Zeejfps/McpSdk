@@ -40,8 +40,8 @@ namespace McpSharp.Protocol
     {
         public ImageContent(IJsonObject jsonObject) : base(jsonObject)
         {
-            // MimeType = mimeType;
-            // Data = data;
+            MimeType = jsonObject["mimeType"].AsString();
+            Data = jsonObject["data"].AsString();
         }
 
         public override ContentKind Kind => ContentKind.Image;
@@ -53,7 +53,8 @@ namespace McpSharp.Protocol
     {
         public ResourceContent(IJsonObject jsonObject) : base(jsonObject)
         {
-            // Resource = new Resource(uri, mimeType, text);
+            var resourceObj = jsonObject["resource"].AsObject();
+            Resource = new Resource(resourceObj);
         }
 
         public override ContentKind Kind => ContentKind.Resource;
@@ -71,15 +72,22 @@ namespace McpSharp.Protocol
 
     public sealed class Resource
     {
-        public Resource(string uri, string mimeType, string text)
+        public Resource(IJsonObject jsonObject)
         {
-            Uri = uri;
-            MimeType = mimeType;
-            Text = text;
+            JsonObject = jsonObject;
+            Uri = jsonObject["uri"].AsString();
+            MimeType = jsonObject["mimeType"].AsString();
+            Text = jsonObject["text"].AsString();
         }
-
+        
+        public IJsonObject JsonObject { get; }
         public string Uri { get; }
         public string MimeType { get; }
         public string Text { get; }
+
+        public override string ToString()
+        {
+            return JsonObject.ToString();
+        }
     }
 }
