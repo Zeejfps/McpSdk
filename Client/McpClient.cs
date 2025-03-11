@@ -38,11 +38,26 @@ namespace McpSharp.Client
             }
         }
 
-        private async void OnCreateMessageRequestReceived(int requestId, IJsonObject args)
+        private async void OnCreateMessageRequestReceived(int requestId, IJsonObject methodParams)
         {
             try
             {
+                var sampling = _sampling;
+                if (sampling == null)
+                    return;
                 
+                var messages = methodParams["messages"]
+                    .AsObjectArray()
+                    .Select(message => new SamplingMessage(message))
+                    .ToArray();
+
+                var result = await sampling.CreateMessages(messages);
+                await _transport.SendResponse(requestId, payload =>
+                {
+                    payload.Write("role", result.Role);
+                    payload.Write("model", result.Model);
+                    payload.Write("stopReason", result.StopReason);
+                });
             }
             catch (Exception ex)
             {
