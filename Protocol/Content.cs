@@ -13,6 +13,27 @@ namespace McpSharp.Protocol
     public abstract class Content : JsonObjectWrapper
     {
         public abstract ContentKind Kind { get; }
+
+        public static Content Create(IJsonObject jsonObject)
+        {
+            var type = jsonObject["type"].AsString();
+            if (type == "text")
+            {
+                return new TextContent(jsonObject);
+            }
+            
+            if (type == "image")
+            {
+                return new ImageContent(jsonObject);
+            }
+             
+            if (type == "resource")
+            {
+                return new ResourceContent(jsonObject);
+            }
+            
+            return new UnknownContent(jsonObject);
+        }
     }
 
     public sealed class TextContent : Content

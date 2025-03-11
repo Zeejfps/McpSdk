@@ -10,23 +10,7 @@
             StopReason = jsonObject["stopReason"]?.AsString();
             
             var contentObj = jsonObject["content"].AsObject();
-            var type = contentObj["type"].AsString();
-            if (type == "text")
-            {
-                Content = new TextContent(contentObj);
-            }
-            else if (type == "image")
-            {
-                Content = new ImageContent(contentObj);
-            }
-            else if (type == "resource")
-            {
-                Content = new ResourceContent(contentObj);
-            }
-            else
-            {
-                Content = new UnknownContent(contentObj);
-            }
+            Content = Content.Create(contentObj);
         }
 
         public CreateMessagesResult(IJson json, string role, string model, Content content, string stopReason)

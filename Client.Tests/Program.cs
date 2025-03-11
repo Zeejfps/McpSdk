@@ -26,10 +26,10 @@ foreach (var tool in listToolsResult.Tools)
 
 var result = await client.CallTool(
     "get-forecast",
-    args =>
+    toolArgs =>
     {
-        args.Write("latitude", 51.5);
-        args.Write("longitude", 51.5);
+        toolArgs.Write("latitude", 51.5);
+        toolArgs.Write("longitude", 51.5);
     }
 );
 

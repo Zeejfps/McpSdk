@@ -11,29 +11,15 @@
             for (var i = 0; i < contentArray.Length; i++)
             {
                 var contentObj = contentArray[i];
-                var type = contentObj["type"].AsString();
-                if (type == "text")
-                {
-                    content[i] = new TextContent(contentObj);
-                }
-                else if (type == "image")
-                {
-                    content[i] = new ImageContent(contentObj);
-                }
-                else if (type == "resource")
-                {
-                    content[i] = new ResourceContent(contentObj);
-                }
-                else
-                {
-                    content[i] = new UnknownContent(contentObj);
-                }
+                content[i] = Protocol.Content.Create(contentObj);
             }
             Content = content;
+            IsError = jsonObject["isError"]?.AsBool() ?? false;
         }
 
         public IJsonObject JsonObject { get; }
         public Content[] Content { get; }
+        public bool IsError { get; }
 
         public override string ToString()
         {
