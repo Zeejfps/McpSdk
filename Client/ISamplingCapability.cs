@@ -3,23 +3,15 @@ using McpSharp.Protocol;
 
 namespace McpSharp.Client
 {
-    public interface ICreateMessagesResult
-    {
-        string Role { get; }
-        string Model { get; }
-        string StopReason { get; }
-        Content Content { get; }
-    }
-    
     public interface ISamplingCapability
     {
-        Task<ICreateMessagesResult> CreateMessages(CreateMessageParams methodParams);
+        Task<CreateMessagesResult> CreateMessages(CreateMessageParams methodParams);
     }
 
     public interface ISamplingCapabilityController
     {
         Content CreateTextContent(string text);
         Content CreateImageContent(byte[] imageBytes);
-        ICreateMessagesResult CreateResult(string role, string model, string stopReason, Content content);
+        CreateMessagesResult CreateResult(string role, string model, string stopReason, Content content);
     }
 }

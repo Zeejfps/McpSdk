@@ -101,7 +101,7 @@ namespace McpSharp.Client
             throw new NotImplementedException();
         }
 
-        public ICreateMessagesResult CreateResult(string role, string model, string stopReason, Content content)
+        public CreateMessagesResult CreateResult(string role, string model, string stopReason, Content content)
         {
             throw new NotImplementedException();
         }

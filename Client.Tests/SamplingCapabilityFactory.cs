@@ -20,18 +20,9 @@ internal sealed class SamplingCapability : ISamplingCapability
         _controller = controller;
     }
 
-    public async Task<ICreateMessagesResult> CreateMessages(CreateMessageParams methodParams)
+    public async Task<CreateMessagesResult> CreateMessages(CreateMessageParams methodParams)
     {
         var content = _controller.CreateTextContent("Hello World");
         return _controller.CreateResult("asdf", "model", "asf", content);
     }
-}
-
-internal sealed class CreateMessagesResult : ICreateMessagesResult
-{
-    public string Role { get; }
-    public string Model { get; }
-    public string StopReason { get; }
-    
-    public Content Content { get; }
 }
