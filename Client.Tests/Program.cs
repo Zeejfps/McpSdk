@@ -4,7 +4,7 @@ using McpSharp.Protocol;
 
 var json = new SystemJson();
 var sseClientFactory = new SseClientFactory();
-var rootsCapabilityFactory = new RootsCapabilityFactory();
+var rootsCapabilityFactory = new RootsCapabilityFactory(json);
 var samplingCapabilityFactory = new SamplingCapabilityFactory(json);
 
 var client = new ClientBuilder(json)
