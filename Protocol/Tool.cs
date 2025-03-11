@@ -2,20 +2,22 @@
 {
     public sealed class Tool
     {
-        public Tool(string toolName, string description, IJsonObject inputSchema)
+        public Tool(IJsonObject jsonObj)
         {
-            Name = toolName;
-            Description = description;
-            InputSchema = inputSchema;
+            JsonObject = jsonObj;
+            Name = jsonObj["name"].AsString();
+            Description = jsonObj["description"].AsString();
+            InputSchema = jsonObj["inputSchema"].AsObject();
         }
 
+        public IJsonObject JsonObject { get; }
         public string Name { get; }
         public string Description { get; }
         public IJsonObject InputSchema { get; }
 
         public override string ToString()
         {
-            return $"{nameof(Name)}: {Name}, {nameof(Description)}: {Description}, {nameof(InputSchema)}: {InputSchema}";
+            return JsonObject.ToString();
         }
     }
 }

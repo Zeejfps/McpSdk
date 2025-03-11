@@ -54,10 +54,7 @@ namespace McpSharp.Client
             for (var i = 0; i < toolsCount; i++)
             {
                 var toolObj = tools[i];
-                var toolName = toolObj["name"].AsString();
-                var toolDescription = toolObj["description"].AsString();
-                var inputSchema = toolObj["inputSchema"].AsObject();
-                toolInfos[i] = new Tool(toolName, toolDescription, inputSchema);
+                toolInfos[i] = new Tool(toolObj);
             }
             return toolInfos;
         }

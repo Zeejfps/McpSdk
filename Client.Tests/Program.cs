@@ -4,18 +4,17 @@ using McpSharp.Protocol;
 
 var json = new SystemJson();
 var sseClientFactory = new SseClientFactory();
-
 var sseTransportFactory = new SseTransportFactory(json, sseClientFactory, "http://localhost:3000");
 var clientFactory = new ClientFactory(sseTransportFactory);
-var client = clientFactory.CreateClient(new ClientInfo("Echo Client", "1.0.0"));
+var client = clientFactory.Create(new ClientInfo("Echo Client", "1.0.0"));
 
 await client.Connect();
 
 var toolInfos = await client.ListTools();
 Console.WriteLine("Available tools:");
-foreach (var toolInfo in toolInfos)
+foreach (var tool in toolInfos)
 {
-    Console.WriteLine(toolInfo.ToString());
+    Console.WriteLine(tool.ToString());
 }
 
 var result = await client.CallTool(
@@ -24,16 +23,6 @@ var result = await client.CallTool(
     {
         args.Write("latitude", 51.5);
         args.Write("longitude", 51.5);
-        args.Write("items", [
-            obj =>
-            {
-                obj.Write("afrd", 3);
-            },
-            obj =>
-            {
-                obj.Write("awdf", 1);
-            }
-        ]);
     }
 );
 
