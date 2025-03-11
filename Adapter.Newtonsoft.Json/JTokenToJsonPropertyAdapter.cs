@@ -78,5 +78,10 @@ namespace McpSdk.Adapter.Newtonsoft.Json
                 .Select(item => new JTokenToJsonObjectAdapter(item))
                 .ToArray<IJsonObject>();
         }
+
+        public override string ToString()
+        {
+            return _jToken.ToString();
+        }
     }
 }

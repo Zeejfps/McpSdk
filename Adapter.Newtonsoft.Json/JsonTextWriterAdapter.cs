@@ -117,9 +117,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
         public IJsonWriter Write(string propertyName, IJsonObject obj)
         {
             _writer.WritePropertyName(propertyName);
-            _writer.WriteStartObject();
             _writer.WriteRawValue(obj.ToString());
-            _writer.WriteEndObject();
             return this;
         }
 

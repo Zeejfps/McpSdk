@@ -2,6 +2,19 @@
 {
     public sealed class Tool
     {
+        public Tool(IJson json, string name, string description, IJsonObject inputSchema)
+        {
+            Name = name;
+            Description = description;
+            InputSchema = inputSchema;
+            JsonObject = json.Build(props =>
+            {
+                props.Write("name", Name);
+                props.Write("description", Description);
+                props.Write("inputSchema", InputSchema);
+            });
+        }
+        
         public Tool(IJsonObject jsonObj)
         {
             JsonObject = jsonObj;

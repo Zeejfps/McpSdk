@@ -23,5 +23,10 @@ namespace McpSdk.Adapter.Newtonsoft.Json
                 return new JTokenToJsonPropertyAdapter(property);
             }
         }
+
+        public override string ToString()
+        {
+            return _jToken.ToString();
+        }
     }
 }
