@@ -24,7 +24,11 @@ namespace McpSdk.Server
 
         private void OnRequestReceived(int requestId, string method, IJsonObject arguments)
         {
-            if (method == "tools/list")
+            if (method == "initialize")
+            {
+                OnInitializeRequestReceived(requestId, arguments);
+            }
+            else if (method == "tools/list")
             {
                 OnListToolsRequestReceived(requestId, arguments);
             }
@@ -32,6 +36,11 @@ namespace McpSdk.Server
             {
                 OnCallToolRequestReceived(requestId, arguments);
             }
+        }
+
+        private void OnInitializeRequestReceived(int requestId, IJsonObject arguments)
+        {
+            throw new NotImplementedException();
         }
 
         private async void OnListToolsRequestReceived(int requestId, IJsonObject methodParams)
