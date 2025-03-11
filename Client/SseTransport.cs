@@ -28,13 +28,6 @@ namespace McpSharp.Client
         public async Task Connect()
         {
             await _sseClient.Connect(_connectionUrl);
-            var sseEvent = await _sseClient.DequeueEvent();
-            if (sseEvent.Kind != "endpoint")
-                throw new Exception($"Expected endpoint event, received: {sseEvent.Kind}");
-            var messagesEndpoint = sseEvent.Data;
-            if (!messagesEndpoint.StartsWith("/"))
-                messagesEndpoint = $"/{messagesEndpoint}";
-            _messagesUrl = $"{_host}{messagesEndpoint}";
         }
 
         public async Task SendNotification(InitializedNotification notification, CancellationToken cancellationToken = default)
@@ -49,6 +42,11 @@ namespace McpSharp.Client
             var jsonRpcRequest = WriteJsonRpcRequest(method, payload);
             await _sseClient.SendMessage(_messagesUrl, jsonRpcRequest, cancellationToken);
             var sseEvent = await _sseClient.DequeueEvent(cancellationToken);
+            if (sseEvent.Kind == "endpoint")
+            {
+                _messagesUrl = $"{_host}{sseEvent.Data}";
+                sseEvent = await _sseClient.DequeueEvent(cancellationToken);
+            }
             return ReadResult(sseEvent.Data);
         }
 

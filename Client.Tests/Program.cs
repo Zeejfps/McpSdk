@@ -37,7 +37,9 @@ var result = await client.CallTool(
     }
 );
 
+Console.WriteLine(result);
 var contents = result["content"].AsObjectArray();
+Console.WriteLine(contents.Length);
 
 foreach (var content in contents)
 {
@@ -45,5 +47,6 @@ foreach (var content in contents)
     if (type == "text")
     {
         var text = content["text"].AsString();
+        Console.WriteLine(text);
     }
 }

@@ -124,6 +124,11 @@ sealed class JsonElementToJsonObjectAdapter : IJsonObject
             return null;
         }
     }
+
+    public override string ToString()
+    {
+        return _element.ToString();
+    }
 }
 
 sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
@@ -197,7 +202,12 @@ sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public IJsonObject[] AsObjectArray()
     {
-        throw new NotImplementedException();
+        var array = new IJsonObject[_element.GetArrayLength()];
+        for (var i = 0; i < array.Length; i++)
+        {
+            array[i] = new JsonElementToJsonObjectAdapter(_element[i]);
+        }
+        return array;
     }
 }
 
