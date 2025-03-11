@@ -13,7 +13,7 @@ public sealed class SamplingCapabilityFactory : ISamplingCapabilityFactory
 
 internal sealed class SamplingCapability : ISamplingCapability
 {
-    public Task<ICreateMessagesResult> CreateMessages(SamplingMessage[] messages)
+    public Task<ICreateMessagesResult> CreateMessages(CreateMessageParams methodParams)
     {
         throw new NotImplementedException();
     }

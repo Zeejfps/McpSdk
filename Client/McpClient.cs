@@ -46,12 +46,8 @@ namespace McpSharp.Client
                 if (sampling == null)
                     return;
                 
-                var messages = methodParams["messages"]
-                    .AsObjectArray()
-                    .Select(message => new SamplingMessage(message))
-                    .ToArray();
-
-                var result = await sampling.CreateMessages(messages);
+                var request = new CreateMessageParams(methodParams);
+                var result = await sampling.CreateMessages(request);
                 await _transport.SendResponse(requestId, payload =>
                 {
                     payload.Write("role", result.Role);

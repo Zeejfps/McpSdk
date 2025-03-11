@@ -12,6 +12,6 @@ namespace McpSharp.Client
     
     public interface ISamplingCapability
     {
-        Task<ICreateMessagesResult> CreateMessages(SamplingMessage[] messages);
+        Task<ICreateMessagesResult> CreateMessages(CreateMessageParams methodParams);
     }
 }
