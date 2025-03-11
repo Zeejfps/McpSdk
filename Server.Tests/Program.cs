@@ -1,9 +1,11 @@
-﻿using McpSdk.Server;
+﻿using McpSdk.Adapter.Newtonsoft.Json;
+using McpSdk.Server;
 using McpSdk.Server.Tests;
 
+var json = new NewtonsoftJson();
 var testToolFactory = new TestToolsCapabilityFactory();
 
-var server = new ServerBuilder()
+var server = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
     .WithStdioTransport()

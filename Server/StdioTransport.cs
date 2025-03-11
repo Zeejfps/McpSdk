@@ -6,7 +6,7 @@ using McpSdk.Protocol;
 
 namespace McpSdk.Server
 {
-    public sealed class StdioTransport : JsonRpcTransport
+    internal sealed class StdioTransport : JsonRpcTransport
     {
         private TextWriter _standardOut;
     

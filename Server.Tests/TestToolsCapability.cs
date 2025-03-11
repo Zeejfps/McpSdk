@@ -9,7 +9,7 @@ public class TestToolsCapability : IToolsCapability
         throw new NotImplementedException();
     }
 
-    public Task<CallToolResult> CallTool(string toolName)
+    public Task<CallToolResult> CallTool(CallToolArguments arguments)
     {
         throw new NotImplementedException();
     }

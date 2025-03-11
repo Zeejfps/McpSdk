@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Adapter.Newtonsoft.Json\Adapter.Newtonsoft.Json.csproj" />
       <ProjectReference Include="..\Server\Server.csproj" />
     </ItemGroup>
 
