@@ -3,7 +3,7 @@ using McpSdk.Server;
 using McpSdk.Server.Tests;
 
 var json = new NewtonsoftJson();
-var testToolFactory = new TestToolsCapabilityFactory();
+var testToolFactory = new ToolsCapabilityFactory();
 
 var server = new ServerBuilder(json)
     .WithName("Demo Server")

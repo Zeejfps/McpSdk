@@ -10,7 +10,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
     {
         public IJsonObject Build(Action<IJsonWriter> props)
         {
-            throw new NotImplementedException();
+            return Parse(Stringify(props));
         }
 
         public IJsonObject Parse(string text)

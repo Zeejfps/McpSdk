@@ -1,7 +1,18 @@
-﻿namespace McpSdk.Protocol
+﻿using System.Linq;
+
+namespace McpSdk.Protocol
 {
     public sealed class ListToolsResult : JsonObjectWrapper
     {
+        public ListToolsResult(IJson json, Tool[] tools)
+        {
+            Tools = tools;
+            JsonObject = json.Build(props =>
+            {
+                props.Write("tools", tools.Select(tool => tool.JsonObject).ToArray());
+            });
+        }
+        
         public ListToolsResult(IJsonObject jsonObject)
         {
             var toolsArray = jsonObject["tools"].AsObjectArray();
