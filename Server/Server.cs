@@ -1,5 +1,6 @@
-﻿namespace Server;
-
-public sealed class Server
+﻿namespace Server
 {
+    public sealed class Server
+    {
+    }
 }
