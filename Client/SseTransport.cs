@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
@@ -11,8 +12,9 @@ namespace McpSharp.Client
         private readonly ISseClient _sseClient;
         private readonly string _host;
         private readonly string _connectionUrl;
+        private readonly Dictionary<int, TaskCompletionSource<IJsonObject>> _tscByMessageId = new Dictionary<int, TaskCompletionSource<IJsonObject>>();
 
-        private int _nextRequestId;
+        private int _nextMessageId;
         private string _messagesUrl;
 
         public SseTransport(ISseClient sseClient, IJson json, string host)
@@ -24,10 +26,10 @@ namespace McpSharp.Client
             _messagesUrl = $"{host}/messages";
         }
 
-        public async Task Connect()
+        public async Task Connect(CancellationToken cancellationToken = default)
         {
             _sseClient.EventReceived += OnSseEventReceived;
-            await _sseClient.Connect(_connectionUrl);
+            await _sseClient.Connect(_connectionUrl, cancellationToken);
         }
 
         private void OnSseEventReceived(ISseEvent sseEvent)
@@ -44,15 +46,24 @@ namespace McpSharp.Client
 
         private void OnMessageReceived(string message)
         {
-            _waitForMessageTsc?.TrySetResult(message);
+            var response = _json.Parse(message);
+            var idProp = response["id"];
+            if (idProp == null) 
+                return;
+            
+            var id = idProp.AsInt();
+            if (!_tscByMessageId.TryGetValue(id, out var tsc))
+                return;
+            
+            _tscByMessageId.Remove(id);
+            tsc.TrySetResult(response);
         }
-
-        private TaskCompletionSource<string> _waitForMessageTsc;
         
-        private Task<string> WaitForJrpcResponse(CancellationToken cancellationToken = default)
+        private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
         {
-            _waitForMessageTsc = new TaskCompletionSource<string>();
-            return _waitForMessageTsc.Task;
+            var tsc = new TaskCompletionSource<IJsonObject>(cancellationToken);
+            _tscByMessageId[messageId] = tsc;
+            return tsc.Task;
         }
         
         public async Task SendNotification(string notification, CancellationToken cancellationToken = default)
@@ -67,27 +78,21 @@ namespace McpSharp.Client
 
         public async Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
         {
-            var request = WriteJrpcRequest(method, payload);
+            var id = NextRequestId();
+            var request = _json.Stringify(req =>
+            {
+                req.Write("jsonrpc", "2.0");
+                req.Write("id", id);
+                req.Write("method", method);
+                req.Write("params", payload);
+            });
             await _sseClient.SendMessage(_messagesUrl, request, cancellationToken);
-            var response = await WaitForJrpcResponse(cancellationToken);
+            var response = await WaitForResponse(id, cancellationToken).ConfigureAwait(false);
             return ReadResult(response);
         }
-
-        private string WriteJrpcRequest(string method, Action<IJsonWriter> payload)
+        
+        private IJsonObject ReadResult(IJsonObject response)
         {
-            var id = NextRequestId();
-            return _json.Stringify(writer =>
-            {
-                writer.Write("jsonrpc", "2.0");
-                writer.Write("id", id);
-                writer.Write("method", method);
-                writer.Write("params", payload);
-            });
-        }
-
-        private IJsonObject ReadResult(string text)
-        {
-            var response = _json.Parse(text);
             var errorProp = response["error"];
             if (errorProp != null)
             {
@@ -101,13 +106,7 @@ namespace McpSharp.Client
 
         private int NextRequestId()
         {
-            return Interlocked.Increment(ref _nextRequestId);
-        }
-
-        private JsonRpcRequest<int, TPayload> CreateRequest<TPayload>(string method, TPayload payload)
-        {
-            var requestId = NextRequestId();
-            return new JsonRpcRequest<int, TPayload>(requestId, method, payload);
+            return Interlocked.Increment(ref _nextMessageId);
         }
     }
 }

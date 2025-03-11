@@ -7,8 +7,8 @@ namespace McpSharp.Client
 {
     public interface ITransport
     {
-        Task Connect();
-        Task SendNotification(string notificaton, CancellationToken cancellationToken = default);
+        Task Connect(CancellationToken cancellationToken = default);
+        Task SendNotification(string notification, CancellationToken cancellationToken = default);
         Task<IJsonObject> SendMessage(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
     }
 }
