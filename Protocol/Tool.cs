@@ -2,7 +2,7 @@
 {
     public sealed class Tool
     {
-        public Tool(string toolName, string description, JsonSchema inputSchema)
+        public Tool(string toolName, string description, IJsonObject inputSchema)
         {
             Name = toolName;
             Description = description;
@@ -11,7 +11,7 @@
 
         public string Name { get; }
         public string Description { get; }
-        public JsonSchema InputSchema { get; }
+        public IJsonObject InputSchema { get; }
 
         public override string ToString()
         {

@@ -1,4 +1,6 @@
-﻿namespace McpSharp.Client
+﻿using McpSharp.Protocol;
+
+namespace McpSharp.Client
 {
     public sealed class SseTransportFactory : ITransportFactory
     {

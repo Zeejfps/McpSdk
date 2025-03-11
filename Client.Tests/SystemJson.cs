@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
-using McpSharp.Client;
+using System.Text.Json.Nodes;
 using McpSharp.Protocol;
 using McpSharp.Protocol.Messages;
 
@@ -147,37 +147,6 @@ internal class SystemJson : IJson
         jsonRpcResponse = new JsonRpcResponse<int, InitializeResultPayload?>(rpcVersion, id, result, error);
     }
 
-    public void Parse(string jsonString, out JsonRpcResponse<int, ListToolsResultPayload?> jsonRpcResponse)
-    {
-        using var document = JsonDocument.Parse(jsonString);
-        var root = document.RootElement;
-        
-        var rpcVersion = root.GetProperty("jsonrpc").GetString();
-        var id = root.GetProperty("id").GetInt32();
-
-        ListToolsResultPayload? result = null;
-
-        if (root.TryGetProperty("result", out var resultObj))
-        {
-            var toolsObj = resultObj.GetProperty("tools");
-            var toolsCount = toolsObj.GetArrayLength();
-            var toolInfos = new Tool[toolsCount];
-            for (var i = 0; i < toolsCount; i++)
-            {
-                var toolObj = toolsObj[i];
-                var toolName = toolObj.GetProperty("name").GetString();
-                var toolDescription = toolObj.GetProperty("description").GetString();
-                var inputSchema = toolObj.GetProperty("inputSchema").GetSchema();
-                toolInfos[i] = new Tool(toolName, toolDescription, inputSchema);
-            }
-            
-            result = new ListToolsResultPayload(toolInfos);
-        }
-
-        var error = TryParseError(root);
-        jsonRpcResponse = new JsonRpcResponse<int, ListToolsResultPayload?>(rpcVersion, id, result, error);
-    }
-
     public void Parse(string jsonString, [UnscopedRef] out JsonRpcResponse<int, CallToolResultPayload> jsonRpcResponse)
     {
         using JsonDocument document = JsonDocument.Parse(jsonString);
@@ -193,12 +162,19 @@ internal class SystemJson : IJson
 
     public IJsonObject Parse(string text)
     {
-        throw new NotImplementedException();
+        var document = JsonDocument.Parse(text);
+        return new JsonElementToJsonObjectAdapter(document.RootElement);
     }
 
     public string Stringify(Action<IJsonWriter> json)
     {
-        throw new NotImplementedException();
+        using var memory = new MemoryStream();
+        using var writer = new Utf8JsonWriter(memory);
+        var jsonWriter = new JsonWriter(writer);
+        json(jsonWriter);
+        writer.Flush();
+        var jsonString = Encoding.UTF8.GetString(memory.ToArray());
+        return jsonString;
     }
 
     private bool TryParseResult(JsonElement root, out CallToolResultPayload result)
@@ -263,6 +239,104 @@ internal class SystemJson : IJson
         var code = errorObj.GetProperty("code").GetInt32();
         var message = errorObj.GetProperty("message").GetString();
         return new JsonRpcResponseError(code, message, null);
+    }
+}
+
+sealed class JsonElementToJsonObjectAdapter : IJsonObject
+{
+    private readonly JsonElement _element;
+
+    public JsonElementToJsonObjectAdapter(JsonElement _element)
+    {
+        this._element = _element;
+    }
+
+    public IJsonProperty? this[string propertyName]
+    {
+        get
+        {
+            var root = _element;
+            if (root.TryGetProperty(propertyName, out var element))
+            {
+                return new JsonElementToJsonPropertyAdapter(element);
+            }
+            return null;
+        }
+    }
+}
+
+sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
+{
+    private readonly JsonElement _element;
+
+    public JsonElementToJsonPropertyAdapter(JsonElement element)
+    {
+        _element = element;
+    }
+
+    public string? AsString()
+    {
+        return _element.GetString();
+    }
+
+    public string[] AsStringArray()
+    {
+        string[] array = new string?[_element.GetArrayLength()];
+        for (int i = 0; i < array.Length; i++)
+        {
+            array[i] = _element[i].GetString();
+        }
+        return array;
+    }
+
+    public double AsDouble()
+    {
+        return _element.GetDouble();
+    }
+
+    public double[] AsDoubleArray()
+    {
+        throw new NotImplementedException();
+    }
+
+    public int AsInt()
+    {
+        return _element.GetInt32();
+    }
+
+    public int[] AsIntArray()
+    {
+        throw new NotImplementedException();
+    }
+
+    public float AsFloat()
+    {
+        return _element.GetSingle();
+    }
+
+    public float[] AsFloatArray()
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool AsBool()
+    {
+        return _element.GetBoolean();
+    }
+
+    public bool[] AsBoolArray()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IJsonObject AsObject()
+    {
+        return new JsonElementToJsonObjectAdapter(_element);
+    }
+
+    public IJsonObject[] AsObjectArray()
+    {
+        throw new NotImplementedException();
     }
 }
 

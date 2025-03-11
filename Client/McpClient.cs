@@ -22,22 +22,45 @@ namespace McpSharp.Client
         public async Task Connect()
         {
             await _transport.Connect();
-            var protocolVersion = "2024-11-05";
-            var requestPayload = new InitializeRequestPayload(protocolVersion, _clientInfo)
-                .WithCapability(new RootsCapability(false))
-                .WithCapability(new SamplingCapability());
-            var response = await _transport.SendMessage(requestPayload);
-            if (response.ProtocolVersion != protocolVersion)
-                throw new ClientException($"Invalid protocol version. Expected {protocolVersion}, got {response.ProtocolVersion}");
+            var clientProtocolVersion = "2024-11-05";
+            var response = await _transport.SendMessage("initialize", payload =>
+            {
+                payload.Write("protocolVersion", "2024-11-05");
+                payload.Write("capabilities", capabilities =>
+                {
+                    payload.Write("roots", roots => { });
+                    payload.Write("sampling", sampling => { });
+                });
+                payload.Write("clientInfo", clientInfo =>
+                {
+                    payload.Write("name", _clientInfo.Name);
+                    payload.Write("version", _clientInfo.Version);
+                });
+            });
+            
+            var serverProtocolVersion = response["protocolVersion"].AsString();
+            if (serverProtocolVersion != clientProtocolVersion)
+                throw new ClientException($"Invalid protocol version. Expected {clientProtocolVersion}, got {serverProtocolVersion}");
+            
             await _transport.SendNotification(new InitializedNotification());
             IsConnected = true;
         }
 
         public async Task<IEnumerable<Tool>> ListTools()
         {
-            var requestPayload = new ListToolsRequestPayload();
-            var result = await _transport.SendMessage(requestPayload);
-            return result.Tools;
+            var result = await _transport.SendMessage("tools/list", payload => { });
+            var tools = result["tools"].AsObjectArray();
+            var toolsCount = tools.Length;
+            var toolInfos = new Tool[toolsCount];
+            for (var i = 0; i < toolsCount; i++)
+            {
+                var toolObj = tools[i];
+                var toolName = toolObj["name"].AsString();
+                var toolDescription = toolObj["description"].AsString();
+                var inputSchema = toolObj["inputSchema"].AsObject();
+                toolInfos[i] = new Tool(toolName, toolDescription, inputSchema);
+            }
+            return toolInfos;
         }
 
         public async Task<IJsonObject> CallTool(string toolName, Action<IJsonWriter> args)
