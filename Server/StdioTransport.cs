@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using McpSharp.Protocol;
 
-namespace Server
+namespace McpSharp.Server
 {
     public sealed class StdioTransport : JsonRpcTransport
     {

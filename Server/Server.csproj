@@ -2,6 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <AssemblyName>McpSharp.Server</AssemblyName>
+        <RootNamespace>McpSharp.Server</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
