@@ -5,7 +5,7 @@ using McpSharp.Protocol;
 var json = new SystemJson();
 var sseClientFactory = new SseClientFactory();
 var rootsCapabilityFactory = new RootsCapabilityFactory();
-var samplingCapabilityFactory = new SamplingCapabilityFactory();
+var samplingCapabilityFactory = new SamplingCapabilityFactory(json);
 
 var client = new ClientBuilder(json)
     .WithName("Echo Client")

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using McpSharp.Protocol;
 
 namespace McpSharp.Client
@@ -70,36 +69,9 @@ namespace McpSharp.Client
                 throw new ArgumentNullException(nameof(transport), "Client transport cannot be null.");
 
             var rootsCapability = _rootsCapabilityFactory?.Create();
-
-            var samplingCapabilityController = new SamplingCapabilityController(_json);
-            var samplingCapability = _samplingCapabilityFactory?.Create(samplingCapabilityController);
+            var samplingCapability = _samplingCapabilityFactory?.Create();
             
             return new McpClient(transport, clientInfo, rootsCapability, samplingCapability);
-        }
-    }
-
-    internal sealed class SamplingCapabilityController : ISamplingCapabilityController
-    {
-        private readonly IJson _json;
-
-        public SamplingCapabilityController(IJson json)
-        {
-            _json = json;
-        }
-
-        public TextContent CreateTextContent(string text)
-        {
-            return new TextContent(_json, text);
-        }
-
-        public ImageContent CreateImageContent(string mimeType, byte[] imageBytes)
-        {
-            return new ImageContent(_json, mimeType, imageBytes);
-        }
-
-        public CreateMessagesResult CreateResult(string role, string model, Content content, string stopReason)
-        {
-            return new CreateMessagesResult(_json, role, model, content, stopReason);
         }
     }
 }

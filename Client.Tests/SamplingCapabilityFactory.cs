@@ -5,24 +5,31 @@ namespace Client.Tests;
 
 public sealed class SamplingCapabilityFactory : ISamplingCapabilityFactory
 {
-    public ISamplingCapability Create(ISamplingCapabilityController controller)
+    private readonly IJson _json;
+
+    public SamplingCapabilityFactory(IJson json)
     {
-        return new SamplingCapability(controller);
+        _json = json;
+    }
+
+    public ISamplingCapability Create()
+    {
+        return new SamplingCapability(_json);
     }
 }
 
 internal sealed class SamplingCapability : ISamplingCapability
 {
-    private readonly ISamplingCapabilityController _controller;
+    private readonly IJson _json;
 
-    public SamplingCapability(ISamplingCapabilityController controller)
+    public SamplingCapability(IJson json)
     {
-        _controller = controller;
+        _json = json;
     }
 
     public async Task<CreateMessagesResult> CreateMessages(CreateMessageParams methodParams)
     {
-        var content = _controller.CreateTextContent("Hello World");
-        return _controller.CreateResult("system", "model", content, "asf");
+        var content = new TextContent(_json, "Hello world");
+        return new CreateMessagesResult(_json, "asdf", "asdf", content, "wadsd");
     }
 }
