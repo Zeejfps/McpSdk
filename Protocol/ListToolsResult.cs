@@ -1,11 +1,9 @@
 ﻿namespace McpSharp.Protocol
 {
-    public sealed class ListToolsResult
+    public sealed class ListToolsResult : JsonObjectWrapper
     {
-        public ListToolsResult(IJsonObject jsonObject)
+        public ListToolsResult(IJsonObject jsonObject) : base(jsonObject)
         {
-            JsonObject = jsonObject;
-            
             var toolsArray = jsonObject["tools"].AsObjectArray();
             var toolsCount = toolsArray.Length;
             var tools = new Tool[toolsCount];
@@ -16,13 +14,7 @@
             }
             Tools = tools;
         }
-
-        public IJsonObject JsonObject { get; }
+        
         public Tool[] Tools { get; }
-
-        public override string ToString()
-        {
-            return JsonObject.ToString();
-        }
     }
 }
