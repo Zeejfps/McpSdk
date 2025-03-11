@@ -10,9 +10,9 @@ var client = clientFactory.Create(new ClientInfo("Echo Client", "1.0.0"));
 
 await client.Connect();
 
-var toolInfos = await client.ListTools();
+var listToolsResult = await client.ListTools();
 Console.WriteLine("Available tools:");
-foreach (var tool in toolInfos)
+foreach (var tool in listToolsResult.Tools)
 {
     Console.WriteLine(tool.ToString());
 }

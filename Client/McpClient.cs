@@ -45,18 +45,10 @@ namespace McpSharp.Client
             IsConnected = true;
         }
 
-        public async Task<IEnumerable<Tool>> ListTools()
+        public async Task<ListToolsResult> ListTools()
         {
             var result = await _transport.SendMessage("tools/list", payload => { });
-            var tools = result["tools"].AsObjectArray();
-            var toolsCount = tools.Length;
-            var toolInfos = new Tool[toolsCount];
-            for (var i = 0; i < toolsCount; i++)
-            {
-                var toolObj = tools[i];
-                toolInfos[i] = new Tool(toolObj);
-            }
-            return toolInfos;
+            return new ListToolsResult(result);
         }
 
         public async Task<IJsonObject> CallTool(string toolName, Action<IJsonWriter> args)
