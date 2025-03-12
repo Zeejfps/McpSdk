@@ -39,7 +39,7 @@ namespace McpSdk.Server
         }
 
         public event Action ListChanged;
-        public bool IsListChangedNotificationSupported => false;
+        public bool IsListChangedNotificationSupported => true;
 
         public Task<ListToolsResult> ListTools()
         {

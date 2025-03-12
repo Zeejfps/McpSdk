@@ -2,10 +2,10 @@
 {
     public sealed class ClientCapabilities
     {
-        public ClientCapabilities()
-        {
-            
-        }
+        public RootsCapability RootsCapability { get; set; }
+        public SamplingCapability SamplingCapability { get; set; }
+        
+        public ClientCapabilities() { }
         
         public ClientCapabilities(IJsonObject jsonObject)
         {
@@ -17,9 +17,6 @@
             if (samplingCapability != null)
                 SamplingCapability = new SamplingCapability(samplingCapability);
         }
-        
-        public RootsCapability RootsCapability { get; set; }
-        public SamplingCapability SamplingCapability { get; set; }
         
         public void AsJson(IJsonWriter writer)
         {

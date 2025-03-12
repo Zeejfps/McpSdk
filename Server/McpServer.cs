@@ -8,12 +8,12 @@ namespace McpSdk.Server
     internal sealed class McpServer : IServer
     {
         private readonly ITransport _transport;
-        private readonly IToolsController _tools;
+        private readonly IToolsController _toolsController;
 
-        public McpServer(ITransport transport, IToolsController tools)
+        public McpServer(ITransport transport, IToolsController toolsController)
         {
             _transport = transport;
-            _tools = tools;
+            _toolsController = toolsController;
         }
 
         public async Task Start()
@@ -54,12 +54,13 @@ namespace McpSdk.Server
                         $"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}");
                     return;
                 }
+
+                var capabilities = new ServerCapabilities();
+                if (_toolsController != null)
+                    capabilities.Tools = new ToolsCapability(_toolsController.IsListChangedNotificationSupported);
                 
-                var result = new InitializeResult(serverProtocolVersion);
-                await _transport.SendOkResponse(requestId, resultWriter =>
-                {
-                    result.Write(resultWriter);
-                });
+                var result = new InitializeResult(serverProtocolVersion, capabilities);
+                await _transport.SendOkResponse(requestId, result.AsJson);
                 
             }
             catch (Exception ex)
@@ -72,13 +73,13 @@ namespace McpSdk.Server
         {
             try
             {
-                if (_tools == null)
+                if (_toolsController == null)
                 {
                     await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
                     return;
                 }
 
-                var result = await _tools.ListTools();
+                var result = await _toolsController.ListTools();
                 await _transport.SendOkResponse(requestId, payload =>
                 {
                     result.Write(payload);
@@ -95,13 +96,13 @@ namespace McpSdk.Server
         {
             try
             {
-                if (_tools == null)
+                if (_toolsController == null)
                 {
                     await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
                     return;
                 }
                 
-                var result = await _tools.CallTool(new CallToolRequest(arguments));
+                var result = await _toolsController.CallTool(new CallToolRequest(arguments));
                 await _transport.SendOkResponse(requestId, result.AsJson);
             }
             catch (Exception ex)
