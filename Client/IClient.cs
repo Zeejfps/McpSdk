@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using McpSdk.Protocol;
+﻿using System.Threading.Tasks;
 using McpSdk.Protocol.Models;
 
 namespace McpSdk.Client
@@ -10,6 +8,6 @@ namespace McpSdk.Client
         bool IsConnected { get; }
         Task Connect();
         Task<ListToolsResult> ListTools();
-        Task<CallToolResult> CallTool(string toolName, Action<IJsonWriter> args);
+        Task<CallToolResult> CallTool(CallToolRequest request);
     }
 }

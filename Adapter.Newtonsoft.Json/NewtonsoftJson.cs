@@ -30,10 +30,5 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             writer.Flush();
             return stringWriter.ToString();
         }
-
-        public void ValidateAgainstSchema(IJsonObject obj, IJsonObject schema)
-        {
-
-        }
     }
 }

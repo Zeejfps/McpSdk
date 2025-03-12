@@ -28,14 +28,14 @@ foreach (var tool in listToolsResult.Tools)
     Console.WriteLine(tool.ToString());
 }
 
-var result = await client.CallTool(
-    "get-forecast",
-    toolArgs =>
-    {
-        toolArgs.Write("latitude", 39.384358225955);
-        toolArgs.Write("longitude", -110.686663445063);
-    }
-);
+var request = new CallToolRequest("get-forecast", json.Object(props =>
+{
+    props.Write("latitude", 39.384358225955);
+    props.Write("longitude", -110.686663445063);
+}));
+var result = await client.CallTool(request);
+
+json.Stringify(result.Write);
 
 Console.WriteLine(result);
 var contents = result.Content;

@@ -140,13 +140,11 @@ namespace McpSdk.Client
             return new ListToolsResult(result);
         }
 
-        public async Task<CallToolResult> CallTool(string toolName, Action<IJsonWriter> args)
+        public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
             var result = await _transport.SendRequest("tools/call", jsonWriter =>
             {
-                CallToolRequest.CreateWriter(jsonWriter)
-                    .WriteToolName(toolName)
-                    .WriteArguments(args);
+                request.Write(jsonWriter);
             });
             return new CallToolResult(result);
         }
