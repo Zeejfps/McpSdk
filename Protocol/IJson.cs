@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace McpSdk.Protocol
 {
@@ -32,6 +33,7 @@ namespace McpSdk.Protocol
     {
         IJsonProperty this[string propertyName] { get; }
         string ToString();
+        bool IsValid(IJsonObject schema, out IList<string> errors);
     }
 
     public interface IJsonProperty
