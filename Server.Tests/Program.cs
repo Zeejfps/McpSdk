@@ -1,5 +1,6 @@
 ﻿using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
 

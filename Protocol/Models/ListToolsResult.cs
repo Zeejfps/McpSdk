@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace McpSdk.Protocol
+namespace McpSdk.Protocol.Models
 {
     public sealed class ListToolsResult : JsonObjectWrapper
     {

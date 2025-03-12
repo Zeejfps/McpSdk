@@ -1,4 +1,6 @@
-﻿namespace McpSdk.Protocol
+﻿using McpSdk.Protocol.Models;
+
+namespace McpSdk.Protocol
 {
     public sealed class SamplingMessage
     {

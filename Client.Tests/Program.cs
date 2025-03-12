@@ -3,6 +3,7 @@ using McpSdk.Adapter.SseClient;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
 using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var sseClientFactory = new SseClientFactory();

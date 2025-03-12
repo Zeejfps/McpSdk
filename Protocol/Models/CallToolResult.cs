@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace McpSdk.Protocol
+namespace McpSdk.Protocol.Models
 {
     public sealed class CallToolResult
     {
@@ -18,13 +18,13 @@ namespace McpSdk.Protocol
         public CallToolResult(IJsonObject jsonObject)
         {
             JsonObject = jsonObject;
-            
+
             var contentArray = jsonObject["content"].AsObjectArray();
             var content = new Content[contentArray.Length];
             for (var i = 0; i < contentArray.Length; i++)
             {
                 var contentObj = contentArray[i];
-                content[i] = Protocol.Content.Create(contentObj);
+                content[i] = Models.Content.Create(contentObj);
             }
             Content = content;
             IsError = jsonObject["isError"]?.AsBool() ?? false;

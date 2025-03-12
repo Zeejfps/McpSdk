@@ -1,4 +1,5 @@
 ﻿using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server.Tests;
 

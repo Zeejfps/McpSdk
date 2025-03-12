@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Protocol
 {
