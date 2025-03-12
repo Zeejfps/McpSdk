@@ -1,9 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
     public sealed class ListToolsResult
     {
+        public Tool[] Tools { get; }
+        
         public ListToolsResult(Tool[] tools)
         {
             Tools = tools;
@@ -24,9 +27,9 @@ namespace McpSdk.Protocol.Models
 
         public void Write(IJsonWriter writer)
         {
-            writer.Write("tools", Tools.Select(tool => tool.JsonObject).ToArray());
+            writer.Write("tools", Tools
+                .Select<Tool, Action<IJsonWriter>>(tool => tool.ToJson)
+                .ToArray());
         }
-
-        public Tool[] Tools { get; }
     }
 }

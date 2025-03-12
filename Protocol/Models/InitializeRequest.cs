@@ -1,11 +1,10 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class InitializeRequest : JsonObjectWrapper
+    public sealed class InitializeRequest
     {
         public string ProtocolVersion { get; }
         public ClientInfo ClientInfo { get; }
         public ClientCapabilities ClientCapabilities { get; }
-        public override IJsonObject JsonObject { get; }
         
         public InitializeRequest(string protocolVersion, ClientCapabilities capabilities, ClientInfo clientInfo)
         {
@@ -16,7 +15,6 @@
         
         public InitializeRequest(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
             ProtocolVersion = jsonObject["protocolVersion"].AsString();
             
             var capabilities = jsonObject["capabilities"].AsObject();
