@@ -28,7 +28,6 @@ namespace McpSdk.Server
                 writeTool(Tool.CreateWriter(jsonWriter));
             });
             var tool = new Tool(_json.Parse(toolAsString));
-            Console.WriteLine(tool);
             AddTool(tool, callToolFunc);
         }
 
