@@ -51,7 +51,6 @@ namespace McpSdk.Client
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
             requestAsJson = Regex.Replace(requestAsJson, @"\t|\n|\r", string.Empty);
-            Console.WriteLine($"Sending request: {requestAsJson}");
             await _standardIn.WriteLineAsync(requestAsJson).ConfigureAwait(false);
         }
 

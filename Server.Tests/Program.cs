@@ -23,7 +23,7 @@ var server = new ServerBuilder(json)
                         })
                         .Number("longitude", z =>
                         {
-                            z.Min(-90).Max(90).Describe("Longitude of the location");
+                            z.Min(-180).Max(180).Describe("Longitude of the location");
                         })
                         .Boolean("testBool", boolWriter => { })
                         .Array("testArray", arrayWriter =>

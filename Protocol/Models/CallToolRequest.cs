@@ -23,7 +23,7 @@
         public void Write(IJsonWriter writer)
         {
             writer.Write(ToolNameProp, ToolName);
-            writer.Write(ArgumentsProp, ArgumentsProp);
+            writer.Write(ArgumentsProp, ToolArguments);
         }
     }
 }
