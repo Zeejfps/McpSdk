@@ -9,6 +9,28 @@ var server = new ServerBuilder(json)
     .WithStdioTransport()
     .WithToolsCapability(tools =>
     {
+        tools.AddTool(toolWriter =>
+        {
+            toolWriter
+                .WriteName("get-forecast")
+                .WriteDescription("asdawdawd")
+                .WriteInputSchema(inputSchemaWriter =>
+                {
+                    inputSchemaWriter
+                        .Prop("latitude", propWriter =>
+                        {
+                            propWriter.Number().Min(-90).Max(90).Describe("Latitude of the location");
+                        })
+                        .Prop("longitude", propWriter =>
+                        {
+                            propWriter.Number().Min(-90).Max(90).Describe("Longitude of the location");
+                        });
+                });
+        }, args =>
+        {
+            return null;
+        });
+        
         tools.AddTool(tool =>
         {
             tool.Name("get-forecast");

@@ -1,3 +1,5 @@
+using System;
+
 namespace McpSdk.Protocol
 {
     public sealed class SchemaWriter
@@ -7,6 +9,13 @@ namespace McpSdk.Protocol
         public SchemaWriter(IJsonWriter writer)
         {
             _writer = writer;
+        }
+
+        public SchemaWriter Object(Action<ObjectSchemaWriter> writeObject)
+        {
+            var objectSchemaWriter = new ObjectSchemaWriter(_writer);
+            writeObject(objectSchemaWriter);
+            return this;
         }
 
         public NumberSchemaWriter Number()
