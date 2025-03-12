@@ -14,7 +14,7 @@ var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     //.WithSseTransport(sseClientFactory, "http://localhost:3000")
-    .WithStdioTransport("bun", ["\"E:\\SeriesAI\\3D Gen\\3d-gen-mcp-server\\index.ts\""])
+    .WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
     .WithRootsCapability(rootsCapabilityFactory)
     .WithSamplingCapability(samplingCapabilityFactory)
     .Build();

@@ -20,11 +20,13 @@ namespace McpSdk.Server
         {
             _transport.RequestReceived += OnRequestReceived;
             _transport.NotificationReceived += OnNotificationReceived;
+            Console.Error.WriteLine("Starting Transport...");
             await _transport.Start();
         }
 
         private void OnRequestReceived(int requestId, string method, IJsonObject payload)
         {
+            Console.Error.WriteLine($"Received request {requestId}: {method}, {payload}");
             if (method == "initialize")
             {
                 OnInitializeRequestReceived(requestId, payload);
@@ -63,7 +65,7 @@ namespace McpSdk.Server
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.Error.WriteLine(ex.Message);
             }
         }
 
@@ -78,14 +80,15 @@ namespace McpSdk.Server
                 }
 
                 var result = await _tools.ListTools();
+                Console.Error.WriteLine("Afer List tools?");
                 await _transport.SendOkResponse(requestId, payload =>
                 {
-                    payload.Write(result.JsonObject);
+                    result.Write(payload);
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.Error.WriteLine(ex);
                 await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
             }
         }
@@ -103,19 +106,19 @@ namespace McpSdk.Server
                 var result = await _tools.CallTool(new CallToolRequest(arguments));
                 await _transport.SendOkResponse(requestId, payload =>
                 {
-                    payload.Write(result.JsonObject);
+                    result.Write(payload);
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.Error.WriteLine(ex.Message);
                 await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
             }
         }
 
         private void OnNotificationReceived(string notification)
         {
-            
+            Console.Error.WriteLine($"Notification received: {notification}");
         }
     }
 }

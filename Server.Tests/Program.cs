@@ -42,4 +42,12 @@ var server = new ServerBuilder(json)
     })
     .Build();
 
-await server.Start();
+Console.Error.WriteLine("Starting server...");
+try
+{
+    await server.Start();
+}
+catch (Exception e)
+{
+    Console.Error.WriteLine(e);
+}

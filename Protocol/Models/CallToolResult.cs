@@ -15,6 +15,12 @@ namespace McpSdk.Protocol.Models
             });
         }
 
+        public void Write(IJsonWriter writer)
+        {
+            writer.Write("content", Content.Select(c => c.JsonObject).ToArray());
+            writer.Write("isError", IsError);
+        }
+        
         public CallToolResult(IJsonObject jsonObject)
         {
             JsonObject = jsonObject;

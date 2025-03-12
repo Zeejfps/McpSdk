@@ -39,7 +39,7 @@ namespace McpSdk.Client
             _process = Process.Start(processStartInfo);
             if (_process == null)
                 throw new ClientException("Failed to connect to the server.");
-
+            
             _standardIn = _process.StandardInput;
             _readStdOutTask = ReadStdOut(_process.StandardOutput);
             _readStdErrTask = ReadStdErr(_process.StandardError);
@@ -49,22 +49,27 @@ namespace McpSdk.Client
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
+            Console.WriteLine($"Sending request: {requestAsJson}");
             await _standardIn.WriteLineAsync(requestAsJson).ConfigureAwait(false);
+            await _standardIn.FlushAsync().ConfigureAwait(false);
         }
 
         private async Task ReadStdOut(StreamReader standardOut)
         {
             string messageAsJson;
-            while ((messageAsJson = await standardOut.ReadLineAsync().ConfigureAwait(false)) != null)
+            while ((messageAsJson = await standardOut.ReadLineAsync()) != null)
+            {
+                Console.WriteLine($"[SERVER-OUT] {messageAsJson}");
                 OnMessageReceived(messageAsJson);
+            }
         }
         
         private async Task ReadStdErr(StreamReader standardErr)
         {
             string message;
-            while ((message = await standardErr.ReadLineAsync().ConfigureAwait(false)) != null)
+            while ((message = await standardErr.ReadLineAsync()) != null)
             {
-                Console.WriteLine($"{message}");
+                Console.WriteLine($"[SERVER-ERR]: {message}");
             }
         }
     }

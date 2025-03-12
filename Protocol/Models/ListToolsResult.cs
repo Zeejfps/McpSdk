@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
@@ -11,8 +12,14 @@ namespace McpSdk.Protocol.Models
             {
                 props.Write("tools", tools.Select(tool => tool.JsonObject).ToArray());
             });
+            Console.Error.WriteLine("ListTOolsREsult: " + JsonObject.ToString());
         }
-        
+
+        public void Write(IJsonWriter writer)
+        {
+            writer.Write("tools", Tools.Select(tool => tool.JsonObject).ToArray());
+        }
+
         public ListToolsResult(IJsonObject jsonObject)
         {
             var toolsArray = jsonObject["tools"].AsObjectArray();
@@ -26,8 +33,9 @@ namespace McpSdk.Protocol.Models
             Tools = tools;
             JsonObject = jsonObject;
         }
-        
+
         public Tool[] Tools { get; }
+
         public override IJsonObject JsonObject { get; }
     }
 }

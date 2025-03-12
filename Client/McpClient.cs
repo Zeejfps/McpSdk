@@ -28,7 +28,6 @@ namespace McpSdk.Client
 
         private void OnRequestReceived(int requestId, string method, IJsonObject args)
         {
-            Console.WriteLine($"Request Received: {method}");
             if (method == "roots/list")
             {
                 OnListRootsRequestReceived(requestId, args);
@@ -138,6 +137,7 @@ namespace McpSdk.Client
         public async Task<ListToolsResult> ListTools()
         {
             var result = await _transport.SendRequest("tools/list", payload => { });
+            Console.WriteLine($"Result: {result}");
             return new ListToolsResult(result);
         }
 
