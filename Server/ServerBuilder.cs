@@ -34,6 +34,14 @@ namespace McpSdk.Server
             _version = version;
             return this;
         }
+        
+        public ServerBuilder WithToolsCapability(Action<DefaultToolsController> addTools)
+        {
+            var toolsController = new DefaultToolsController(_json);
+            addTools(toolsController);
+            _toolsController = toolsController;
+            return this;
+        }
 
         public ServerBuilder WithToolsCapability(IToolsController toolsController)
         {

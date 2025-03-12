@@ -13,6 +13,6 @@ public sealed class ToolsControllerFactory : IToolsControllerFactory
 
     public IToolsController Create()
     {
-        return new ToolsController(_json);
+        return new DefaultToolsController(_json);
     }
 }
