@@ -1,6 +1,6 @@
-﻿namespace McpSdk.Client
+﻿namespace McpSdk.Protocol.Models
 {
-    internal readonly struct ClientInfo
+    public sealed class ClientInfo
     {
         public string Name { get; }
         public string Version { get; }

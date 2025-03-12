@@ -1,5 +1,6 @@
 ﻿using System;
 using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Client
 {

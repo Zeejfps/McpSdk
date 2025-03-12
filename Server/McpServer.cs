@@ -23,28 +23,36 @@ namespace McpSdk.Server
             await _transport.Start();
         }
 
-        private void OnRequestReceived(int requestId, string method, IJsonObject arguments)
+        private void OnRequestReceived(int requestId, string method, IJsonObject payload)
         {
             if (method == "initialize")
             {
-                OnInitializeRequestReceived(requestId, arguments);
+                OnInitializeRequestReceived(requestId, payload);
             }
             else if (method == "tools/list")
             {
-                OnListToolsRequestReceived(requestId, arguments);
+                OnListToolsRequestReceived(requestId, payload);
             }
             else if (method == "tools/call")
             {
-                OnCallToolRequestReceived(requestId, arguments);
+                OnCallToolRequestReceived(requestId, payload);
             }
         }
 
-        private void OnInitializeRequestReceived(int requestId, IJsonObject arguments)
+        private async void OnInitializeRequestReceived(int requestId, IJsonObject reqPayload)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var initializeRequest = new InitializeRequest(reqPayload);
+                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
-        private async void OnListToolsRequestReceived(int requestId, IJsonObject methodParams)
+        private async void OnListToolsRequestReceived(int requestId, IJsonObject reqPayload)
         {
             try
             {

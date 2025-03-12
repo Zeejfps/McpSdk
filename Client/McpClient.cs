@@ -107,29 +107,19 @@ namespace McpSdk.Client
             _transport.NotificationReceived += OnNotificationReceived;
             
             var clientProtocolVersion = "2024-11-05";
-            var response = await _transport.SendRequest("initialize", payload =>
+            var response = await _transport.SendRequest("initialize", jsonWriter =>
             {
-                payload.Write("protocolVersion", "2024-11-05");
-                payload.Write("capabilities", capabilities =>
-                {
-                    if (_roots != null)
+                InitializeRequest.CreateWriter(jsonWriter)
+                    .WriteProtocolVersion(clientProtocolVersion)
+                    .WriteCapabilities(capabilityWriter =>
                     {
-                        payload.Write("roots", roots =>
-                        {
-                            roots.Write("listChanged", _roots.IsListChangedNotificationSupported);
-                        });
-                    }
+                        if (_roots != null)
+                            capabilityWriter.WriteRootsCapability(_roots.IsListChangedNotificationSupported);
 
-                    if (_sampling != null)
-                    {
-                        payload.Write("sampling", sampling => { });
-                    }
-                });
-                payload.Write("clientInfo", clientInfo =>
-                {
-                    payload.Write("name", _clientInfo.Name);
-                    payload.Write("version", _clientInfo.Version);
-                });
+                        if (_sampling != null)
+                            capabilityWriter.WriteSamplingCapability();
+                    })
+                    .WriteClientInfo(_clientInfo.Name, _clientInfo.Version);
             });
             
             var serverProtocolVersion = response["protocolVersion"].AsString();
