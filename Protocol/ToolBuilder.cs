@@ -30,13 +30,13 @@ namespace McpSdk.Protocol
             return this;
         }
 
-        public ToolBuilder Input(string name, Action<InputSchemaWriter> input)
+        public ToolBuilder Input(string name, Action<SchemaWriter> input)
         {
             var writeInputSchemaAction = new Action<IJsonWriter>(writer =>
             {
                 writer.Write(name, props =>
                 {
-                    input.Invoke(new InputSchemaWriter(props));
+                    input.Invoke(new SchemaWriter(props));
                 });
             });
             _inputs.Add(writeInputSchemaAction);
@@ -50,51 +50,8 @@ namespace McpSdk.Protocol
                 foreach (var writeInputs in _inputs)
                     writeInputs(props);
             });
+            Console.WriteLine(_inputSchema);
             return new Tool(_json, _name, _description, _inputSchema);
         }
     }
-    
-    public sealed class InputSchemaWriter
-    {
-        private readonly IJsonWriter _writer;
-
-        public InputSchemaWriter(IJsonWriter writer)
-        {
-            _writer = writer;
-        }
-
-        public NumberInputSchemaWriter Number()
-        {
-            return new NumberInputSchemaWriter(_writer);
-        }
-    }
-
-    public sealed class NumberInputSchemaWriter
-    {
-        private readonly IJsonWriter _jsonObject;
-
-        public NumberInputSchemaWriter(IJsonWriter jsonObject)
-        {
-            _jsonObject = jsonObject;
-        }
-
-        public NumberInputSchemaWriter Min(int minValue)
-        {
-            _jsonObject.Write("min", minValue);
-            return this;
-        }
-
-        public NumberInputSchemaWriter Max(int maxValue)
-        {
-            _jsonObject.Write("max", maxValue);
-            return this;
-        }
-
-        public NumberInputSchemaWriter Describe(string description)
-        {
-            _jsonObject.Write("description", description);
-            return this;
-        }
-    }
-    
 }

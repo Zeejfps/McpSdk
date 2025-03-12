@@ -5,7 +5,7 @@ using McpSdk.Server;
 using McpSdk.Server.Tests;
 
 var json = new NewtonsoftJson();
-var tools = new ToolsController(json);
+var toolsController = new ToolsController(json);
 
 var getForecastTool = new ToolBuilder(json)
     .Name("get-forecast")
@@ -18,9 +18,13 @@ var getForecastTool = new ToolBuilder(json)
     {
         input.Number().Min(-180).Max(180).Describe("Longitude of the location");
     })
+    .Input("test", input =>
+    {
+        input.Array().Min(0).Max(10).Number();
+    })
     .Build();
 
-tools.AddTool(getForecastTool, args =>
+toolsController.AddTool(getForecastTool, args =>
 {
     var latitude = args["latitude"].AsDouble();
     var longitude = args["longitude"].AsDouble();
@@ -32,7 +36,7 @@ var server = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
     .WithStdioTransport()
-    .WithToolsCapability(tools)
+    .WithToolsCapability(toolsController)
     .Build();
 
 await server.Start();
