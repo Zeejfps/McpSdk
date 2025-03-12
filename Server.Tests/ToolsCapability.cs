@@ -35,10 +35,14 @@ public class ToolsCapability : IToolsCapability
         return Task.FromResult(result);
     }
 
-    public Task<CallToolResult> CallTool(CallToolArguments arguments)
+    public async Task<CallToolResult> CallTool(CallToolArguments arguments)
     {
-        var tool = _toolByNameLookup[arguments.ToolName];
-        // _json.ValidateAgainstSchema(arguments.JsonObject, tool.InputSchema);
-        throw new NotImplementedException();
+        var toolName = arguments.ToolName;
+        if (!_toolByNameLookup.TryGetValue(toolName, out var tool))
+        {
+            var content = new TextContent(_json, $"No tool found with name: {toolName}");
+            return new CallToolResult(_json, new Content[] { content }, true);
+        }
+        return new CallToolResult(_json, null, false);
     }
 }

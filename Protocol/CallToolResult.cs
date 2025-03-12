@@ -1,7 +1,20 @@
-﻿namespace McpSdk.Protocol
+﻿using System.Linq;
+
+namespace McpSdk.Protocol
 {
     public sealed class CallToolResult
     {
+        public CallToolResult(IJson json, Content[] content, bool isError)
+        {
+            Content = content;
+            IsError = isError;
+            JsonObject = json.Build(props =>
+            {
+                props.Write("content", content.Select(c => c.JsonObject).ToArray());
+                props.Write("isError", isError);
+            });
+        }
+
         public CallToolResult(IJsonObject jsonObject)
         {
             JsonObject = jsonObject;
