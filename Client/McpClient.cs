@@ -47,7 +47,7 @@ namespace McpSdk.Client
                 
                 var request = new CreateMessageRequest(methodParams);
                 var result = await sampling.CreateMessages(request);
-                await _transport.SendOkResponse(requestId, request.AsJson);
+                await _transport.SendOkResponse(requestId, result.AsJson);
             }
             catch (Exception ex)
             {
