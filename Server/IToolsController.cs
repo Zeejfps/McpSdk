@@ -9,6 +9,6 @@ namespace McpSdk.Server
         event Action ListChanged;
         bool IsListChangedNotificationSupported { get; }
         Task<ListToolsResult> ListTools();
-        Task<CallToolResult> CallTool(CallToolArguments arguments);
+        Task<CallToolResult> CallTool(CallToolRequest request);
     }
 }

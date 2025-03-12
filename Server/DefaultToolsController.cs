@@ -45,9 +45,9 @@ namespace McpSdk.Server
             return Task.FromResult(result);
         }
 
-        public async Task<CallToolResult> CallTool(CallToolArguments arguments)
+        public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var toolName = arguments.ToolName;
+            var toolName = request.ToolName;
             if (!_toolByNameLookup.TryGetValue(toolName, out var tool))
             {
                 var content = new TextContent(_json, $"No tool found with name: {toolName}");
@@ -55,7 +55,7 @@ namespace McpSdk.Server
             }
 
             var inputSchema = tool.InputSchema;
-            if (!arguments.JsonObject.IsValid(inputSchema, out var errors))
+            if (!request.JsonObject.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)
@@ -65,7 +65,7 @@ namespace McpSdk.Server
                 return new CallToolResult(_json, content, true);
             }
 
-            var toolArguments = arguments.ToolArguments;
+            var toolArguments = request.ToolArguments;
             var callToolFunc = _funcByToolNameLookup[toolName];
             return await callToolFunc(toolArguments);
         }

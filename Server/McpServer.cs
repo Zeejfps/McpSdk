@@ -85,7 +85,7 @@ namespace McpSdk.Server
                     return;
                 }
                 
-                var result = await _tools.CallTool(new CallToolArguments(arguments));
+                var result = await _tools.CallTool(new CallToolRequest(arguments));
                 await _transport.SendOkResponse(requestId, payload =>
                 {
                     payload.Write(result.JsonObject);
