@@ -47,13 +47,7 @@ namespace McpSdk.Client
                 
                 var request = new CreateMessageRequest(methodParams);
                 var result = await sampling.CreateMessages(request);
-                await _transport.SendOkResponse(requestId, payload =>
-                {
-                    
-                    payload.Write("role", result.Role);
-                    payload.Write("model", result.Model);
-                    payload.Write("stopReason", result.StopReason);
-                });
+                await _transport.SendOkResponse(requestId, request.AsJson);
             }
             catch (Exception ex)
             {
@@ -68,11 +62,8 @@ namespace McpSdk.Client
                 if (_roots == null)
                     return;
 
-                var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
-                await _transport.SendOkResponse(requestId, result =>
-                {
-                    result.Write("roots", listRootsResult.AsJson);
-                }).ConfigureAwait(false);
+                var result = await _roots.ListRoots().ConfigureAwait(false);
+                await _transport.SendOkResponse(requestId, result.AsJson).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
