@@ -6,7 +6,7 @@
         {
             Uri = uri;
             Name = name;
-            JsonObject = json.Build(props =>
+            JsonObject = json.Object(props =>
             {
                 props.Write("uri", uri);
                 props.Write("name", name);

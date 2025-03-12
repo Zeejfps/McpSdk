@@ -40,14 +40,12 @@ namespace McpSdk.Protocol.Models
     {
         public TextContent(IJsonObject jsonObject)
         {
-            Text = jsonObject["text"].AsString();
             JsonObject = jsonObject;
         }
 
         public TextContent(IJson json, string text)
         {
-            Text = text;
-            JsonObject = json.Build(props =>
+            JsonObject = json.Object(props =>
             {
                 props.Write("type", "text");
                 props.Write("text", text);
@@ -56,7 +54,7 @@ namespace McpSdk.Protocol.Models
 
         public override IJsonObject JsonObject { get; }
         public override ContentKind Kind => ContentKind.Text;
-        public string Text { get; }
+        public string Text => JsonObject["text"]?.AsString();
     }
 
     public sealed class ImageContent : Content
@@ -72,7 +70,7 @@ namespace McpSdk.Protocol.Models
         {
             MimeType = mimeType;
             Data = Convert.ToBase64String(data);
-            JsonObject = json.Build(props =>
+            JsonObject = json.Object(props =>
             {
                 props.Write("type", "image");
                 props.Write("mimeType", mimeType);

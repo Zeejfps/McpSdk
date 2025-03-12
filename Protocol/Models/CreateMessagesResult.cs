@@ -19,7 +19,7 @@
             Model = model;
             Content = content;
             StopReason = stopReason;
-            JsonObject = json.Build(props =>
+            JsonObject = json.Object(props =>
             {
                 props.Write("role", role);
                 props.Write("model", model);

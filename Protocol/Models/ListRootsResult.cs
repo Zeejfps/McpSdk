@@ -7,7 +7,7 @@ namespace McpSdk.Protocol.Models
         public ListRootsResult(IJson json, Root[] roots)
         {
             Roots = roots;
-            JsonObject = json.Build(prop =>
+            JsonObject = json.Object(prop =>
             {
                 prop.Write("roots", Roots.Select(root => root.JsonObject).ToArray());
             });

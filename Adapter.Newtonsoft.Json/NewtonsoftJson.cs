@@ -8,7 +8,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 {
     public sealed class NewtonsoftJson : IJson
     {
-        public IJsonObject Build(Action<IJsonWriter> props)
+        public IJsonObject Object(Action<IJsonWriter> props)
         {
             return Parse(Stringify(props));
         }

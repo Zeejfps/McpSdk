@@ -7,7 +7,7 @@ namespace McpSdk.Protocol.Models
         public ListToolsResult(IJson json, Tool[] tools)
         {
             Tools = tools;
-            JsonObject = json.Build(props =>
+            JsonObject = json.Object(props =>
             {
                 props.Write("tools", tools.Select(tool => tool.JsonObject).ToArray());
             });
