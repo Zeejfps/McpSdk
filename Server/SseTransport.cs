@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 
@@ -6,18 +7,30 @@ namespace McpSdk.Server
 {
     public sealed class SseTransport : JsonRpcTransport
     {
-        public SseTransport(IJson json) : base(json)
+        private readonly ISseServer _server;
+        
+        public SseTransport(IJson json, ISseServer server) : base(json)
         {
+            _server = server;
         }
 
-        protected override Task OnStart(CancellationToken cancellationToken = default)
+        protected override async Task OnStart(CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                _server.MessageReceived += OnMessageReceived;
+                await _server.Start();
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+                _server.MessageReceived -= OnMessageReceived;
+            }
         }
 
-        protected override Task Send(string requestAsJson, CancellationToken cancellationToken)
+        protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
-            throw new System.NotImplementedException();
+            await _server.Send(requestAsJson);
         }
     }
 }
