@@ -1,23 +1,12 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ListToolsResult : JsonObjectWrapper
+    public sealed class ListToolsResult
     {
-        public ListToolsResult(IJson json, Tool[] tools)
+        public ListToolsResult(Tool[] tools)
         {
             Tools = tools;
-            JsonObject = json.Object(props =>
-            {
-                props.Write("tools", tools.Select(tool => tool.JsonObject).ToArray());
-            });
-            Console.Error.WriteLine("ListTOolsREsult: " + JsonObject.ToString());
-        }
-
-        public void Write(IJsonWriter writer)
-        {
-            writer.Write("tools", Tools.Select(tool => tool.JsonObject).ToArray());
         }
 
         public ListToolsResult(IJsonObject jsonObject)
@@ -31,11 +20,13 @@ namespace McpSdk.Protocol.Models
                 tools[i] = new Tool(toolObj);
             }
             Tools = tools;
-            JsonObject = jsonObject;
+        }
+
+        public void Write(IJsonWriter writer)
+        {
+            writer.Write("tools", Tools.Select(tool => tool.JsonObject).ToArray());
         }
 
         public Tool[] Tools { get; }
-
-        public override IJsonObject JsonObject { get; }
     }
 }

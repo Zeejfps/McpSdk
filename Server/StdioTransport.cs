@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
@@ -24,6 +25,7 @@ namespace McpSdk.Server
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
+            requestAsJson = Regex.Replace(requestAsJson, @"\t|\n|\r", string.Empty);
             await _standardOut.WriteLineAsync(requestAsJson).ConfigureAwait(false);
         }
     

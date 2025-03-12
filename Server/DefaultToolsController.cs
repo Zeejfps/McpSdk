@@ -44,11 +44,7 @@ namespace McpSdk.Server
         public Task<ListToolsResult> ListTools()
         {
             var tools = _toolByNameLookup.Values.ToArray();
-            foreach (var tool in tools)
-            {
-                Console.Error.WriteLine($"Tool: {tool}");
-            }
-            var result = new ListToolsResult(_json, tools);
+            var result = new ListToolsResult(tools);
             return Task.FromResult(result);
         }
 
