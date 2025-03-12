@@ -15,12 +15,8 @@ namespace McpSdk.Protocol
         {
             _writer.Write(name, propWriter =>
             {
-                propWriter.Write("type", "object");
-                propWriter.Write("properties", writer =>
-                {
-                    var schemaWriter = new SchemaWriter(propWriter);
-                    writeProp(schemaWriter);
-                });
+                var schemaWriter = new SchemaWriter(propWriter);
+                writeProp(schemaWriter);
             });
             return this;
         }

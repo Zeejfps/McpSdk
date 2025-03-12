@@ -7,7 +7,6 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server
 {
-    public delegate void BuildToolFunc(ToolBuilder input);
     public delegate void WriteToolFunc(Tool.Writer toolWriter);
     public delegate Task<CallToolResult> CallToolFunc(IJsonObject args);
 
@@ -29,14 +28,7 @@ namespace McpSdk.Server
                 writeTool(Tool.CreateWriter(jsonWriter));
             });
             var tool = new Tool(_json.Parse(toolAsString));
-            AddTool(tool, callToolFunc);
-        }
-
-        public void AddTool(BuildToolFunc buildTool, CallToolFunc callToolFunc)
-        {
-            var toolBuilder = new ToolBuilder(_json);
-            buildTool(toolBuilder);
-            var tool = toolBuilder.Build();
+            Console.WriteLine(tool);
             AddTool(tool, callToolFunc);
         }
 

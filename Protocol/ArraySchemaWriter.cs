@@ -7,7 +7,6 @@ namespace McpSdk.Protocol
         public ArraySchemaWriter(IJsonWriter writer)
         {
             _writer = writer;
-            _writer.Write("type", "array");
         }
 
         public ArraySchemaWriter MinItems(int min)

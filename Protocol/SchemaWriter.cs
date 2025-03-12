@@ -11,31 +11,63 @@ namespace McpSdk.Protocol
             _writer = writer;
         }
 
-        public SchemaWriter Object(Action<ObjectSchemaWriter> writeObject)
+        public SchemaWriter Object(string name, Action<SchemaWriter> writeObjSchema)
         {
-            var objectSchemaWriter = new ObjectSchemaWriter(_writer);
-            writeObject(objectSchemaWriter);
+            _writer.Write(name, objWriter =>
+            {
+                _writer.Write("type", "object");
+                _writer.Write("properties", propertyWriter =>
+                {
+                    var objSchemaWriter = new SchemaWriter(propertyWriter);
+                    writeObjSchema(objSchemaWriter);
+                });
+            });
+           
             return this;
         }
 
-        public NumberSchemaWriter Number()
+        public SchemaWriter Number(string name, Action<NumberSchemaWriter> writeNumberSchema)
         {
-            return new NumberSchemaWriter(_writer);
+            _writer.Write(name, writer =>
+            {
+                writer.Write("type", "number");
+                var numberSchemaWriter = new NumberSchemaWriter(_writer);
+                writeNumberSchema(numberSchemaWriter);
+            });
+            return this;
         }
 
-        public StringInputSchemaWriter String()
+        public SchemaWriter String(string name, Action<StringSchemaWriter> writeStringSchema)
         {
-            return new StringInputSchemaWriter(_writer);
+            _writer.Write(name, writer =>
+            {
+                writer.Write("type", "string");
+                var schemaWriter = new StringSchemaWriter(_writer);
+                writeStringSchema(schemaWriter);
+            });
+            return this;
         }
 
-        public BooleanSchemaWriter Boolean()
+        public SchemaWriter Boolean(string name, Action<BooleanSchemaWriter> writeStringSchema)
         {
-            return new BooleanSchemaWriter(_writer);
+            _writer.Write(name, writer =>
+            {
+                writer.Write("type", "boolean");
+                var schemaWriter = new BooleanSchemaWriter(_writer);
+                writeStringSchema(schemaWriter);
+            });
+            return this;
         }
 
-        public ArraySchemaWriter Array()
+        public SchemaWriter Array(string name, Action<ArraySchemaWriter> writeSchema)
         {
-            return new ArraySchemaWriter(_writer);
+            _writer.Write(name, writer =>
+            {
+                writer.Write("type", "array");
+                var schemaWriter = new ArraySchemaWriter(_writer);
+                writeSchema(schemaWriter);
+            });
+            return this;
         }
     }
 }

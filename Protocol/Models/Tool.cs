@@ -56,13 +56,10 @@ namespace McpSdk.Protocol.Models
                 return this;
             }
 
-            public Writer WriteInputSchema(Action<ObjectSchemaWriter> writeInputSchema)
+            public Writer WriteInputSchema(Action<SchemaWriter> writeInputSchema)
             {
-                _writer.Write("inputSchema", props =>
-                {
-                    var objectSchemaWriter = new ObjectSchemaWriter(_writer);
-                    writeInputSchema(objectSchemaWriter);
-                });
+                var schemaWriter = new SchemaWriter(_writer);
+                schemaWriter.Object("inputSchema", writeInputSchema);
                 return this;
             }
         }

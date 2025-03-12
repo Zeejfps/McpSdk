@@ -17,36 +17,20 @@ var server = new ServerBuilder(json)
                 .WriteInputSchema(inputSchemaWriter =>
                 {
                     inputSchemaWriter
-                        .Prop("latitude", propWriter =>
+                        .Number("latitude", z =>
                         {
-                            propWriter.Number().Min(-90).Max(90).Describe("Latitude of the location");
+                            z.Min(-90).Max(90).Describe("Latitude of the location");
                         })
-                        .Prop("longitude", propWriter =>
+                        .Number("longitude", z =>
                         {
-                            propWriter.Number().Min(-90).Max(90).Describe("Longitude of the location");
+                            z.Min(-90).Max(90).Describe("Longitude of the location");
+                        })
+                        .Boolean("testBool", boolWriter => { })
+                        .Array("testArray", arrayWriter =>
+                        {
+                            arrayWriter.MinItems(0).MaxItems(10).Boolean();
                         });
                 });
-        }, args =>
-        {
-            return null;
-        });
-        
-        tools.AddTool(tool =>
-        {
-            tool.Name("get-forecast");
-            tool.Description("Get weather forecast for a location");
-            tool.Input("latitude", input =>
-            {
-                input.Number().Min(-90).Max(90).Describe("Latitude of the location");
-            });
-            tool.Input("longitude", input =>
-            {
-                input.Number().Min(-180).Max(180).Describe("Longitude of the location");
-            });
-            tool.Input("test", input =>
-            {
-                input.Array().Number().MinItems(10).MaxItems(10).Number().Describe("Testing input");
-            });
         }, args =>
         {
             var latitude = args["latitude"].AsDouble();
