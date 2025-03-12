@@ -23,6 +23,12 @@ namespace McpSdk.Server
             return this;
         }
 
+        public ServerBuilder WithSseTransport()
+        {
+            _transportFactory = new SseTransportFactory(_json);
+            return this;
+        }
+        
         public ServerBuilder WithName(string name)
         {
             _name = name;
