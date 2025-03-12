@@ -20,7 +20,7 @@
             InputSchema = jsonObj["inputSchema"].AsObject();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("description", Description);

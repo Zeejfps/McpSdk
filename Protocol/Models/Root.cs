@@ -17,7 +17,7 @@
             Name = jsonObject["name"]?.AsString();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("uri", Uri);
             writer.Write("name", Name);

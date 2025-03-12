@@ -21,13 +21,13 @@
         public RootsCapability RootsCapability { get; set; }
         public SamplingCapability SamplingCapability { get; set; }
         
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             if (RootsCapability != null)
-                writer.Write("roots", RootsCapability.ToJson);
+                writer.Write("roots", RootsCapability.AsJson);
 
             if (SamplingCapability != null)
-                writer.Write("sampling", SamplingCapability.ToJson);
+                writer.Write("sampling", SamplingCapability.AsJson);
         }
     }
 }

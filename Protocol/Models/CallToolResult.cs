@@ -24,10 +24,10 @@ namespace McpSdk.Protocol.Models
             IsError = jsonObject["isError"]?.AsBool() ?? false;
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("content", Content
-                .Select<Content, Action<IJsonWriter>>(c => c.AsJson)
+                .Select<Content, Json>(c => c.AsJson)
                 .ToArray());
             writer.Write("isError", IsError);
         }

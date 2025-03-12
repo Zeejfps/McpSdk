@@ -13,7 +13,7 @@
             Text = jsonObject["text"].AsString();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("uri", Uri);
             writer.Write("mimeType", MimeType);

@@ -11,7 +11,7 @@
         {
         }
 
-        public void ToJson(IJsonWriter obj)
+        public void AsJson(IJsonWriter obj)
         {
             
         }

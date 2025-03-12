@@ -20,7 +20,7 @@
             ToolArguments = jsonObject[ArgumentsProp]?.AsObject();
         }
         
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write(ToolNameProp, ToolName);
             writer.Write(ArgumentsProp, ToolArguments);

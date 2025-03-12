@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace McpSdk.Protocol
 {
-    public delegate void ToJsonFunc(IJsonWriter jsonWriter);
+    public delegate void Json(IJsonWriter jsonWriter);
     
     public interface IJson
     {
@@ -26,8 +26,8 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, bool[] value);
         IJsonWriter Write(string propertyName, IJsonObject obj);
         IJsonWriter Write(string propertyName, IJsonObject[] objs);
-        IJsonWriter Write(string propertyName, Action<IJsonWriter> obj);
-        IJsonWriter Write(string propertyName, Action<IJsonWriter>[] objs);
+        IJsonWriter Write(string propertyName, Json json);
+        IJsonWriter Write(string propertyName, Json[] jsonArray);
     }
 
     public interface IJsonObject

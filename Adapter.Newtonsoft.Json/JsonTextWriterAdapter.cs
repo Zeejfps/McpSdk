@@ -125,7 +125,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return this;
         }
 
-        public IJsonWriter Write(string propertyName, Action<IJsonWriter> obj)
+        public IJsonWriter Write(string propertyName, Protocol.Json obj)
         {
             _writer.WritePropertyName(propertyName);
             _writer.WriteStartObject();
@@ -134,7 +134,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return this;
         }
 
-        public IJsonWriter Write(string propertyName, Action<IJsonWriter>[] objs)
+        public IJsonWriter Write(string propertyName, Protocol.Json[] objs)
         {
             _writer.WritePropertyName(propertyName);
             _writer.WriteStartArray();

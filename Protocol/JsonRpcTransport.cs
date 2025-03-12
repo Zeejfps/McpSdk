@@ -37,7 +37,7 @@ namespace McpSdk.Protocol
             await Send(requestAsJson, cancellationToken);
         }
         
-        public async Task<IJsonObject> SendRequest(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        public async Task<IJsonObject> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
             var request = _json.Stringify(req =>
@@ -53,7 +53,7 @@ namespace McpSdk.Protocol
             return ReadResult(response);
         }
 
-        public async Task SendOkResponse(int requestId, Action<IJsonWriter> writeResult, CancellationToken cancellationToken = default)
+        public async Task SendOkResponse(int requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
@@ -64,7 +64,7 @@ namespace McpSdk.Protocol
             await Send(response, cancellationToken);
         }
         
-        public async Task SendErrorResponse(int requestId, ErrorCode code, string message, Action<IJsonWriter> data, CancellationToken cancellationToken = default)
+        public async Task SendErrorResponse(int requestId, ErrorCode code, string message, Json data, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {

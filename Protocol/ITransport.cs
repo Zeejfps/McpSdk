@@ -13,8 +13,8 @@ namespace McpSdk.Protocol
         event NotificationReceivedCallback NotificationReceived;
         Task Start(CancellationToken cancellationToken = default);
         Task SendNotification(string notification, CancellationToken cancellationToken = default);
-        Task<IJsonObject> SendRequest(string method, Action<IJsonWriter> payload, CancellationToken cancellationToken = default);
-        Task SendOkResponse(int requestId, Action<IJsonWriter> writeResult, CancellationToken cancellationToken = default);
-        Task SendErrorResponse(int requestId, ErrorCode code, string message, Action<IJsonWriter> data = null, CancellationToken cancellationToken = default);
+        Task<IJsonObject> SendRequest(string method, Json request, CancellationToken cancellationToken = default);
+        Task SendOkResponse(int requestId, Json result, CancellationToken cancellationToken = default);
+        Task SendErrorResponse(int requestId, ErrorCode code, string message, Json data = null, CancellationToken cancellationToken = default);
     }
 }

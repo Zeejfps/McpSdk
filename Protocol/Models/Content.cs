@@ -100,7 +100,7 @@ namespace McpSdk.Protocol.Models
         public override void AsJson(IJsonWriter writer)
         {
             writer.Write("type", "resource");
-            writer.Write("resource", Resource.ToJson);
+            writer.Write("resource", Resource.AsJson);
         }
     }
 

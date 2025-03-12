@@ -17,12 +17,12 @@ namespace McpSdk.Protocol.Models
             MaxTokens = jsonObject["maxTokens"]?.AsInt();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("messages", Messages
-                .Select<SamplingMessage, Action<IJsonWriter>>(message => message.ToJson)
+                .Select<SamplingMessage, Json>(message => message.AsJson)
                 .ToArray());
-            writer.Write("modelPreferences", Preferences.ToJson);
+            writer.Write("modelPreferences", Preferences.AsJson);
             writer.Write("systemPrompt", SystemPrompt);
             if (MaxTokens.HasValue)
                 writer.Write("maxTokens", MaxTokens.Value);

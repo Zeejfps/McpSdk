@@ -17,7 +17,7 @@
             Version = jsonObject["Version"]?.AsString();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("version", Version);

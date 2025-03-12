@@ -19,10 +19,10 @@ namespace McpSdk.Protocol.Models
             SpeedPriority = jsonObject["speedPriority"]?.AsFloat();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("hints", Hints
-                .Select<ModelHint, Action<IJsonWriter>>(hint => hint.ToJson)
+                .Select<ModelHint, Json>(hint => hint.AsJson)
                 .ToArray());
             
             if (IntelligencePriority.HasValue)

@@ -25,11 +25,11 @@
                 ClientInfo = new ClientInfo(clientInfoObj);
         }
         
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("protocolVersion", ProtocolVersion);
-            writer.Write("capabilities", ClientCapabilities.ToJson);
-            writer.Write("clientInfo", ClientInfo.ToJson);
+            writer.Write("capabilities", ClientCapabilities.AsJson);
+            writer.Write("clientInfo", ClientInfo.AsJson);
         }
     }
 }

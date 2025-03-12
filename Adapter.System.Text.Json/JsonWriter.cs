@@ -122,7 +122,7 @@ internal sealed class JsonWriter : IJsonWriter
         return this;
     }
 
-    public IJsonWriter Write(string propertyName, Action<IJsonWriter> obj)
+    public IJsonWriter Write(string propertyName, Protocol.Json obj)
     {
         _jsonWriter.WriteStartObject(propertyName);
         obj(this);
@@ -130,7 +130,7 @@ internal sealed class JsonWriter : IJsonWriter
         return this;
     }
 
-    public IJsonWriter Write(string propertyName, Action<IJsonWriter>[] objs)
+    public IJsonWriter Write(string propertyName, Protocol.Json[] objs)
     {
         _jsonWriter.WriteStartArray(propertyName);
         foreach (var obj in objs)

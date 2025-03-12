@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -62,7 +61,7 @@ namespace McpSdk.Client
             }
         }
 
-        private async void OnListRootsRequestReceived(int requestId, IJsonObject args)
+        private async void OnListRootsRequestReceived(int requestId, IJsonObject _)
         {
             try
             {
@@ -70,19 +69,10 @@ namespace McpSdk.Client
                     return;
 
                 var listRootsResult = await _roots.ListRoots().ConfigureAwait(false);
-                await _transport.SendOkResponse(requestId, payload =>
+                await _transport.SendOkResponse(requestId, result =>
                 {
-                    var roots = listRootsResult.Roots.Select<Root, Action<IJsonWriter>>(root =>
-                    {
-                        return element =>
-                        {
-                            element.Write("uri", root.Uri);
-                            element.Write("name", root.Name);
-                        };
-                    }).ToArray();
-
-                    payload.Write("roots", roots);
-                });
+                    result.Write("roots", listRootsResult.AsJson);
+                }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -115,7 +105,7 @@ namespace McpSdk.Client
                 capabilities.SamplingCapability = new SamplingCapability();
             
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
-            var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.ToJson);
+            var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.AsJson);
             var initializeResult = new InitializeResult(resultJsonObject);
             
             var serverProtocolVersion = initializeResult.ProtocolVersion;
@@ -138,7 +128,7 @@ namespace McpSdk.Client
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var result = await _transport.SendRequest("tools/call", request.ToJson);
+            var result = await _transport.SendRequest("tools/call", request.AsJson);
             return new CallToolResult(result);
         }
     }

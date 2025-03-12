@@ -102,7 +102,7 @@ namespace McpSdk.Server
                 }
                 
                 var result = await _tools.CallTool(new CallToolRequest(arguments));
-                await _transport.SendOkResponse(requestId, result.ToJson);
+                await _transport.SendOkResponse(requestId, result.AsJson);
             }
             catch (Exception ex)
             {

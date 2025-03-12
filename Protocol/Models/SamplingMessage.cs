@@ -13,7 +13,7 @@
             Content = Content.Create(contentObj);
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("role", Role);
             writer.Write("content", Content.AsJson);

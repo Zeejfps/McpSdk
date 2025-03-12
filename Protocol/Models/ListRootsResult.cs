@@ -18,10 +18,10 @@ namespace McpSdk.Protocol.Models
                 .ToArray();
         }
 
-        public void ToJson(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("roots", Roots
-                .Select<Root, Action<IJsonWriter>>(root => root.ToJson)
+                .Select<Root, Json>(root => root.AsJson)
                 .ToArray());
         }
         
