@@ -21,6 +21,8 @@ var getForecastTool = new ToolBuilder(json)
 
 tools.AddTool(getForecastTool, args =>
 {
+    var latitude = args["latitude"].AsDouble();
+    var longitude = args["longitude"].AsDouble();
     return new CallToolResult(json, null, false);
 });
 
