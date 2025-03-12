@@ -6,8 +6,8 @@ var json = new NewtonsoftJson();
 var server = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
-    //.WithStdioTransport()
-    .WithSseTransport()
+    .WithStdioTransport()
+    //.WithSseTransport()
     .WithToolsCapability(tools =>
     {
         tools.AddTool(toolWriter =>

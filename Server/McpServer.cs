@@ -8,11 +8,13 @@ namespace McpSdk.Server
     internal sealed class McpServer : IServer
     {
         private readonly ITransport _transport;
+        private readonly ServerInfo _serverInfo;
         private readonly IToolsController _toolsController;
 
-        public McpServer(ITransport transport, IToolsController toolsController)
+        public McpServer(ITransport transport, ServerInfo serverInfo,  IToolsController toolsController)
         {
             _transport = transport;
+            _serverInfo = serverInfo;
             _toolsController = toolsController;
         }
 
@@ -59,7 +61,7 @@ namespace McpSdk.Server
                 if (_toolsController != null)
                     capabilities.Tools = new ToolsCapability(_toolsController.IsListChangedNotificationSupported);
                 
-                var result = new InitializeResult(serverProtocolVersion, capabilities);
+                var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
                 await _transport.SendOkResponse(requestId, result.AsJson);
                 
             }

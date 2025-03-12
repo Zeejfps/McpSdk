@@ -1,5 +1,6 @@
 ﻿using System;
 using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server
 {
@@ -59,7 +60,8 @@ namespace McpSdk.Server
         {
             var transport = _transportFactory.Create();
             var tools = _toolsController;
-            return new McpServer(transport, tools);
+            var serverInfo = new ServerInfo(_name, _version);
+            return new McpServer(transport, serverInfo, tools);
         }
     }
 }

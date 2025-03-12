@@ -5,10 +5,13 @@
         public string ProtocolVersion { get; }
         public ServerCapabilities Capabilities { get; }
 
-        public InitializeResult(string protocolVersion, ServerCapabilities capabilities)
+        public ServerInfo ServerInfo { get; }
+        
+        public InitializeResult(string protocolVersion, ServerCapabilities capabilities, ServerInfo serverInfo)
         {
             ProtocolVersion = protocolVersion;
             Capabilities = capabilities;
+            ServerInfo = serverInfo;
         }
 
         public InitializeResult(IJsonObject jsonObject)
@@ -20,6 +23,7 @@
         {
             writer.Write("protocolVersion", ProtocolVersion);
             writer.Write("capabilities", Capabilities.AsJson);
+            writer.Write("serverInfo", ServerInfo.AsJson);
         }
     }
 }
