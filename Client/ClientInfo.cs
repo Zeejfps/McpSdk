@@ -1,6 +1,6 @@
-﻿namespace McpSdk.Protocol
+﻿namespace McpSdk.Client
 {
-    public readonly struct ClientInfo
+    internal readonly struct ClientInfo
     {
         public string Name { get; }
         public string Version { get; }
