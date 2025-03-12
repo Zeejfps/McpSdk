@@ -5,13 +5,13 @@ namespace McpSdk.Server.Tests;
 
 public delegate Task<CallToolResult> CallToolFunc(IJsonObject args);
 
-public class Tools : IToolsCapability
+public class ToolsController : IToolsController
 {
     private readonly IJson _json;
     private readonly Dictionary<string, Tool> _toolByNameLookup = new();
     private readonly Dictionary<string, CallToolFunc> _funcByToolNameLookup = new();
     
-    public Tools(IJson json)
+    public ToolsController(IJson json)
     {
         _json = json;
     }
@@ -20,8 +20,10 @@ public class Tools : IToolsCapability
     {
         _toolByNameLookup.Add(tool.Name, tool);
         _funcByToolNameLookup.Add(tool.Name, callToolFunc);
+        ListChanged?.Invoke();
     }
 
+    public event Action? ListChanged;
     public bool IsListChangedNotificationSupported => false;
 
     public Task<ListToolsResult> ListTools()

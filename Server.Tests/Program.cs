@@ -5,7 +5,7 @@ using McpSdk.Server;
 using McpSdk.Server.Tests;
 
 var json = new NewtonsoftJson();
-var tools = new Tools(json);
+var tools = new ToolsController(json);
 
 var getForecastTool = new ToolBuilder(json)
     .Name("get-forecast")

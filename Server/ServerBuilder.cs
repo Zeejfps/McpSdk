@@ -10,7 +10,7 @@ namespace McpSdk.Server
         private string _name;
         private string _version;
         private ITransportFactory _transportFactory;
-        private IToolsCapability _toolsCapability;
+        private IToolsController _toolsController;
 
         public ServerBuilder(IJson json)
         {
@@ -35,16 +35,16 @@ namespace McpSdk.Server
             return this;
         }
 
-        public ServerBuilder WithToolsCapability(IToolsCapability toolsCapability)
+        public ServerBuilder WithToolsCapability(IToolsController toolsController)
         {
-            _toolsCapability = toolsCapability;
+            _toolsController = toolsController;
             return this;
         }
 
         public IServer Build()
         {
             var transport = _transportFactory.Create();
-            var tools = _toolsCapability;
+            var tools = _toolsController;
             return new McpServer(transport, tools);
         }
     }

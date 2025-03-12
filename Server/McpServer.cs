@@ -8,9 +8,9 @@ namespace McpSdk.Server
     internal sealed class McpServer : IServer
     {
         private readonly ITransport _transport;
-        private readonly IToolsCapability _tools;
+        private readonly IToolsController _tools;
 
-        public McpServer(ITransport transport, IToolsCapability tools)
+        public McpServer(ITransport transport, IToolsController tools)
         {
             _transport = transport;
             _tools = tools;
