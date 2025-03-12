@@ -9,6 +9,7 @@ namespace McpSdk.Server
     internal sealed class StdioTransport : JsonRpcTransport
     {
         private TextWriter _standardOut;
+        private Task _readStdInTask;
     
         public StdioTransport(IJson json) : base(json)
         {
@@ -17,7 +18,7 @@ namespace McpSdk.Server
         protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             _standardOut = Console.Out;
-            ReadStdIn(Console.In);
+            _readStdInTask = ReadStdIn(Console.In);
             return Task.CompletedTask;
         }
 
