@@ -13,6 +13,6 @@ public sealed class ToolsCapabilityFactory : IToolsCapabilityFactory
 
     public IToolsCapability Create()
     {
-        return new ToolsCapability(_json);
+        return new Tools(_json);
     }
 }
