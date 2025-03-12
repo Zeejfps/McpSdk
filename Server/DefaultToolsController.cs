@@ -58,8 +58,6 @@ namespace McpSdk.Server
             }
 
             var inputSchema = tool.InputSchema;
-            Console.Error.WriteLine($"Input Schema: {inputSchema}");
-            Console.Error.WriteLine($"Input args: {request.ToolArguments}");
             if (!request.ToolArguments.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];

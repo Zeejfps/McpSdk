@@ -24,7 +24,7 @@ var listToolsResult = await client.ListTools();
 Console.WriteLine("Available tools:");
 foreach (var tool in listToolsResult.Tools)
 {
-    Console.WriteLine(tool.ToString());
+    Console.WriteLine(json.Stringify(tool.ToJson));
 }
 
 var request = new CallToolRequest("get-forecast", json.Object(props =>
