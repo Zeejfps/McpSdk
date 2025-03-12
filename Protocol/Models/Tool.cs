@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace McpSdk.Protocol.Models
+﻿namespace McpSdk.Protocol.Models
 {
     public sealed class Tool
     {
@@ -27,40 +25,6 @@ namespace McpSdk.Protocol.Models
             writer.Write("name", Name);
             writer.Write("description", Description);
             writer.Write("inputSchema", InputSchema);
-        }
-
-        public static Writer CreateWriter(IJsonWriter jsonWriter)
-        {
-            return new Writer(jsonWriter);
-        }
-
-        public sealed class Writer
-        {
-            private readonly IJsonWriter _writer;
-            
-            public Writer(IJsonWriter writer)
-            {
-                _writer = writer;
-            }
-
-            public Writer WriteName(string name)
-            {
-                _writer.Write("name", name);
-                return this;
-            }
-
-            public Writer WriteDescription(string description)
-            {
-                _writer.Write("description", description);
-                return this;
-            }
-
-            public Writer WriteInputSchema(Action<SchemaWriter> writeInputSchema)
-            {
-                var schemaWriter = new SchemaWriter(_writer);
-                schemaWriter.Object("inputSchema", writeInputSchema);
-                return this;
-            }
         }
     }
 }
