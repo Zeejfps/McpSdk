@@ -2,21 +2,20 @@
 using McpSdk.Adapter.SseClient;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
-using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var sseClientFactory = new SseClientFactory();
-var rootsCapabilityFactory = new RootsControllerFactory(json);
-var samplingCapabilityFactory = new SamplingControllerFactory();
+var rootsControllerFactory = new RootsControllerFactory();
+var samplingControllerFactory = new SamplingControllerFactory();
 
 var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     //.WithSseTransport(sseClientFactory, "http://localhost:3000")
     .WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
-    .WithRootsCapability(rootsCapabilityFactory)
-    .WithSamplingCapability(samplingCapabilityFactory)
+    .WithRootsCapability(rootsControllerFactory)
+    .WithSamplingCapability(samplingControllerFactory)
     .Build();
 
 await client.Connect();

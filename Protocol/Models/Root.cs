@@ -1,20 +1,26 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class Root : JsonObjectWrapper
+    public sealed class Root
     {
-        public Root(IJson json, string uri, string name)
+        public string Uri { get; }
+        public string Name { get; }
+        
+        public Root(string uri, string name)
         {
             Uri = uri;
             Name = name;
-            JsonObject = json.Object(props =>
-            {
-                props.Write("uri", uri);
-                props.Write("name", name);
-            });
         }
 
-        public string Uri { get; }
-        public string Name { get; }
-        public override IJsonObject JsonObject { get; }
+        public Root(IJsonObject jsonObject)
+        {
+            Uri = jsonObject["uri"]?.AsString();
+            Name = jsonObject["name"]?.AsString();
+        }
+
+        public void ToJson(IJsonWriter writer)
+        {
+            writer.Write("uri", Uri);
+            writer.Write("name", Name);
+        }
     }
 }

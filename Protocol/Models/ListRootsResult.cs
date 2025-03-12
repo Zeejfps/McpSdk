@@ -1,19 +1,30 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ListRootsResult : JsonObjectWrapper
+    public sealed class ListRootsResult
     {
-        public ListRootsResult(IJson json, Root[] roots)
+        public ListRootsResult(Root[] roots)
         {
             Roots = roots;
-            JsonObject = json.Object(prop =>
-            {
-                prop.Write("roots", Roots.Select(root => root.JsonObject).ToArray());
-            });
+        }
+
+        public ListRootsResult(IJsonObject jsonObject)
+        {
+            Roots = jsonObject["roots"]
+                .AsObjectArray()
+                .Select(rootObj => new Root(rootObj))
+                .ToArray();
+        }
+
+        public void ToJson(IJsonWriter writer)
+        {
+            writer.Write("roots", Roots
+                .Select<Root, Action<IJsonWriter>>(root => root.ToJson)
+                .ToArray());
         }
         
         public Root[] Roots { get; }
-        public override IJsonObject JsonObject { get; }
     }
 }
