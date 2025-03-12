@@ -24,9 +24,9 @@ namespace McpSdk.Server
             return this;
         }
 
-        public ServerBuilder WithSseTransport()
+        public ServerBuilder WithSseTransport(ISseServer sseServer)
         {
-            _transportFactory = new SseTransportFactory(_json);
+            _transportFactory = new SseTransportFactory(_json, sseServer);
             return this;
         }
         
