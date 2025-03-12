@@ -2,9 +2,11 @@
 {
     public sealed class SamplingMessage
     {
+        public string Role { get; }
+        public Content Content { get; }
+        
         public SamplingMessage(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
             Role = jsonObject["role"].AsString();
             
             var contentObj = jsonObject["content"].AsObject();
@@ -23,9 +25,10 @@
             }
         }
 
-        public IJsonObject JsonObject { get; }
-        
-        public string Role { get; }
-        public Content Content { get; }
+        public void ToJson(IJsonWriter writer)
+        {
+            writer.Write("role", Role);
+            writer.Write("content", Content.AsJson);
+        }
     }
 }

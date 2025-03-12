@@ -14,7 +14,7 @@ namespace McpSdk.Protocol.Models
     {
         public abstract ContentKind Kind { get; }
 
-        public abstract void ToJson(IJsonWriter writer);
+        public abstract void AsJson(IJsonWriter writer);
         
         public static Content Create(IJsonObject jsonObject)
         {
@@ -50,7 +50,7 @@ namespace McpSdk.Protocol.Models
             Text = text;
         }
 
-        public override void ToJson(IJsonWriter writer)
+        public override void AsJson(IJsonWriter writer)
         {
             writer.Write("type", "text");
             writer.Write("text", Text);
@@ -75,7 +75,7 @@ namespace McpSdk.Protocol.Models
         }
 
         public override ContentKind Kind => ContentKind.Image;
-        public override void ToJson(IJsonWriter writer)
+        public override void AsJson(IJsonWriter writer)
         {
             writer.Write("type", "image");
             writer.Write("mimeType", MimeType);
@@ -97,7 +97,7 @@ namespace McpSdk.Protocol.Models
             Resource = new Resource(resourceObj);
         }
 
-        public override void ToJson(IJsonWriter writer)
+        public override void AsJson(IJsonWriter writer)
         {
             writer.Write("type", "resource");
             writer.Write("resource", Resource.ToJson);
@@ -111,7 +111,7 @@ namespace McpSdk.Protocol.Models
         }
 
         public override ContentKind Kind => ContentKind.Unknown;
-        public override void ToJson(IJsonWriter writer)
+        public override void AsJson(IJsonWriter writer)
         {
             writer.Write("type", "unknown");
         }

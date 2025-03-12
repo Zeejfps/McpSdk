@@ -1,10 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class CreateMessageArguments : JsonObjectWrapper
+    public sealed class CreateMessageRequest
     {
-        public CreateMessageArguments(IJsonObject jsonObject)
+        public CreateMessageRequest(IJsonObject jsonObject)
         {
             Messages = jsonObject["messages"]
                 .AsObjectArray()
@@ -14,13 +15,22 @@ namespace McpSdk.Protocol.Models
             Preferences = new ModelPreferences(jsonObject);
             SystemPrompt = jsonObject["systemPrompt"]?.AsString();    
             MaxTokens = jsonObject["maxTokens"]?.AsInt();
-            JsonObject = jsonObject;
+        }
+
+        public void ToJson(IJsonWriter writer)
+        {
+            writer.Write("messages", Messages
+                .Select<SamplingMessage, Action<IJsonWriter>>(message => message.ToJson)
+                .ToArray());
+            writer.Write("modelPreferences", Preferences.ToJson);
+            writer.Write("systemPrompt", SystemPrompt);
+            if (MaxTokens.HasValue)
+                writer.Write("maxTokens", MaxTokens.Value);
         }
         
         public ModelPreferences Preferences { get; }
         public SamplingMessage[] Messages { get; }
         public string SystemPrompt { get; }
         public int? MaxTokens { get; }
-        public override IJsonObject JsonObject { get; }
     }
 }

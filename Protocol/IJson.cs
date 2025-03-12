@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace McpSdk.Protocol
 {
+    public delegate void ToJsonFunc(IJsonWriter jsonWriter);
+    
     public interface IJson
     {
         IJsonObject Object(Action<IJsonWriter> props);

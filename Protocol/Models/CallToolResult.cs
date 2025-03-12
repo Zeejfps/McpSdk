@@ -27,7 +27,7 @@ namespace McpSdk.Protocol.Models
         public void ToJson(IJsonWriter writer)
         {
             writer.Write("content", Content
-                .Select<Content, Action<IJsonWriter>>(c => c.ToJson)
+                .Select<Content, Action<IJsonWriter>>(c => c.AsJson)
                 .ToArray());
             writer.Write("isError", IsError);
         }

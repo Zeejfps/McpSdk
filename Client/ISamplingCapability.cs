@@ -6,6 +6,6 @@ namespace McpSdk.Client
 {
     public interface ISamplingCapability
     {
-        Task<CreateMessagesResult> CreateMessages(CreateMessageArguments methodArguments);
+        Task<CreateMessagesResult> CreateMessages(CreateMessageRequest methodArguments);
     }
 }
