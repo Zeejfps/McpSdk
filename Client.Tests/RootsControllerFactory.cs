@@ -3,26 +3,26 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Client.Tests;
 
-public sealed class RootsCapabilityFactory : IRootsCapabilityFactory
+public sealed class RootsControllerFactory : IRootsCapabilityFactory
 {
     private readonly IJson _json;
 
-    public RootsCapabilityFactory(IJson json)
+    public RootsControllerFactory(IJson json)
     {
         _json = json;
     }
 
-    public IRootsCapability Create()
+    public IRootsController Create()
     {
-        return new RootsCapability(_json);
+        return new RootsController(_json);
     }
 }
 
-internal sealed class RootsCapability : IRootsCapability
+internal sealed class RootsController : IRootsController
 {
     private readonly IJson _json;
 
-    public RootsCapability(IJson json)
+    public RootsController(IJson json)
     {
         _json = json;
     }

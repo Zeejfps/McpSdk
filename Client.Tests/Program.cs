@@ -7,8 +7,8 @@ using McpSdk.Protocol.Models;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var sseClientFactory = new SseClientFactory();
-var rootsCapabilityFactory = new RootsCapabilityFactory(json);
-var samplingCapabilityFactory = new SamplingCapabilityFactory(json);
+var rootsCapabilityFactory = new RootsControllerFactory(json);
+var samplingCapabilityFactory = new SamplingControllerFactory();
 
 var client = new ClientBuilder(json)
     .WithName("Echo Client")

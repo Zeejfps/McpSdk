@@ -2,6 +2,6 @@
 {
     public interface ISamplingCapabilityFactory
     {
-        ISamplingCapability Create();
+        ISamplingController Create();
     }
 }

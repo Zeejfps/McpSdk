@@ -10,19 +10,7 @@
             Role = jsonObject["role"].AsString();
             
             var contentObj = jsonObject["content"].AsObject();
-            var contentType = contentObj["type"].AsString();
-            if (contentType == "text")
-            {
-                Content = new TextContent(contentObj);
-            }
-            else if (contentType == "image")
-            {
-                Content = new ImageContent(contentObj);
-            }
-            else
-            {
-                Content = new UnknownContent(contentObj);
-            }
+            Content = Content.Create(contentObj);
         }
 
         public void ToJson(IJsonWriter writer)

@@ -1,10 +1,14 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class CreateMessagesResult : JsonObjectWrapper
+    public sealed class CreateMessagesResult
     {
+        public string Role { get; }
+        public string Model { get; }
+        public string StopReason { get; }
+        public Content Content { get; }
+        
         public CreateMessagesResult(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
             Role = jsonObject["role"]?.AsString();
             Model = jsonObject["module"]?.AsString();
             StopReason = jsonObject["stopReason"]?.AsString();
@@ -13,26 +17,20 @@
             Content = Content.Create(contentObj);
         }
 
-        public CreateMessagesResult(IJson json, string role, string model, Content content, string stopReason)
+        public CreateMessagesResult(string role, string model, Content content, string stopReason)
         {
             Role = role;
             Model = model;
             Content = content;
             StopReason = stopReason;
-            JsonObject = json.Object(props =>
-            {
-                props.Write("role", role);
-                props.Write("model", model);
-                props.Write("content", content.AsJson);
-                props.Write("stopReason", stopReason);
-            });
         }
 
-        public string Role { get; }
-        public string Model { get; }
-        public string StopReason { get; }
-        public Content Content { get; }
-
-        public override IJsonObject JsonObject { get; }
+        public void ToJson(IJsonWriter writer)
+        {
+            writer.Write("role", Role);
+            writer.Write("model", Model);
+            writer.Write("content", Content.AsJson);
+            writer.Write("stopReason", StopReason);
+        }
     }
 }

@@ -2,6 +2,6 @@
 {
     public interface IRootsCapabilityFactory
     {
-        IRootsCapability Create();
+        IRootsController Create();
     }
 }

@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
-using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
 namespace McpSdk.Client
 {
-    public interface IRootsCapability
+    public interface IRootsController
     {
         event Action ListChanged;
         bool IsListChangedNotificationSupported { get; }

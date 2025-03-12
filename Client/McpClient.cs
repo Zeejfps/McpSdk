@@ -10,10 +10,10 @@ namespace McpSdk.Client
     {
         private readonly ITransport _transport;
         private readonly ClientInfo _clientInfo;
-        private readonly IRootsCapability _roots;
-        private readonly ISamplingCapability _sampling;
+        private readonly IRootsController _roots;
+        private readonly ISamplingController _sampling;
 
-        public McpClient(ITransport transport, ClientInfo clientInfo, IRootsCapability roots, ISamplingCapability sampling)
+        public McpClient(ITransport transport, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling)
         {
             _transport = transport;
             _roots = roots;
@@ -50,6 +50,7 @@ namespace McpSdk.Client
                 var result = await sampling.CreateMessages(request);
                 await _transport.SendOkResponse(requestId, payload =>
                 {
+                    
                     payload.Write("role", result.Role);
                     payload.Write("model", result.Model);
                     payload.Write("stopReason", result.StopReason);
