@@ -137,7 +137,6 @@ namespace McpSdk.Client
         public async Task<ListToolsResult> ListTools()
         {
             var result = await _transport.SendRequest("tools/list", payload => { });
-            Console.WriteLine($"Result: {result}");
             return new ListToolsResult(result);
         }
 

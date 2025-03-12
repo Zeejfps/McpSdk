@@ -2,29 +2,16 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class CallToolResult : JsonObjectWrapper
+    public sealed class CallToolResult
     {
-        public CallToolResult(IJson json, Content[] content, bool isError)
+        public CallToolResult(Content[] content, bool isError)
         {
             Content = content;
             IsError = isError;
-            JsonObject = json.Object(props =>
-            {
-                props.Write("content", content.Select(c => c.JsonObject).ToArray());
-                props.Write("isError", isError);
-            });
         }
 
-        public void Write(IJsonWriter writer)
-        {
-            writer.Write("content", Content.Select(c => c.JsonObject).ToArray());
-            writer.Write("isError", IsError);
-        }
-        
         public CallToolResult(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
-
             var contentArray = jsonObject["content"].AsObjectArray();
             var content = new Content[contentArray.Length];
             for (var i = 0; i < contentArray.Length; i++)
@@ -36,7 +23,12 @@ namespace McpSdk.Protocol.Models
             IsError = jsonObject["isError"]?.AsBool() ?? false;
         }
 
-        public override IJsonObject JsonObject { get; }
+        public void Write(IJsonWriter writer)
+        {
+            writer.Write("content", Content.Select(c => c.JsonObject).ToArray());
+            writer.Write("isError", IsError);
+        }
+
         public Content[] Content { get; }
         public bool IsError { get; }
     }

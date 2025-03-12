@@ -2,20 +2,20 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class CallToolRequest : JsonObjectWrapper
+    public sealed class CallToolRequest
     {
         private const string ToolNameProp = "name";
         private const string ArgumentsProp = "arguments";
         
         public CallToolRequest(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
+            ToolName = jsonObject[ToolNameProp]?.AsString();
+            ToolArguments = jsonObject[ArgumentsProp]?.AsObject();
         }
         
-        public string ToolName => JsonObject[ToolNameProp]?.AsString();
-        public IJsonObject ToolArguments => JsonObject[ArgumentsProp]?.AsObject();
-        public override IJsonObject JsonObject { get; }
-
+        public string ToolName { get; }
+        public IJsonObject ToolArguments { get; }
+        
         public static Writer CreateWriter(IJsonWriter jsonWriter)
         {
             return new Writer(jsonWriter);
