@@ -10,12 +10,10 @@ namespace McpSdk.Protocol.Models
         public CallToolRequest(IJsonObject jsonObject)
         {
             JsonObject = jsonObject;
-            ToolName = jsonObject[ToolNameProp].AsString();
-            ToolArguments = jsonObject[ArgumentsProp].AsObject();
         }
         
-        public string ToolName { get; }
-        public IJsonObject ToolArguments { get; }
+        public string ToolName => JsonObject[ToolNameProp]?.AsString();
+        public IJsonObject ToolArguments => JsonObject[ArgumentsProp]?.AsObject();
         public override IJsonObject JsonObject { get; }
 
         public static Writer CreateWriter(IJsonWriter jsonWriter)

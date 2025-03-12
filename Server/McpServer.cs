@@ -43,7 +43,22 @@ namespace McpSdk.Server
         {
             try
             {
-                var initializeRequest = new InitializeRequest(reqPayload);
+                var serverProtocolVersion = "2024-11-05";
+                var request = new InitializeRequest(reqPayload);
+                if (request.ProtocolVersion != serverProtocolVersion)
+                {
+                    await _transport.SendErrorResponse(
+                        requestId,
+                        ErrorCode.InvalidParams,
+                        $"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}");
+                    return;
+                }
+                
+                var result = new InitializeResult(serverProtocolVersion);
+                await _transport.SendOkResponse(requestId, resultWriter =>
+                {
+                    result.Write(resultWriter);
+                });
                 
             }
             catch (Exception ex)

@@ -53,13 +53,13 @@ namespace McpSdk.Protocol
             return ReadResult(response);
         }
 
-        public async Task SendOkResponse(int requestId, Action<IJsonWriter> payload, CancellationToken cancellationToken = default)
+        public async Task SendOkResponse(int requestId, Action<IJsonWriter> writeResult, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("id", requestId);
-                req.Write("result", payload);
+                req.Write("result", writeResult);
             });
             await Send(response, cancellationToken);
         }
