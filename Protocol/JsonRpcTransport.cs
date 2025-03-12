@@ -83,8 +83,6 @@ namespace McpSdk.Protocol
         
         protected void OnMessageReceived(string messageAsJson)
         {
-            Console.WriteLine($"Received: {messageAsJson}");
-
             var response = _json.Parse(messageAsJson);
             var idProp = response["id"];
             var method = response["method"]?.AsString();
