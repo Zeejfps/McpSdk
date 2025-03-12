@@ -114,7 +114,7 @@ namespace McpSdk.Client
                 capabilities.SamplingCapability = new SamplingCapability();
             
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
-            var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.AsJson);
+            var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.ToJson);
             var initializeResult = new InitializeResult(resultJsonObject);
             
             var serverProtocolVersion = initializeResult.ProtocolVersion;
@@ -137,10 +137,7 @@ namespace McpSdk.Client
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var result = await _transport.SendRequest("tools/call", jsonWriter =>
-            {
-                request.Write(jsonWriter);
-            });
+            var result = await _transport.SendRequest("tools/call", request.ToJson);
             return new CallToolResult(result);
         }
     }

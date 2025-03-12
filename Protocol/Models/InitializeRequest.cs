@@ -30,11 +30,11 @@ namespace McpSdk.Protocol.Models
         public ClientCapabilities ClientCapabilities { get; }
         public override IJsonObject JsonObject { get; }
 
-        public void AsJson(IJsonWriter writer)
+        public void ToJson(IJsonWriter writer)
         {
             writer.Write("protocolVersion", ProtocolVersion);
-            writer.Write("capabilities", ClientCapabilities.AsJson);
-            writer.Write("clientInfo", ClientInfo.AsJson);
+            writer.Write("capabilities", ClientCapabilities.ToJson);
+            writer.Write("clientInfo", ClientInfo.ToJson);
         }
     }
 }

@@ -20,7 +20,6 @@ namespace McpSdk.Server
         {
             _transport.RequestReceived += OnRequestReceived;
             _transport.NotificationReceived += OnNotificationReceived;
-            Console.Error.WriteLine("Starting Transport...");
             await _transport.Start();
         }
 
@@ -80,7 +79,6 @@ namespace McpSdk.Server
                 }
 
                 var result = await _tools.ListTools();
-                Console.Error.WriteLine("Afer List tools?");
                 await _transport.SendOkResponse(requestId, payload =>
                 {
                     result.Write(payload);
@@ -104,7 +102,7 @@ namespace McpSdk.Server
                 }
                 
                 var result = await _tools.CallTool(new CallToolRequest(arguments));
-                await _transport.SendOkResponse(requestId, result.AsJson);
+                await _transport.SendOkResponse(requestId, result.ToJson);
             }
             catch (Exception ex)
             {

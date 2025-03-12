@@ -35,7 +35,7 @@ var request = new CallToolRequest("get-forecast", json.Object(props =>
 }));
 var result = await client.CallTool(request);
 
-Console.WriteLine(result);
+Console.WriteLine(json.Stringify(request.ToJson));
 var contents = result.Content;
 Console.WriteLine(contents.Length);
 

@@ -14,7 +14,7 @@
             IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void ToJson(IJsonWriter writer)
         {
             writer.Write("listChanged", IsListChangedNotificationSupported);
         }

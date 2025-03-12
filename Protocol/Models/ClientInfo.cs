@@ -11,7 +11,7 @@
             Version = version;
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void ToJson(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("version", Version);
