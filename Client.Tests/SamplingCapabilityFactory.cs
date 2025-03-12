@@ -29,7 +29,7 @@ internal sealed class SamplingCapability : ISamplingCapability
 
     public async Task<CreateMessagesResult> CreateMessages(CreateMessageArguments methodArguments)
     {
-        var content = new TextContent(_json, "Hello world");
+        var content = new TextContent("Hello world");
         return new CreateMessagesResult(_json, "asdf", "asdf", content, "wadsd");
     }
 }

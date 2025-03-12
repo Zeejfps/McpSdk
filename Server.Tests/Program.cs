@@ -35,7 +35,7 @@ var server = new ServerBuilder(json)
         {
             var latitude = args["latitude"].AsDouble();
             var longitude = args["longitude"].AsDouble();
-            var content = new TextContent(json, $"Lat: {latitude}, Long: {longitude}");
+            var content = new TextContent($"Lat: {latitude}, Long: {longitude}");
             var result = new CallToolResult([content], false);
             return Task.FromResult(result);
         });

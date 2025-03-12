@@ -23,7 +23,7 @@
             {
                 props.Write("role", role);
                 props.Write("model", model);
-                props.Write("content", content.JsonObject);
+                props.Write("content", content.ToJson);
                 props.Write("stopReason", stopReason);
             });
         }

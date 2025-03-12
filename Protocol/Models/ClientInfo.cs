@@ -11,6 +11,12 @@
             Version = version;
         }
 
+        public ClientInfo(IJsonObject jsonObject)
+        {
+            Name = jsonObject["Name"]?.AsString();
+            Version = jsonObject["Version"]?.AsString();
+        }
+
         public void ToJson(IJsonWriter writer)
         {
             writer.Write("name", Name);

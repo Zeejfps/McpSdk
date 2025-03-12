@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
@@ -25,7 +26,9 @@ namespace McpSdk.Protocol.Models
 
         public void ToJson(IJsonWriter writer)
         {
-            writer.Write("content", Content.Select(c => c.JsonObject).ToArray());
+            writer.Write("content", Content
+                .Select<Content, Action<IJsonWriter>>(c => c.ToJson)
+                .ToArray());
             writer.Write("isError", IsError);
         }
 

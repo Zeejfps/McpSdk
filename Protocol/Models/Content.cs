@@ -10,10 +10,12 @@ namespace McpSdk.Protocol.Models
         Resource
     }
 
-    public abstract class Content : JsonObjectWrapper
+    public abstract class Content
     {
         public abstract ContentKind Kind { get; }
 
+        public abstract void ToJson(IJsonWriter writer);
+        
         public static Content Create(IJsonObject jsonObject)
         {
             var type = jsonObject["type"].AsString();
@@ -40,21 +42,22 @@ namespace McpSdk.Protocol.Models
     {
         public TextContent(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
+            Text = jsonObject["text"]?.AsString();
         }
 
-        public TextContent(IJson json, string text)
+        public TextContent(string text)
         {
-            JsonObject = json.Object(props =>
-            {
-                props.Write("type", "text");
-                props.Write("text", text);
-            });
+            Text = text;
         }
 
-        public override IJsonObject JsonObject { get; }
+        public override void ToJson(IJsonWriter writer)
+        {
+            writer.Write("type", "text");
+            writer.Write("text", Text);
+        }
+
         public override ContentKind Kind => ContentKind.Text;
-        public string Text => JsonObject["text"]?.AsString();
+        public string Text { get; }
     }
 
     public sealed class ImageContent : Content
@@ -62,71 +65,55 @@ namespace McpSdk.Protocol.Models
         public ImageContent(IJsonObject jsonObject)
         {
             MimeType = jsonObject["mimeType"].AsString();
-            Data = jsonObject["data"].AsString();
-            JsonObject = jsonObject;
+            Base64EncodedData = jsonObject["data"].AsString();
         }
 
-        public ImageContent(IJson json, string mimeType, byte[] data)
+        public ImageContent(string mimeType, byte[] data)
         {
             MimeType = mimeType;
-            Data = Convert.ToBase64String(data);
-            JsonObject = json.Object(props =>
-            {
-                props.Write("type", "image");
-                props.Write("mimeType", mimeType);
-                props.Write("data", Data);
-            });
+            Base64EncodedData = Convert.ToBase64String(data);
         }
 
         public override ContentKind Kind => ContentKind.Image;
-        public string Data { get; }
+        public override void ToJson(IJsonWriter writer)
+        {
+            writer.Write("type", "image");
+            writer.Write("mimeType", MimeType);
+            writer.Write("data", Base64EncodedData);
+        }
+
+        public string Base64EncodedData { get; }
         public string MimeType { get; }
-        public override IJsonObject JsonObject { get; }
     }
 
     public sealed class ResourceContent : Content
     {
+        public override ContentKind Kind => ContentKind.Resource;
+        public Resource Resource { get; }
+        
         public ResourceContent(IJsonObject jsonObject)
         {
             var resourceObj = jsonObject["resource"].AsObject();
             Resource = new Resource(resourceObj);
-            JsonObject = jsonObject;
         }
 
-        public override ContentKind Kind => ContentKind.Resource;
-        public Resource Resource { get; }
-        public override IJsonObject JsonObject { get; }
+        public override void ToJson(IJsonWriter writer)
+        {
+            writer.Write("type", "resource");
+            writer.Write("resource", Resource.ToJson);
+        }
     }
 
     public sealed class UnknownContent : Content
     {
         public UnknownContent(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
         }
 
         public override ContentKind Kind => ContentKind.Unknown;
-        public override IJsonObject JsonObject { get; }
-    }
-
-    public sealed class Resource
-    {
-        public Resource(IJsonObject jsonObject)
+        public override void ToJson(IJsonWriter writer)
         {
-            JsonObject = jsonObject;
-            Uri = jsonObject["uri"].AsString();
-            MimeType = jsonObject["mimeType"].AsString();
-            Text = jsonObject["text"].AsString();
-        }
-        
-        public IJsonObject JsonObject { get; }
-        public string Uri { get; }
-        public string MimeType { get; }
-        public string Text { get; }
-
-        public override string ToString()
-        {
-            return JsonObject.ToString();
+            writer.Write("type", "unknown");
         }
     }
 }
