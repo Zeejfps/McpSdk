@@ -65,7 +65,12 @@ internal sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public float[] AsFloatArray()
     {
-        throw new NotImplementedException();
+        var array = new float[_element.GetArrayLength()];
+        for (var i = 0; i < array.Length; i++)
+        {
+            array[i] = _element[i].GetSingle();
+        }
+        return array;
     }
 
     public bool AsBool()
@@ -75,7 +80,12 @@ internal sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public bool[] AsBoolArray()
     {
-        throw new NotImplementedException();
+        var array = new bool[_element.GetArrayLength()];
+        for (var i = 0; i < array.Length; i++)
+        {
+            array[i] = _element[i].GetBoolean();
+        }
+        return array;
     }
 
     public IJsonObject AsObject()

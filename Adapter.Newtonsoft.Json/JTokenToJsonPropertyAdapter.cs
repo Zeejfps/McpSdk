@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using McpSdk.Protocol;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
@@ -81,7 +82,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public override string ToString()
         {
-            return _jToken.ToString();
+            return _jToken.ToString(Formatting.None);
         }
     }
 }

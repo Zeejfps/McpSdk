@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using McpSdk.Protocol;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 
@@ -28,7 +29,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public override string ToString()
         {
-            return _jToken.ToString();
+            return _jToken.ToString(Formatting.None);
         }
 
         public bool IsValid(IJsonObject schema, out IList<string> errors)
