@@ -54,18 +54,18 @@ namespace McpSdk.Server
             if (!_toolByNameLookup.TryGetValue(toolName, out var tool))
             {
                 var content = new TextContent(_json, $"No tool found with name: {toolName}");
-                return new CallToolResult(_json, new Content[] { content }, true);
+                return new CallToolResult([content], true);
             }
 
             var inputSchema = tool.InputSchema;
-            if (!request.JsonObject.IsValid(inputSchema, out var errors))
+            if (!request.ToolArguments.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)
                 {
                     content[i] = new TextContent(_json, errors[i]);
                 }
-                return new CallToolResult(_json, content, true);
+                return new CallToolResult(content, true);
             }
 
             var toolArguments = request.ToolArguments;

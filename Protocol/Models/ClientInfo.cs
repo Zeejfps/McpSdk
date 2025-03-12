@@ -10,5 +10,11 @@
             Name = name;
             Version = version;
         }
+
+        public void AsJson(IJsonWriter writer)
+        {
+            writer.Write("name", Name);
+            writer.Write("version", Version);
+        }
     }
 }

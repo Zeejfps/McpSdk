@@ -1,15 +1,22 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class RootsCapability : JsonObjectWrapper
+    public sealed class RootsCapability
     {
         private bool IsListChangedNotificationSupported { get; }
 
+        public RootsCapability(bool isListChangedNotificationSupported)
+        {
+            IsListChangedNotificationSupported = isListChangedNotificationSupported;
+        }
+
         public RootsCapability(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
             IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;
         }
 
-        public override IJsonObject JsonObject { get; }
+        public void AsJson(IJsonWriter writer)
+        {
+            writer.Write("listChanged", IsListChangedNotificationSupported);
+        }
     }
 }

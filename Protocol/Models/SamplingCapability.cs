@@ -1,12 +1,19 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class SamplingCapability : JsonObjectWrapper
+    public sealed class SamplingCapability
     {
+        public SamplingCapability()
+        {
+            
+        }
+        
         public SamplingCapability(IJsonObject jsonObject)
         {
-            JsonObject = jsonObject;
         }
 
-        public override IJsonObject JsonObject { get; }
+        public void AsJson(IJsonWriter obj)
+        {
+            
+        }
     }
 }

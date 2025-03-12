@@ -106,23 +106,18 @@ namespace McpSdk.Client
             _transport.NotificationReceived += OnNotificationReceived;
             
             var clientProtocolVersion = "2024-11-05";
-            var resultJsonObject = await _transport.SendRequest("initialize", jsonWriter =>
-            {
-                InitializeRequest.CreateWriter(jsonWriter)
-                    .WriteProtocolVersion(clientProtocolVersion)
-                    .WriteCapabilities(capabilityWriter =>
-                    {
-                        if (_roots != null)
-                            capabilityWriter.WriteRootsCapability(_roots.IsListChangedNotificationSupported);
+            var capabilities = new ClientCapabilities();
+            if (_roots != null)
+                capabilities.RootsCapability = new RootsCapability(_roots.IsListChangedNotificationSupported);
 
-                        if (_sampling != null)
-                            capabilityWriter.WriteSamplingCapability();
-                    })
-                    .WriteClientInfo(_clientInfo.Name, _clientInfo.Version);
-            });
+            if (_sampling != null)
+                capabilities.SamplingCapability = new SamplingCapability();
             
-            var result = new InitializeResult(resultJsonObject);
-            var serverProtocolVersion = result.ProtocolVersion;
+            var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
+            var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.AsJson);
+            var initializeResult = new InitializeResult(resultJsonObject);
+            
+            var serverProtocolVersion = initializeResult.ProtocolVersion;
             if (serverProtocolVersion != clientProtocolVersion)
                 throw new ClientException($"Invalid protocol version. Expected {clientProtocolVersion}, got {serverProtocolVersion}");
             
