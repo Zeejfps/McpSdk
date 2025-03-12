@@ -10,13 +10,13 @@ namespace McpSdk.Protocol
             _writer.Write("type", "string");
         }
 
-        public StringInputSchemaWriter Min(int min)
+        public StringInputSchemaWriter MinLength(int min)
         {
             _writer.Write("minLength", min);
             return this;
         }
 
-        public StringInputSchemaWriter Max(int max)
+        public StringInputSchemaWriter MaxLength(int max)
         {
             _writer.Write("maxLength", max);
             return this;

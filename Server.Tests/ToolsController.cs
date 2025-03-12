@@ -3,6 +3,7 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server.Tests;
 
+public delegate void BuildToolFunc(ToolBuilder input);
 public delegate Task<CallToolResult> CallToolFunc(IJsonObject args);
 
 public class ToolsController : IToolsController
@@ -14,6 +15,14 @@ public class ToolsController : IToolsController
     public ToolsController(IJson json)
     {
         _json = json;
+    }
+
+    public void AddTool(BuildToolFunc buildTool, CallToolFunc callToolFunc)
+    {
+        var toolBuilder = new ToolBuilder(_json);
+        buildTool(toolBuilder);
+        var tool = toolBuilder.Build();
+        AddTool(tool, callToolFunc);
     }
 
     public void AddTool(Tool tool, CallToolFunc callToolFunc)

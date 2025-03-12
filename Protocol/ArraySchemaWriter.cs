@@ -10,13 +10,13 @@ namespace McpSdk.Protocol
             _writer.Write("type", "array");
         }
 
-        public ArraySchemaWriter Min(int min)
+        public ArraySchemaWriter MinItems(int min)
         {
             _writer.Write("minItems", min);
             return this;
         }
 
-        public ArraySchemaWriter Max(int max)
+        public ArraySchemaWriter MaxItems(int max)
         {
             _writer.Write("maxItems", max);
             return this;
@@ -40,11 +40,17 @@ namespace McpSdk.Protocol
             return this;
         }
 
+        public ArraySchemaWriter Describe(string description)
+        {
+            _writer.Write("description", description);
+            return this;
+        }
+
         private void WriteType(string type)
         {
             _writer.Write("items", props =>
             {
-                _writer.Write("type", "number");
+                _writer.Write("type", type);
             });
         }
     }
