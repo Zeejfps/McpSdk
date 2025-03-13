@@ -35,6 +35,15 @@ namespace McpSdk.Adapter.SseServer
             await Listen();
         }
 
+        public Task Stop()
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+            _listener.Stop();
+            _listeningTask = null;
+            return Task.CompletedTask;
+        }
+
         public string ConnectionPath { get; private set; }
 
         public ISseChannel CreateChannel(string messagesPath)
