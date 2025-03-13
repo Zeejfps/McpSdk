@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using McpSdk.Shared;
 
 namespace Adapter.ConsoleLogger
 {
-    internal sealed class ServerConsoleLogger : ILogger
+    internal sealed class ClientConsoleLogger : ILogger
     {
         private readonly string _type;
         
-        public ServerConsoleLogger(Type type)
+        public ClientConsoleLogger(Type type)
         {
             _type = type.Name;
         }

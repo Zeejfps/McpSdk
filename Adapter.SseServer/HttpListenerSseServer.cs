@@ -11,6 +11,8 @@ namespace McpSdk.Adapter.SseServer
 {
     public sealed class HttpListenerSseServer : ISseServer
     {
+        public event Action ClientConnected; 
+        
         private readonly HttpListener _listener;
         private CancellationTokenSource _cts;
         private Task _listeningTask;
@@ -78,13 +80,7 @@ namespace McpSdk.Adapter.SseServer
                 
                 if (isGetMethod && hasEventStreamHeaders && isConnectionPath)
                 {
-                    foreach (var channel in _channelsByMessagePath.Values)
-                    {
-                        if (channel.IsOpened)
-                            continue;
-                        
-                        channel.Open(response);
-                    }
+                    ClientConnected?.Invoke();
                 }
                 else if (isPostMethod)
                 {
