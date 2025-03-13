@@ -40,7 +40,7 @@ namespace McpSdk.Server
 
         private void OnRequestReceived(int requestId, string method, IJsonObject payload)
         {
-            _logger.LogDebug($"Received Request:\n\tId: {requestId}\n\tMethod: {method}\n\tPayload: {payload}");
+            _logger.LogDebug($"Received Request: Id: {requestId}, Method: {method}, Payload: {payload}");
             if (method == "initialize")
             {
                 OnInitializeRequestReceived(requestId, payload);

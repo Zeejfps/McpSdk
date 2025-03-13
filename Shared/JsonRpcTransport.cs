@@ -38,6 +38,7 @@ namespace McpSdk.Shared
                 request.Write("jsonrpc", JsonRpcVersion);
                 request.Write("method", notification);
             });
+            Logger.LogDebug($"Sending notification: {requestAsJson}");
             await Send(requestAsJson, cancellationToken);
         }
         
@@ -51,7 +52,8 @@ namespace McpSdk.Shared
                 req.Write("method", method);
                 req.Write("params", payload);
             });
-
+            
+            Logger.LogDebug($"Sending request: {request}");
             await Send(request, cancellationToken);
             var response = await WaitForResponse(id, cancellationToken);
             return ReadResult(response);
@@ -65,6 +67,7 @@ namespace McpSdk.Shared
                 req.Write("id", requestId);
                 req.Write("result", writeResult);
             });
+            Logger.LogDebug($"Sending OK response: {response}");
             await Send(response, cancellationToken);
         }
         
@@ -82,6 +85,7 @@ namespace McpSdk.Shared
                         error.Write("data", data);
                 });
             });
+            Logger.LogDebug($"Sending Error response: {response}");
             await Send(response, cancellationToken);
         }
         
