@@ -34,7 +34,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             var obj = (JObject)_jToken;
             return obj
                 .Properties()
-                .Select(prop => new KeyValuePair<string, IJsonProperty>(prop.Name, new JTokenToJsonPropertyAdapter(prop)))
+                .Select(prop => new KeyValuePair<string, IJsonProperty>(prop.Name, new JTokenToJsonPropertyAdapter(prop.Value)))
                 .GetEnumerator();
         }
 

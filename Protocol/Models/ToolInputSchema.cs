@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace McpSdk.Protocol.Models;
@@ -18,7 +19,7 @@ public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput
             {
                 var name = kvp.Key;
                 var property = kvp.Value.AsObject();
-                var type = properties["type"].AsString();
+                var type = property["type"].AsString();
                 ToolInput input = type switch
                 {
                     "string" => new StringInput(property),
