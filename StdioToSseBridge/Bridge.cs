@@ -20,7 +20,7 @@ public sealed class Bridge
     public async Task Run()
     {
         _sseClient.EventReceived += OnSseEventReceived;
-        await _sseClient.Connect("http://localhost:3000");
+        await _sseClient.Connect("http://localhost:3000/sse");
         _logger.LogDebug("Bridge Connected");
         await ReadStdIn().ConfigureAwait(false);
     }
