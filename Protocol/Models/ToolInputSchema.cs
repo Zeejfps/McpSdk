@@ -32,7 +32,7 @@ public sealed class ToolInputSchema
 
     }
     
-    public ToolInputSchema WithInput(string name, ToolInput writeInput)
+    public ToolInputSchema AddInput(string name, ToolInput writeInput)
     {
         _inputsByNameLookup[name] = writeInput;
         return this;
