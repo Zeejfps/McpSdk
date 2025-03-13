@@ -2,5 +2,5 @@
 
 public interface ISseServer
 {
-    ISseChannel CreateChannel(string connectionPath, string messagesPath);
+    ISseChannel GetChannel(string connectionPath, string messagesPath);
 }

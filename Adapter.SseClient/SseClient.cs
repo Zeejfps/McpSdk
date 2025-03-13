@@ -35,7 +35,12 @@ namespace McpSdk.Adapter.SseClient
             var response = await _httpClient.PostAsync(url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
         }
-    
+
+        public Task Disconnect()
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task Connect(string url, CancellationToken cancellationToken = default)
         {
             _startListeningTask = StartListening(url, cancellationToken);

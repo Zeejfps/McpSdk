@@ -37,7 +37,7 @@ namespace McpSdk.Adapter.SseServer
             ClientConnected?.Invoke();
         }
 
-        public void Close()
+        public Task Close()
         {
             _cts.Cancel();
             _cts.Dispose();
@@ -60,6 +60,8 @@ namespace McpSdk.Adapter.SseServer
             {
                 _logger.LogError(ex);
             }
+            
+            return Task.CompletedTask;
         }
 
         public async Task Send(SseEvent sseEvent)
@@ -92,7 +94,7 @@ namespace McpSdk.Adapter.SseServer
             }
             finally
             {
-                Close();
+                await Close();
             }
         }
 

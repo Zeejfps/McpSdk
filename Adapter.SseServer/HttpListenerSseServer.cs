@@ -33,7 +33,7 @@ namespace McpSdk.Adapter.SseServer
             await Listen();
         }
         
-        public ISseChannel CreateChannel(string connectionPath, string messagesPath)
+        public ISseChannel GetChannel(string connectionPath, string messagesPath)
         {
             var connection = new SseChannel(_loggerFactory);
             _channelByConnectionPathLookup.Add(connectionPath, connection);

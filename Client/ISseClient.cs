@@ -16,5 +16,6 @@ namespace McpSdk.Client
         event Action<ISseEvent> EventReceived;
         Task Connect(string url, CancellationToken cancellationToken = default);
         Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default);
+        Task Disconnect();
     }
 }

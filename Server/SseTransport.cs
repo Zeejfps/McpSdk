@@ -32,7 +32,7 @@ namespace McpSdk.Server
             try
             {
                 _sessionId = Guid.NewGuid().ToString("N");
-                _sseChannel = _sseServer.CreateChannel(_connectionEndpoint, $"{_messagesEndpoint}?{_sessionId}");
+                _sseChannel = _sseServer.GetChannel(_connectionEndpoint, $"{_messagesEndpoint}?{_sessionId}");
                 _sseChannel.ClientConnected += OnClientConnected;
                 _sseChannel.MessageReceived += OnMessageReceived;
             }
@@ -47,6 +47,13 @@ namespace McpSdk.Server
             }
             
             return Task.CompletedTask;
+        }
+
+        protected override async Task OnStop(CancellationToken cancellationToken = default)
+        {
+            _sseChannel.ClientConnected -= OnClientConnected;
+            _sseChannel.MessageReceived -= OnMessageReceived;
+            await _sseChannel.Close();
         }
 
         private void OnClientConnected()

@@ -24,6 +24,11 @@ namespace McpSdk.Server
             return Task.CompletedTask;
         }
 
+        protected override Task OnStop(CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
             requestAsJson = Regex.Replace(requestAsJson, @"\t|\n|\r", string.Empty);

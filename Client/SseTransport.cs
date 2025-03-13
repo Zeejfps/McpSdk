@@ -43,9 +43,10 @@ namespace McpSdk.Client
             await _startedTcs.Task;
         }
 
-        protected override Task OnStop(CancellationToken cancellationToken = default)
+        protected override async Task OnStop(CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            _sseClient.EventReceived -= OnSseEventReceived;
+            await _sseClient.Disconnect();
         }
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
