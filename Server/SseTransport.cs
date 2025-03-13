@@ -7,30 +7,30 @@ namespace McpSdk.Server
 {
     public sealed class SseTransport : JsonRpcTransport
     {
-        private readonly ISseServer _server;
+        private readonly ISseConnection _connection;
         
-        public SseTransport(IJson json, ISseServer server) : base(json)
+        public SseTransport(IJson json, ISseConnection connection) : base(json)
         {
-            _server = server;
+            _connection = connection;
         }
 
         protected override async Task OnStart(CancellationToken cancellationToken = default)
         {
             try
             {
-                _server.MessageReceived += OnMessageReceived;
-                await _server.Start();
+                _connection.MessageReceived += OnMessageReceived;
+                await _connection.Start();
             }
             catch (Exception e)
             {
                 Console.Error.WriteLine(e);
-                _server.MessageReceived -= OnMessageReceived;
+                _connection.MessageReceived -= OnMessageReceived;
             }
         }
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
-            await _server.Send(requestAsJson);
+            await _connection.Send(requestAsJson);
         }
     }
 }

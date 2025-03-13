@@ -5,9 +5,9 @@ namespace McpSdk.Server;
 public sealed class SseTransportFactory : ITransportFactory
 {
     private readonly IJson _json;
-    private readonly ISseServer _sseServer;
+    private readonly ISseConnection _sseServer;
 
-    public SseTransportFactory(IJson json, ISseServer sseServer)
+    public SseTransportFactory(IJson json, ISseConnection sseServer)
     {
         _json = json;
         _sseServer = sseServer;

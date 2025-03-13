@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace McpSdk.Server;
 
-public interface ISseServer
+public interface ISseConnection
 {
     event Action<string> MessageReceived;
     Task Start();
