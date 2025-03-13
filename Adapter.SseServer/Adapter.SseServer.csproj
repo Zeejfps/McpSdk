@@ -6,4 +6,8 @@
         <RootNamespace>McpSdk.Adapter.SseServer</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Server\Server.csproj" />
+    </ItemGroup>
+
 </Project>
