@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.SseServer", "Adapte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.ConsoleLogger", "Adapter.ConsoleLogger\Adapter.ConsoleLogger.csproj", "{02DB8034-FB7F-428F-9939-245CF69DDA4A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{84E786CF-BDCB-4071-8FC9-9C4B5FCBF4C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84E786CF-BDCB-4071-8FC9-9C4B5FCBF4C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84E786CF-BDCB-4071-8FC9-9C4B5FCBF4C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84E786CF-BDCB-4071-8FC9-9C4B5FCBF4C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84E786CF-BDCB-4071-8FC9-9C4B5FCBF4C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

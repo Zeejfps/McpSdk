@@ -1,5 +1,6 @@
 ﻿using System;
 using McpSdk.Protocol;
+using McpSdk.Shared;
 
 namespace Adapter.ConsoleLogger
 {

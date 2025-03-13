@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server
 {

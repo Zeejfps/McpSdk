@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace McpSdk.Protocol;
+namespace McpSdk.Shared;
 
 internal sealed class NullLogger : ILogger
 {

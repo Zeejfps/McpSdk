@@ -2,13 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <AssemblyName>McpSdk.Client</AssemblyName>
-        <RootNamespace>McpSdk.Client</RootNamespace>
+        <AssemblyName>McpSdk.Shared</AssemblyName>
+        <RootNamespace>McpSdk.Shared</RootNamespace>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Protocol\Protocol.csproj" />
-      <ProjectReference Include="..\Shared\Shared.csproj" />
     </ItemGroup>
 
 </Project>

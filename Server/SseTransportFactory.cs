@@ -1,4 +1,5 @@
 ﻿using McpSdk.Protocol;
+using McpSdk.Shared;
 
 namespace McpSdk.Server;
 

@@ -1,4 +1,6 @@
-﻿namespace McpSdk.Protocol
+﻿using McpSdk.Protocol;
+
+namespace McpSdk.Shared
 {
     public interface ITransportFactory
     {

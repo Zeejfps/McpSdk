@@ -1,6 +1,7 @@
 ﻿using System;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server
 {

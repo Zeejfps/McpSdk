@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
+using McpSdk.Shared;
 
 namespace McpSdk.Client
 {

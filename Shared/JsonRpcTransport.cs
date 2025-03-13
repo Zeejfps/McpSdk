@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using McpSdk.Protocol;
 
-namespace McpSdk.Protocol
+namespace McpSdk.Shared
 {
     public abstract class JsonRpcTransport : ITransport
     {
