@@ -40,9 +40,10 @@ namespace McpSdk.Adapter.SseClient
             throw new NotImplementedException();
         }
 
-        public async Task Connect(string url, CancellationToken cancellationToken = default)
+        public Task Connect(string url, CancellationToken cancellationToken = default)
         {
             _startListeningTask = StartListening(url, cancellationToken);
+            return Task.CompletedTask;
         }
 
         private async Task StartListening(string sseUrl, CancellationToken cancellationToken)

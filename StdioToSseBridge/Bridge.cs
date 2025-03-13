@@ -14,6 +14,7 @@ public sealed class Bridge
     {
         _sseClient = sseClient;
         _logger = loggerFactory.Create<Bridge>();
+        _url = "http://localhost:3000/messages";
     }
 
     public async Task Run()
