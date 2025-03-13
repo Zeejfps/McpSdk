@@ -8,30 +8,22 @@ using McpSdk.Shared;
 
 namespace McpSdk.Adapter.SseServer
 {
-    internal sealed class SseChannel : ISseChannel
+    internal sealed class SseSession : ISseSession
     {
-        public event Action ClientConnected;
         public event Action<string> MessageReceived;
 
         private Task _listenForDisconnect;
         private StreamWriter _textWriter;
         private CancellationTokenSource _cts;
         private HttpListenerResponse _response;
-        
         private readonly ILogger _logger;
 
-        public SseChannel(ILoggerFactory loggerFactory)
+        public string Path { get; }
+        
+        public SseSession(ILoggerFactory loggerFactory, string path, HttpListenerResponse response)
         {
-            _logger = loggerFactory.Create<SseChannel>();
-        }
-
-        public bool IsOpened { get; private set; }
-
-        public void Open(HttpListenerResponse response)
-        {
-            if (IsOpened)
-                return;
-            
+            Path = path;
+            _logger = loggerFactory.Create<SseSession>();
             _response = response;
             response.ContentType = "text/event-stream";
             response.Headers.Add("Cache-Control", "no-cache");
@@ -39,15 +31,10 @@ namespace McpSdk.Adapter.SseServer
             _textWriter = new StreamWriter(response.OutputStream);
             _cts = new CancellationTokenSource();
             _listenForDisconnect = ListenForDisconnect();
-            IsOpened = true;
-            ClientConnected?.Invoke();
         }
 
         public Task Close()
         {
-            if (!IsOpened)
-                return Task.CompletedTask;
-            
             _cts.Cancel();
             _cts.Dispose();
             
@@ -72,7 +59,7 @@ namespace McpSdk.Adapter.SseServer
             
             return Task.CompletedTask;
         }
-
+        
         public async Task Send(SseEvent sseEvent)
         {
             await _textWriter.WriteLineAsync("event: " + sseEvent.Kind);

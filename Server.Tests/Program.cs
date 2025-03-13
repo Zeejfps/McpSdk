@@ -6,14 +6,14 @@ using McpSdk.Server;
 
 var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();
-var sseServer = new HttpListenerSseServer("/sse", loggerFactory);
-sseServer.ClientConnected += async () =>
+var sseServer = new HttpListenerSseServer("/sse", "/messages", loggerFactory);
+sseServer.SessionStarted += async session =>
 {
     var mcpServer = new ServerBuilder(json)
         .WithName("Demo Server")
         .WithVersion("1.0.0")
         .WithLogger(loggerFactory)
-        .WithSseTransport(sseServer, "/messages")
+        .WithSseTransport(session)
         .WithToolsCapability(tools =>
         {
             tools.AddTool(toolWriter =>

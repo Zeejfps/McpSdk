@@ -9,21 +9,23 @@ using McpSdk.Shared;
 
 namespace McpSdk.Adapter.SseServer
 {
-    public sealed class HttpListenerSseServer : ISseServer
+    public sealed class HttpListenerSseServer
     {
-        public event Action ClientConnected; 
+        public event Action<ISseSession> SessionStarted; 
         
         private readonly HttpListener _listener;
         private CancellationTokenSource _cts;
         private Task _listeningTask;
 
-        private readonly Dictionary<string, SseChannel> _channelsByMessagePath = new Dictionary<string, SseChannel>();
+        private readonly Dictionary<string, SseSession> _sessionByPathLookup = new Dictionary<string, SseSession>();
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
+        private readonly string _messagesEndpoint;
         
-        public HttpListenerSseServer(string connectionEndpoint, ILoggerFactory loggerFactory)
+        public HttpListenerSseServer(string connectionEndpoint, string messagesEndpoint, ILoggerFactory loggerFactory)
         {
             ConnectionPath = connectionEndpoint;
+            _messagesEndpoint = messagesEndpoint;
             _loggerFactory = loggerFactory;
             _logger = loggerFactory.Create<HttpListenerSseServer>();
             _listener = new HttpListener();
@@ -48,22 +50,6 @@ namespace McpSdk.Adapter.SseServer
 
         public string ConnectionPath { get; private set; }
 
-        public ISseChannel CreateChannel(string messagesPath)
-        {
-            if (!_channelsByMessagePath.TryGetValue(messagesPath, out var channel))
-            { 
-                channel = new SseChannel(_loggerFactory);
-                _channelsByMessagePath[messagesPath] = channel;
-            }
-            
-            return channel;
-        }
-
-        public void DestroyChannel(string messagesPath)
-        {
-            _channelsByMessagePath.Remove(messagesPath);
-        }
-
         private async Task Listen()
         {
             while (!_cts.IsCancellationRequested)
@@ -80,13 +66,17 @@ namespace McpSdk.Adapter.SseServer
                 
                 if (isGetMethod && hasEventStreamHeaders && isConnectionPath)
                 {
-                    ClientConnected?.Invoke();
+                    var sessionId = Guid.NewGuid().ToString("N");
+                    var sessionPath = $"{_messagesEndpoint}?{sessionId}";
+                    var session = new SseSession(_loggerFactory, sessionPath, response);
+                    _sessionByPathLookup.Add(sessionPath, session);
+                    SessionStarted?.Invoke(session);
                 }
                 else if (isPostMethod)
                 {
-                    if (_channelsByMessagePath.TryGetValue(path, out var connection))
+                    if (_sessionByPathLookup.TryGetValue(path, out var session))
                     {
-                        connection.HandlePostMessage(request, response);
+                        session.HandlePostMessage(request, response);
                     }
                 }
             }

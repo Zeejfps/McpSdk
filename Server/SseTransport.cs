@@ -8,37 +8,33 @@ namespace McpSdk.Server
 {
     public sealed class SseTransport : JsonRpcTransport
     {
-        private readonly ISseServer _sseServer;
-        private readonly string _messagesEndpoint;
-
-        private string _sessionId;
-        private ISseChannel _sseChannel;
+        private readonly ISseSession _sseSession;
         
         public SseTransport(
             IJson json,
-            ISseServer sseServer,
-            ILoggerFactory loggerFactory,
-            string messagesEndpoint) : base(json, loggerFactory)
+            ISseSession sseSession,
+            ILoggerFactory loggerFactory) : base(json, loggerFactory)
         {
-            _sseServer = sseServer;
-            _messagesEndpoint = messagesEndpoint;
+            _sseSession = sseSession;
         }
 
         protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             try
             {
-                _sessionId = Guid.NewGuid().ToString("N");
-                _sseChannel = _sseServer.CreateChannel($"{_messagesEndpoint}?{_sessionId}");
-                _sseChannel.ClientConnected += OnClientConnected;
-                _sseChannel.MessageReceived += OnMessageReceived;
+                _sseSession.Send(new SseEvent
+                {
+                    Kind = "endpoint",
+                    Data = _sseSession.Path
+                });
+                
+                _sseSession.MessageReceived += OnMessageReceived;
             }
             catch (Exception e)
             {
-                if (_sseChannel != null)
+                if (_sseSession != null)
                 {
-                    _sseChannel.ClientConnected -= OnClientConnected;
-                    _sseChannel.MessageReceived -= OnMessageReceived;
+                    _sseSession.MessageReceived -= OnMessageReceived;
                 }
                 Console.Error.WriteLine(e);
             }
@@ -48,25 +44,14 @@ namespace McpSdk.Server
 
         protected override async Task OnStop(CancellationToken cancellationToken = default)
         {
-            _sseChannel.ClientConnected -= OnClientConnected;
-            _sseChannel.MessageReceived -= OnMessageReceived;
+            _sseSession.MessageReceived -= OnMessageReceived;
             Logger.LogDebug("Stopping Sse Channel");
-            await _sseChannel.Close();
-            _sseServer.DestroyChannel($"{_messagesEndpoint}?{_sessionId}");
-        }
-
-        private void OnClientConnected()
-        {
-            _sseChannel.Send(new SseEvent
-            {
-                Kind = "endpoint",
-                Data = $"{_messagesEndpoint}?{_sessionId}"
-            });
+            await _sseSession.Close();
         }
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
-            await _sseChannel.Send(new SseEvent
+            await _sseSession.Send(new SseEvent
             {
                 Kind = "message",
                 Data = $"{requestAsJson}"

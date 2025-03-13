@@ -33,8 +33,8 @@ namespace McpSdk.Server
                 _transport.RequestReceived += OnRequestReceived;
                 _transport.NotificationReceived += OnNotificationReceived;
                 await _transport.Start();
-                _logger.LogDebug("Mcp Server Started");
                 _isRunning = true;
+                _logger.LogDebug("Mcp Server Started");
             }
             catch (Exception)
             {

@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 
 namespace McpSdk.Server;
 
-public interface ISseChannel
+public interface ISseSession
 {
-    event Action ClientConnected;
     event Action<string> MessageReceived;
+    string Path { get; }
     Task Send(SseEvent sseEvent);
     Task Close();
 }

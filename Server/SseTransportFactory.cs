@@ -6,21 +6,18 @@ namespace McpSdk.Server;
 public sealed class SseTransportFactory : ITransportFactory
 {
     private readonly IJson _json;
-    private readonly ISseServer _sseServer;
-    private readonly string _messagesEndpoint;
+    private readonly ISseSession _sseSession;
 
     public SseTransportFactory(
         IJson json,
-        ISseServer sseServer,
-        string messagesEndpoint)
+        ISseSession sseSession)
     {
         _json = json;
-        _sseServer = sseServer;
-        _messagesEndpoint = messagesEndpoint;
+        _sseSession = sseSession;
     }
 
     public ITransport Create(ILoggerFactory loggerFactory)
     {
-        return new SseTransport(_json, _sseServer, loggerFactory, _messagesEndpoint);
+        return new SseTransport(_json, _sseSession, loggerFactory);
     }
 }
