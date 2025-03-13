@@ -12,8 +12,8 @@ var samplingControllerFactory = new SamplingControllerFactory();
 var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
-    //.WithSseTransport(sseClientFactory, "http://localhost:3000")
-    .WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
+    .WithSseTransport(sseClientFactory, "http://localhost:3000")
+    //.WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
     .WithRootsCapability(rootsControllerFactory)
     .WithSamplingCapability(samplingControllerFactory)
     .Build();

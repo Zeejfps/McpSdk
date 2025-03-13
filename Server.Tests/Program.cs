@@ -5,7 +5,7 @@ using McpSdk.Server;
 
 var sseServer = new HttpListenerSseServer();
 var json = new NewtonsoftJson();
-var server = new ServerBuilder(json)
+var mcpServer = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
     //.WithStdioTransport()
@@ -45,4 +45,6 @@ var server = new ServerBuilder(json)
     })
     .Build();
 
-await server.Start();
+await mcpServer.Start();
+
+await sseServer.Start();

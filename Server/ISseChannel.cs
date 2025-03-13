@@ -15,4 +15,9 @@ public sealed class SseEvent
     public string Kind { get; set; }
     public string Id { get; set; }
     public string Data { get; set; }
+
+    public override string ToString()
+    {
+        return $"{nameof(Kind)}: {Kind}, {nameof(Id)}: {Id}, {nameof(Data)}: {Data}";
+    }
 }

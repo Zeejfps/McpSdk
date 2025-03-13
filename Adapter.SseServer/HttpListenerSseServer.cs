@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,19 +22,19 @@ namespace McpSdk.Adapter.SseServer
             _listener = new HttpListener();
         }
         
-        public Task Start()
+        public async Task Start()
         {
+            _listener.Prefixes.Add("http://localhost:3000/");
             _listener.Start();
             _cts = new CancellationTokenSource();
-            _listeningTask = Listen();
-            return Task.CompletedTask;
+            await Listen();
         }
         
         public ISseChannel CreateChannel(string connectionPath, string messagesPath)
         {
             var connection = new SseChannel();
-            _channelByMessagePathLookup.Add(connectionPath, connection);
-            _channelByConnectionPathLookup.Add(messagesPath, connection);
+            _channelByConnectionPathLookup.Add(connectionPath, connection);
+            _channelByMessagePathLookup.Add(messagesPath, connection);
             return connection;
         }
 
@@ -41,24 +42,28 @@ namespace McpSdk.Adapter.SseServer
         {
             while (!_cts.IsCancellationRequested)
             {
+                Console.WriteLine("Listening for connections");
                 var httpContext = await _listener.GetContextAsync();
                 var request = httpContext.Request;
                 var response = httpContext.Response;
                 var method = request.HttpMethod;
                 var path = request.Url.PathAndQuery;
+                Console.WriteLine($"Someone connected... Method: {method}, Path: {path}");
                 var isGetMethod = method.Equals("GET", StringComparison.OrdinalIgnoreCase);
                 var isPostMethod = method.Equals("POST", StringComparison.OrdinalIgnoreCase);
-                var hasEventStreamHeaders = request.ContentType?.Contains("text/event-stream") ?? false;
+                var hasEventStreamHeaders = request.AcceptTypes?.Contains("text/event-stream") ?? false;
                 
                 if (isGetMethod && hasEventStreamHeaders)
                 {
+                    Console.WriteLine("Getting events from stream...");
                     if (_channelByConnectionPathLookup.TryGetValue(path, out var connection))
                     {
-                        connection.Establish(response);
+                        connection.Open(response);
                     }
                 }
                 else if (isPostMethod)
                 {
+                    Console.WriteLine($"Sending a message to: {path}");
                     if (_channelByMessagePathLookup.TryGetValue(path, out var connection))
                     {
                         connection.HandlePostMessage(request, response);

@@ -17,7 +17,7 @@ namespace McpSdk.Adapter.SseServer
         private CancellationTokenSource _cts;
         private HttpListenerResponse _response;
 
-        public void Establish(HttpListenerResponse response)
+        public void Open(HttpListenerResponse response)
         {
             _response = response;
             response.ContentType = "text/event-stream";
@@ -26,10 +26,11 @@ namespace McpSdk.Adapter.SseServer
             _textWriter = new StreamWriter(response.OutputStream);
             _cts = new CancellationTokenSource();
             _listenForDisconnect = ListenForDisconnect();
+            Console.WriteLine("Connection established");
             ClientConnected?.Invoke();
         }
 
-        public void Terminate()
+        public void Close()
         {
             _cts.Cancel();
             _cts.Dispose();
@@ -56,6 +57,7 @@ namespace McpSdk.Adapter.SseServer
 
         public async Task Send(SseEvent sseEvent)
         {
+            Console.WriteLine("Sending: " + sseEvent);
             await _textWriter.WriteLineAsync("event: " + sseEvent.Kind);
             
             if (sseEvent.Id != null)
@@ -73,6 +75,8 @@ namespace McpSdk.Adapter.SseServer
                 {
                     await Task.Delay(1000);
                 }
+                
+                Console.WriteLine("Client disconnected");
             }
             catch (Exception ex)
             {
@@ -80,7 +84,7 @@ namespace McpSdk.Adapter.SseServer
             }
             finally
             {
-                Terminate();
+                Close();
             }
         }
 

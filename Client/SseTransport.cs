@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 
@@ -22,6 +23,7 @@ namespace McpSdk.Client
         
         private void OnSseEventReceived(ISseEvent sseEvent)
         {
+            Console.WriteLine(sseEvent.ToString());
             if (sseEvent.Kind == "endpoint")
             {
                 _messagesUrl = $"{_host}{sseEvent.Data}";
