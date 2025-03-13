@@ -57,7 +57,7 @@ namespace McpSdk.Server
                 return new CallToolResult([content], true);
             }
 
-            var inputSchema = tool.InputSchema;
+            var inputSchema = tool.InputSchema.AsJsonObject(_json);
             if (!request.ToolArguments.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];

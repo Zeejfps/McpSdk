@@ -5,6 +5,16 @@ public sealed class NumberInput : ToolInput
     public double? Minimum { get; set; }
     public double? Maximum { get; set; }
     public string Description { get; set; }
+
+    public NumberInput()
+    {
+        
+    }
+
+    public NumberInput(IJsonObject jsonObject)
+    {
+        
+    }
     
     public override void AsJson(IJsonWriter writer)
     {

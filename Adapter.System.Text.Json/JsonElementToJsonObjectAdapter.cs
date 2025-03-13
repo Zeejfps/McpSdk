@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Json.Schema;
 using McpSdk.Protocol;
-using NotImplementedException = System.NotImplementedException;
 
 namespace McpSdk.Adapter.System.Text.Json;
 
@@ -11,9 +11,9 @@ internal sealed class JsonElementToJsonObjectAdapter : IJsonObject
 {
     private readonly JsonElement _element;
 
-    public JsonElementToJsonObjectAdapter(JsonElement _element)
+    public JsonElementToJsonObjectAdapter(JsonElement element)
     {
-        this._element = _element;
+        _element = element;
     }
 
     public IJsonProperty? this[string propertyName]
@@ -27,6 +27,14 @@ internal sealed class JsonElementToJsonObjectAdapter : IJsonObject
             }
             return null;
         }
+    }
+
+    public IEnumerator<KeyValuePair<string, IJsonProperty>> GetEnumerator()
+    {
+        return _element
+            .EnumerateObject()
+            .Select(property => new KeyValuePair<string, IJsonProperty>(property.Name, new JsonElementToJsonPropertyAdapter(property.Value)))
+            .GetEnumerator();
     }
 
     public override string ToString()
@@ -45,5 +53,10 @@ internal sealed class JsonElementToJsonObjectAdapter : IJsonObject
         }
         errors = null;
         return true;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

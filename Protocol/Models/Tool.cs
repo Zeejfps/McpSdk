@@ -4,9 +4,9 @@
     {
         public string Name { get; }
         public string Description { get; }
-        public IJsonObject InputSchema { get; }
+        public ToolInputSchema InputSchema { get; }
 
-        public Tool(string name, string description, IJsonObject schema)
+        public Tool(string name, string description, ToolInputSchema schema)
         {
             Name = name;
             Description = description;
@@ -17,14 +17,14 @@
         {
             Name = jsonObj["name"].AsString();
             Description = jsonObj["description"].AsString();
-            InputSchema = jsonObj["inputSchema"].AsObject();
+            InputSchema = new ToolInputSchema(jsonObj["inputSchema"].AsObject());
         }
 
         public void AsJson(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("description", Description);
-            writer.Write("inputSchema", InputSchema);
+            writer.Write("inputSchema", InputSchema.AsJson);
         }
     }
 }

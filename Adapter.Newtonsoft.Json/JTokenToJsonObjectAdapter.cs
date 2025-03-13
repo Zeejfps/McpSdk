@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using McpSdk.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -27,9 +29,23 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             }
         }
 
+        public IEnumerator<KeyValuePair<string, IJsonProperty>> GetEnumerator()
+        {
+            var obj = (JObject)_jToken;
+            return obj
+                .Properties()
+                .Select(prop => new KeyValuePair<string, IJsonProperty>(prop.Name, new JTokenToJsonPropertyAdapter(prop)))
+                .GetEnumerator();
+        }
+
         public override string ToString()
         {
             return _jToken.ToString(Formatting.None);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         public bool IsValid(IJsonObject schema, out IList<string> errors)

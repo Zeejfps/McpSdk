@@ -21,6 +21,8 @@ public sealed class ToolInputSchema
                 ToolInput input = type switch
                 {
                     "string" => new StringInput(property),
+                    "number" => new NumberInput(property),
+                    "boolean" => new BooleanInput(property),
                     _ => null
                 };
                 if (input != null)
@@ -48,5 +50,10 @@ public sealed class ToolInputSchema
                 propertyWriter.Write(name, input.AsJson);
             }
         });
+    }
+    
+    public IJsonObject AsJsonObject(IJson json)
+    {
+        return json.Object(AsJson);
     }
 }
