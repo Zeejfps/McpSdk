@@ -12,11 +12,11 @@ namespace McpSdk.Server
         private readonly IToolsController _toolsController;
         private readonly ILogger _logger;
         
-        public McpServer(ITransport transport, ServerInfo serverInfo, ILogger logger, IToolsController toolsController)
+        public McpServer(ITransport transport, ServerInfo serverInfo, ILoggerFactory loggerFactory, IToolsController toolsController)
         {
             _transport = transport;
             _serverInfo = serverInfo;
-            _logger = logger;
+            _logger = loggerFactory.Create<McpServer>();
             _toolsController = toolsController;
         }
 

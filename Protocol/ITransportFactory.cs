@@ -2,6 +2,6 @@
 {
     public interface ITransportFactory
     {
-        ITransport Create();
+        ITransport Create(ILoggerFactory loggerFactory);
     }
 }

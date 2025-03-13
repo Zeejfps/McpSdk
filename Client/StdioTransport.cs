@@ -18,7 +18,7 @@ namespace McpSdk.Client
         private Task _readStdOutTask;
         private Task _readStdErrTask;
         
-        public StdioTransport(IJson json, string command, string arguments) : base(json)
+        public StdioTransport(IJson json, ILoggerFactory loggerFactory, string command, string arguments) : base(json, loggerFactory)
         {
             _command = command;
             _arguments = arguments;

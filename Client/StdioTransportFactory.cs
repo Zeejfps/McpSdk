@@ -15,9 +15,9 @@ namespace McpSdk.Client
             _arguments = string.Join(" ", args);
         }
 
-        public ITransport Create()
+        public ITransport Create(ILoggerFactory loggerFactory)
         {
-            return new StdioTransport(_json, _command, _arguments);
+            return new StdioTransport(_json, loggerFactory, _command, _arguments);
         }
     }
 }

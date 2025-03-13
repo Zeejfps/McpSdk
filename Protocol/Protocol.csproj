@@ -4,7 +4,7 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <AssemblyName>McpSdk.Protocol</AssemblyName>
         <RootNamespace>McpSdk.Protocol</RootNamespace>
-        <LangVersion>7.3</LangVersion>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
 </Project>

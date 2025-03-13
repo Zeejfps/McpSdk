@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace McpSdk.Server;
+namespace McpSdk.Protocol;
 
-public sealed class NullLogger : ILogger
+internal sealed class NullLogger : ILogger
 {
     public void LogDebug(string message)
     {

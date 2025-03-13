@@ -15,10 +15,10 @@ namespace McpSdk.Client
             _host = host;
         }
 
-        public ITransport Create()
+        public ITransport Create(ILoggerFactory loggerFactory)
         {
             var sseClient = _sseClientFactory.Create();
-            return new SseTransport(sseClient, _json, _host);
+            return new SseTransport(sseClient, _json, loggerFactory, _host);
         }
     }
 }

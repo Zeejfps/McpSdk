@@ -14,7 +14,7 @@ namespace McpSdk.Client
         private string _messagesUrl;
         private TaskCompletionSource<bool> _startedTcs;
 
-        public SseTransport(ISseClient sseClient, IJson json, string host) : base(json)
+        public SseTransport(ISseClient sseClient, IJson json, ILoggerFactory loggerFactory, string host) : base(json, loggerFactory)
         {
             _sseClient = sseClient;
             _host = host;

@@ -10,13 +10,16 @@ namespace McpSdk.Protocol
         private const string JsonRpcVersion = "2.0";
 
         private readonly IJson _json;
-        private readonly Dictionary<int, TaskCompletionSource<IJsonObject>> _tscByMessageId = new Dictionary<int, TaskCompletionSource<IJsonObject>>();
+        private readonly Dictionary<int, TaskCompletionSource<IJsonObject>> _tscByMessageId = new();
         
         private int _nextMessageId;
+        
+        protected ILogger Logger { get; }
 
-        protected JsonRpcTransport(IJson json)
+        protected JsonRpcTransport(IJson json, ILoggerFactory loggerFactory)
         {
             _json = json;
+            Logger = loggerFactory.Create(GetType());
         }
         
         public event RequestReceivedCallback RequestReceived;

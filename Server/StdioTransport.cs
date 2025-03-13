@@ -12,7 +12,7 @@ namespace McpSdk.Server
         private TextWriter _standardOut;
         private Task _readStdInTask;
     
-        public StdioTransport(IJson json) : base(json)
+        public StdioTransport(IJson json, ILoggerFactory loggerFactory) : base(json, loggerFactory)
         {
         }
 

@@ -11,9 +11,9 @@ namespace McpSdk.Server
             _json = json;
         }
 
-        public ITransport Create()
+        public ITransport Create(ILoggerFactory loggerFactory)
         {
-            return new StdioTransport(_json);
+            return new StdioTransport(_json, loggerFactory);
         }
     }
 }

@@ -4,13 +4,13 @@ using McpSdk.Adapter.SseServer;
 using McpSdk.Protocol.Models;
 using McpSdk.Server;
 
-var logger = new ConsoleLogger();
+var loggerFactory = new ConsoleLoggerFactory();
 var sseServer = new HttpListenerSseServer();
 var json = new NewtonsoftJson();
 var mcpServer = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
-    .WithLogger(logger)
+    .WithLogger(loggerFactory)
     //.WithStdioTransport()
     .WithSseTransport(sseServer, "/sse", "/messages")
     .WithToolsCapability(tools =>

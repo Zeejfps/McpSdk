@@ -13,10 +13,12 @@ namespace McpSdk.Client
         private ITransportFactory _transportFactory;
         private IRootsCapabilityFactory _rootsCapabilityFactory;
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
+        private ILoggerFactory _loggerFactory;
 
         public ClientBuilder(IJson json)
         {
             _json = json;
+            _loggerFactory = new NullLoggerFactory();
         }
 
         public ClientBuilder WithName(string name)
@@ -28,6 +30,12 @@ namespace McpSdk.Client
         public ClientBuilder WithVersion(string version)
         {
             _version = version;
+            return this;
+        }
+
+        public ClientBuilder WithLogger(ILoggerFactory loggerFactory)
+        {
+            _loggerFactory = loggerFactory;
             return this;
         }
 
@@ -71,7 +79,7 @@ namespace McpSdk.Client
             
             var clientInfo = new ClientInfo(_name, _version);
             
-            var transport = _transportFactory?.Create();
+            var transport = _transportFactory?.Create(_loggerFactory);
             if (transport == null)
                 throw new ArgumentNullException(nameof(transport), "Client transport cannot be null.");
 

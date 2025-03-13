@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace McpSdk.Server;
+namespace McpSdk.Protocol;
 
 public interface ILogger
 {
@@ -10,3 +10,5 @@ public interface ILogger
     void LogError(string message);
     void LogError(Exception exception);
 }
+
+public interface ILogger<T> : ILogger {}
