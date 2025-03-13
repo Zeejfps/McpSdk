@@ -1,13 +1,15 @@
 ﻿using McpSdk.Adapter.Newtonsoft.Json;
+using McpSdk.Adapter.SseServer;
 using McpSdk.Protocol.Models;
 using McpSdk.Server;
 
+var sseServer = new HttpListenerSseServer();
 var json = new NewtonsoftJson();
 var server = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
-    .WithStdioTransport()
-    //.WithSseTransport()
+    //.WithStdioTransport()
+    .WithSseTransport(sseServer, "/sse", "/messages")
     .WithToolsCapability(tools =>
     {
         tools.AddTool(toolWriter =>

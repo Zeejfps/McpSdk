@@ -11,6 +11,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Adapter.Newtonsoft.Json\Adapter.Newtonsoft.Json.csproj" />
+      <ProjectReference Include="..\Adapter.SseServer\Adapter.SseServer.csproj" />
       <ProjectReference Include="..\Server\Server.csproj" />
     </ItemGroup>
 
