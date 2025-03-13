@@ -1,6 +1,7 @@
 ﻿using System;
+using McpSdk.Protocol;
 
-namespace McpSdk.Protocol
+namespace McpSdk.Server
 {
     public sealed class ObjectSchemaWriter
     {
