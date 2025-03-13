@@ -13,6 +13,8 @@ namespace McpSdk.Server
         private readonly IToolsController _toolsController;
         private readonly ILogger _logger;
         
+        private bool _isRunning;
+        
         public McpServer(ITransport transport, ServerInfo serverInfo, ILoggerFactory loggerFactory, IToolsController toolsController)
         {
             _transport = transport;
@@ -25,10 +27,14 @@ namespace McpSdk.Server
         {
             try
             {
+                if (_isRunning)
+                    return;
+                
                 _transport.RequestReceived += OnRequestReceived;
                 _transport.NotificationReceived += OnNotificationReceived;
                 await _transport.Start();
                 _logger.LogDebug("Mcp Server Started");
+                _isRunning = true;
             }
             catch (Exception)
             {
@@ -36,6 +42,20 @@ namespace McpSdk.Server
                 _transport.NotificationReceived -= OnNotificationReceived;
                 throw;
             }
+        }
+
+        public async Task Stop()
+        {
+            if (!_isRunning)
+                return;
+
+            _transport.RequestReceived -= OnRequestReceived;
+            _transport.NotificationReceived -= OnNotificationReceived;
+            _isRunning = false;
+            
+            await _transport.Stop();
+            
+            _logger.LogDebug("Mcp Server Stopped");
         }
 
         private void OnRequestReceived(int requestId, string method, IJsonObject payload)

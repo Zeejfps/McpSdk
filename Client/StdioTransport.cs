@@ -16,6 +16,7 @@ namespace McpSdk.Client
 
         private StreamWriter _standardIn;
         private Process _process;
+        private CancellationTokenSource _cts;
         private Task _readStdOutTask;
         private Task _readStdErrTask;
         
@@ -42,11 +43,26 @@ namespace McpSdk.Client
             if (_process == null)
                 throw new ClientException("Failed to connect to the server.");
             
+            _cts = new CancellationTokenSource();
             _standardIn = _process.StandardInput;
             _readStdOutTask = ReadStdOut(_process.StandardOutput);
             _readStdErrTask = ReadStdErr(_process.StandardError);
             
             return Task.CompletedTask;
+        }
+
+        protected override async Task OnStop(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                _process.Kill();
+                _cts?.Cancel();
+                await Task.WhenAll(_readStdOutTask, _readStdErrTask);
+            }
+            catch (OperationCanceledException)
+            {
+                
+            }
         }
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
@@ -58,7 +74,7 @@ namespace McpSdk.Client
         private async Task ReadStdOut(StreamReader standardOut)
         {
             string messageAsJson;
-            while ((messageAsJson = await standardOut.ReadLineAsync()) != null)
+            while (!_cts.IsCancellationRequested && (messageAsJson = await standardOut.ReadLineAsync()) != null)
             {
                 Logger.LogDebug($"[SERVER-OUT] {messageAsJson}");
                 OnMessageReceived(messageAsJson);
@@ -68,7 +84,7 @@ namespace McpSdk.Client
         private async Task ReadStdErr(StreamReader standardErr)
         {
             string message;
-            while ((message = await standardErr.ReadLineAsync()) != null)
+            while (!_cts.IsCancellationRequested && (message = await standardErr.ReadLineAsync()) != null)
             {
                 Logger.LogDebug($"[SERVER-ERR]: {message}");
             }

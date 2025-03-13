@@ -5,5 +5,6 @@ namespace McpSdk.Server
     public interface IServer
     {
         Task Start();
+        Task Stop();
     }
 }

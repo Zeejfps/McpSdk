@@ -31,6 +31,11 @@ namespace McpSdk.Shared
             return OnStart(cancellationToken);
         }
 
+        public Task Stop()
+        {
+            return OnStop();
+        }
+
         public async Task SendNotification(string notification, CancellationToken cancellationToken = default)
         {
             var requestAsJson = _json.Stringify(request =>
@@ -125,6 +130,7 @@ namespace McpSdk.Shared
         }
         
         protected abstract Task OnStart(CancellationToken cancellationToken = default);
+        protected abstract Task OnStop(CancellationToken cancellationToken = default);
         protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken);
 
         private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
