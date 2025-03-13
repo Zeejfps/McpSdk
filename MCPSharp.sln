@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.Newtonsoft.Json", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.SseServer", "Adapter.SseServer\Adapter.SseServer.csproj", "{386DEDC5-6B76-47F0-8D08-167947BA811D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.ConsoleLogger", "Adapter.ConsoleLogger\Adapter.ConsoleLogger.csproj", "{02DB8034-FB7F-428F-9939-245CF69DDA4A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,5 +62,9 @@ Global
 		{386DEDC5-6B76-47F0-8D08-167947BA811D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{386DEDC5-6B76-47F0-8D08-167947BA811D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{386DEDC5-6B76-47F0-8D08-167947BA811D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02DB8034-FB7F-428F-9939-245CF69DDA4A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

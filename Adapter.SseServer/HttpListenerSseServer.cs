@@ -42,20 +42,17 @@ namespace McpSdk.Adapter.SseServer
         {
             while (!_cts.IsCancellationRequested)
             {
-                Console.WriteLine("Listening for connections");
                 var httpContext = await _listener.GetContextAsync();
                 var request = httpContext.Request;
                 var response = httpContext.Response;
                 var method = request.HttpMethod;
                 var path = request.Url.PathAndQuery;
-                Console.WriteLine($"Someone connected... Method: {method}, Path: {path}");
                 var isGetMethod = method.Equals("GET", StringComparison.OrdinalIgnoreCase);
                 var isPostMethod = method.Equals("POST", StringComparison.OrdinalIgnoreCase);
                 var hasEventStreamHeaders = request.AcceptTypes?.Contains("text/event-stream") ?? false;
                 
                 if (isGetMethod && hasEventStreamHeaders)
                 {
-                    Console.WriteLine("Getting events from stream...");
                     if (_channelByConnectionPathLookup.TryGetValue(path, out var connection))
                     {
                         connection.Open(response);
@@ -63,7 +60,6 @@ namespace McpSdk.Adapter.SseServer
                 }
                 else if (isPostMethod)
                 {
-                    Console.WriteLine($"Sending a message to: {path}");
                     if (_channelByMessagePathLookup.TryGetValue(path, out var connection))
                     {
                         connection.HandlePostMessage(request, response);

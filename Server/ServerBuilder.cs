@@ -12,10 +12,17 @@ namespace McpSdk.Server
         private string _version;
         private ITransportFactory _transportFactory;
         private IToolsController _toolsController;
+        private ILogger _logger;
 
         public ServerBuilder(IJson json)
         {
             _json = json;
+        }
+
+        public ServerBuilder WithLogger(ILogger logger)
+        {
+            _logger = logger;
+            return this;
         }
 
         public ServerBuilder WithStdioTransport()
@@ -61,7 +68,8 @@ namespace McpSdk.Server
             var transport = _transportFactory.Create();
             var tools = _toolsController;
             var serverInfo = new ServerInfo(_name, _version);
-            return new McpServer(transport, serverInfo, tools);
+            var logger = _logger ?? new NullLogger();
+            return new McpServer(transport, serverInfo, logger, tools);
         }
     }
 }

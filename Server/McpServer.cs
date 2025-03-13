@@ -10,24 +10,36 @@ namespace McpSdk.Server
         private readonly ITransport _transport;
         private readonly ServerInfo _serverInfo;
         private readonly IToolsController _toolsController;
-
-        public McpServer(ITransport transport, ServerInfo serverInfo,  IToolsController toolsController)
+        private readonly ILogger _logger;
+        
+        public McpServer(ITransport transport, ServerInfo serverInfo, ILogger logger, IToolsController toolsController)
         {
             _transport = transport;
             _serverInfo = serverInfo;
+            _logger = logger;
             _toolsController = toolsController;
         }
 
         public async Task Start()
         {
-            _transport.RequestReceived += OnRequestReceived;
-            _transport.NotificationReceived += OnNotificationReceived;
-            await _transport.Start();
+            try
+            {
+                _transport.RequestReceived += OnRequestReceived;
+                _transport.NotificationReceived += OnNotificationReceived;
+                await _transport.Start();
+                _logger.LogDebug("Mcp Server Started");
+            }
+            catch (Exception)
+            {
+                _transport.RequestReceived -= OnRequestReceived;
+                _transport.NotificationReceived -= OnNotificationReceived;
+                throw;
+            }
         }
 
         private void OnRequestReceived(int requestId, string method, IJsonObject payload)
         {
-            Console.Error.WriteLine($"Received request {requestId}: {method}, {payload}");
+            _logger.LogDebug($"Received Request:\n\tId: {requestId}\n\tMethod: {method}\n\tPayload: {payload}");
             if (method == "initialize")
             {
                 OnInitializeRequestReceived(requestId, payload);
@@ -67,7 +79,10 @@ namespace McpSdk.Server
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex.Message);
+                _logger.LogError(ex);
+                await _transport.SendErrorResponse(
+                    requestId,
+                    ErrorCode.InternalError, "Internal server error");
             }
         }
 
@@ -89,7 +104,7 @@ namespace McpSdk.Server
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex);
+                _logger.LogError(ex);
                 await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
             }
         }
@@ -109,14 +124,14 @@ namespace McpSdk.Server
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex.Message);
+                _logger.LogError(ex);
                 await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
             }
         }
 
         private void OnNotificationReceived(string notification)
         {
-            Console.Error.WriteLine($"Notification received: {notification}");
+            _logger.LogDebug($"Received Notification: '{notification}'");
         }
     }
 }
