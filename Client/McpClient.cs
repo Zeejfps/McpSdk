@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Client
 {
@@ -11,10 +12,14 @@ namespace McpSdk.Client
         private readonly ClientInfo _clientInfo;
         private readonly IRootsController _roots;
         private readonly ISamplingController _sampling;
-
-        public McpClient(ITransport transport, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling)
+        private readonly ILogger _logger;
+        
+        public bool IsConnected { get; private set; }
+        
+        public McpClient(ITransport transport, ILoggerFactory loggerFactory, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling)
         {
             _transport = transport;
+            _logger = loggerFactory.Create<McpClient>();
             _roots = roots;
             _clientInfo = clientInfo;
             _sampling = sampling;
@@ -51,7 +56,8 @@ namespace McpSdk.Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex);
+                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal client error");
             }
         }
 
@@ -67,16 +73,15 @@ namespace McpSdk.Client
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex);
+                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal client error");
             }
         }
 
         private void OnNotificationReceived(string notification)
         {
-            Console.WriteLine($"Notification Received: {notification}");
+            _logger.LogDebug($"Notification Received: '{notification}'");
         }
-
-        public bool IsConnected { get; private set; }
         
         public async Task Connect()
         {

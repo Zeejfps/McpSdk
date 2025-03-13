@@ -86,8 +86,10 @@ namespace McpSdk.Client
 
             var rootsCapability = _rootsCapabilityFactory?.Create();
             var samplingCapability = _samplingCapabilityFactory?.Create();
+
+            var loggerFactory = _loggerFactory;
             
-            return new McpClient(transport, clientInfo, rootsCapability, samplingCapability);
+            return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability);
         }
     }
 }

@@ -4,7 +4,7 @@ using McpSdk.Adapter.SseServer;
 using McpSdk.Protocol.Models;
 using McpSdk.Server;
 
-var loggerFactory = new ConsoleLoggerFactory();
+var loggerFactory = new ServerConsoleLoggerFactory();
 var sseServer = new HttpListenerSseServer(loggerFactory);
 var json = new NewtonsoftJson();
 var mcpServer = new ServerBuilder(json)

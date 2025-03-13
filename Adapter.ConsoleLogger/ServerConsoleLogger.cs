@@ -1,10 +1,9 @@
 ﻿using System;
-using McpSdk.Protocol;
 using McpSdk.Shared;
 
 namespace Adapter.ConsoleLogger
 {
-    public sealed class ConsoleLoggerFactory : ILoggerFactory
+    public sealed class ServerConsoleLoggerFactory : ILoggerFactory
     {
         public ILogger Create<T>()
         {
@@ -13,15 +12,15 @@ namespace Adapter.ConsoleLogger
 
         public ILogger Create(Type type)
         {
-            return new ConsoleLogger(type);
+            return new ServerConsoleLogger(type);
         }
     }
     
-    internal sealed class ConsoleLogger : ILogger
+    internal sealed class ServerConsoleLogger : ILogger
     {
         private readonly string _type;
         
-        public ConsoleLogger(Type type)
+        public ServerConsoleLogger(Type type)
         {
             _type = type.Name;
         }
