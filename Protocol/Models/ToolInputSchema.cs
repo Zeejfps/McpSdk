@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 
 namespace McpSdk.Protocol.Models;
 
-public sealed class ToolInputSchema
+public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput>>
 {
     private readonly Dictionary<string, ToolInput> _inputsByNameLookup = new();
     
@@ -32,7 +33,7 @@ public sealed class ToolInputSchema
 
     }
     
-    public ToolInputSchema AddInput(string name, ToolInput writeInput)
+    public ToolInputSchema Add(string name, ToolInput writeInput)
     {
         _inputsByNameLookup[name] = writeInput;
         return this;
@@ -55,5 +56,15 @@ public sealed class ToolInputSchema
     public IJsonObject AsJsonObject(IJson json)
     {
         return json.Object(AsJson);
+    }
+
+    public IEnumerator<KeyValuePair<string, ToolInput>> GetEnumerator()
+    {
+        return _inputsByNameLookup.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }
