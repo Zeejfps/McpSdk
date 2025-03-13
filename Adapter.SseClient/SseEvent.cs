@@ -17,11 +17,11 @@ namespace McpSdk.Adapter.SseClient
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append("event: ").Append(Kind).Append(' ');
+            sb.Append("event: ").Append(Kind).AppendLine();
             if (Id != null)
-                sb.Append("id: ").Append(Id).Append(' ');
+                sb.Append("id: ").Append(Id).AppendLine();
             if (Data != null)
-                sb.Append("data: ").Append(Data).Append(' ');
+                sb.Append("data: ").Append(Data).AppendLine();
             return sb.ToString();
         }
     }

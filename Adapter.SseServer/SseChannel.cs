@@ -26,7 +26,6 @@ namespace McpSdk.Adapter.SseServer
             _textWriter = new StreamWriter(response.OutputStream);
             _cts = new CancellationTokenSource();
             _listenForDisconnect = ListenForDisconnect();
-            Console.WriteLine("Connection established");
             ClientConnected?.Invoke();
         }
 
@@ -57,7 +56,6 @@ namespace McpSdk.Adapter.SseServer
 
         public async Task Send(SseEvent sseEvent)
         {
-            Console.WriteLine("Sending: " + sseEvent);
             await _textWriter.WriteLineAsync("event: " + sseEvent.Kind);
             
             if (sseEvent.Id != null)
@@ -65,6 +63,10 @@ namespace McpSdk.Adapter.SseServer
             
             if (sseEvent.Data != null)
                 await _textWriter.WriteLineAsync("data: " + sseEvent.Data);
+
+            // NOTE: Must send an empty line to indicate end of message
+            await _textWriter.WriteLineAsync();
+            await _textWriter.FlushAsync();
         }
 
         private async Task ListenForDisconnect()
@@ -75,8 +77,6 @@ namespace McpSdk.Adapter.SseServer
                 {
                     await Task.Delay(1000);
                 }
-                
-                Console.WriteLine("Client disconnected");
             }
             catch (Exception ex)
             {

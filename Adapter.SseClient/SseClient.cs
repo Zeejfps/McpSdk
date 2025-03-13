@@ -24,8 +24,8 @@ namespace McpSdk.Adapter.SseClient
     
         public event Action<ISseEvent> EventReceived
         {
-            remove => _sseMessageReader.EventReceived -= value;
             add => _sseMessageReader.EventReceived += value;
+            remove => _sseMessageReader.EventReceived -= value;
         }
 
         public async Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
@@ -60,6 +60,7 @@ namespace McpSdk.Adapter.SseClient
                     {
                         // Read a line from the stream.
                         var line = await reader.ReadLineAsync();
+                        Console.WriteLine($"Line Read: {line}");
                         _sseMessageReader.ProcessLine(line);
                     }
                 }

@@ -83,9 +83,9 @@ namespace McpSdk.Client
             if (IsConnected)
                 throw new Exception("Client is already connected");
             
-            await _transport.Start();
             _transport.RequestReceived += OnRequestReceived;
             _transport.NotificationReceived += OnNotificationReceived;
+            await _transport.Start();
             
             var clientProtocolVersion = "2024-11-05";
             var capabilities = new ClientCapabilities();

@@ -11,7 +11,6 @@ namespace McpSdk.Adapter.SseClient
     
         public void ProcessLine(string? line)
         {
-            //Console.WriteLine($"Processing {line}");
             if (string.IsNullOrEmpty(line))
             {
                 if (_currentMessage != null)

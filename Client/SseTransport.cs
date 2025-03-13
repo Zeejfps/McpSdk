@@ -12,6 +12,7 @@ namespace McpSdk.Client
         private readonly string _connectionUrl;
 
         private string _messagesUrl;
+        private TaskCompletionSource<bool> _startedTcs;
 
         public SseTransport(ISseClient sseClient, IJson json, string host) : base(json)
         {
@@ -23,10 +24,10 @@ namespace McpSdk.Client
         
         private void OnSseEventReceived(ISseEvent sseEvent)
         {
-            Console.WriteLine(sseEvent.ToString());
             if (sseEvent.Kind == "endpoint")
             {
                 _messagesUrl = $"{_host}{sseEvent.Data}";
+                _startedTcs.TrySetResult(true);
             }
             else if (sseEvent.Kind == "message")
             {
@@ -36,8 +37,10 @@ namespace McpSdk.Client
 
         protected override async Task OnStart(CancellationToken cancellationToken = default)
         {
+            _startedTcs = new TaskCompletionSource<bool>();
             _sseClient.EventReceived += OnSseEventReceived;
             await _sseClient.Connect(_connectionUrl, cancellationToken);
+            await _startedTcs.Task;
         }
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
