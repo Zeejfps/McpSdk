@@ -5,7 +5,7 @@ using McpSdk.Protocol.Models;
 using McpSdk.Server;
 
 var loggerFactory = new ConsoleLoggerFactory();
-var sseServer = new HttpListenerSseServer();
+var sseServer = new HttpListenerSseServer(loggerFactory);
 var json = new NewtonsoftJson();
 var mcpServer = new ServerBuilder(json)
     .WithName("Demo Server")

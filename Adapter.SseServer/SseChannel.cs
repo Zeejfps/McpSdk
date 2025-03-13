@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Server;
+using McpSdk.Shared;
 
 namespace McpSdk.Adapter.SseServer
 {
@@ -16,6 +17,13 @@ namespace McpSdk.Adapter.SseServer
         private StreamWriter _textWriter;
         private CancellationTokenSource _cts;
         private HttpListenerResponse _response;
+        
+        private readonly ILogger _logger;
+
+        public SseChannel(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.Create<SseChannel>();
+        }
 
         public void Open(HttpListenerResponse response)
         {
@@ -41,7 +49,7 @@ namespace McpSdk.Adapter.SseServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex);
             }
 
             try
@@ -50,7 +58,7 @@ namespace McpSdk.Adapter.SseServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex);
             }
         }
 
@@ -80,7 +88,7 @@ namespace McpSdk.Adapter.SseServer
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex);
             }
             finally
             {

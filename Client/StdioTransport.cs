@@ -60,7 +60,7 @@ namespace McpSdk.Client
             string messageAsJson;
             while ((messageAsJson = await standardOut.ReadLineAsync()) != null)
             {
-                Console.WriteLine($"[SERVER-OUT] {messageAsJson}");
+                Logger.LogDebug($"[SERVER-OUT] {messageAsJson}");
                 OnMessageReceived(messageAsJson);
             }
         }
@@ -70,7 +70,7 @@ namespace McpSdk.Client
             string message;
             while ((message = await standardErr.ReadLineAsync()) != null)
             {
-                Console.WriteLine($"[SERVER-ERR]: {message}");
+                Logger.LogDebug($"[SERVER-ERR]: {message}");
             }
         }
     }

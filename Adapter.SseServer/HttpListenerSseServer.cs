@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Server;
+using McpSdk.Shared;
 
 namespace McpSdk.Adapter.SseServer
 {
@@ -16,9 +17,11 @@ namespace McpSdk.Adapter.SseServer
 
         private readonly Dictionary<string, SseChannel> _channelByMessagePathLookup = new Dictionary<string, SseChannel>();
         private readonly Dictionary<string, SseChannel> _channelByConnectionPathLookup = new Dictionary<string, SseChannel>();
+        private readonly ILoggerFactory _loggerFactory;
         
-        public HttpListenerSseServer()
+        public HttpListenerSseServer(ILoggerFactory loggerFactory)
         {
+            _loggerFactory = loggerFactory;
             _listener = new HttpListener();
         }
         
@@ -32,7 +35,7 @@ namespace McpSdk.Adapter.SseServer
         
         public ISseChannel CreateChannel(string connectionPath, string messagesPath)
         {
-            var connection = new SseChannel();
+            var connection = new SseChannel(_loggerFactory);
             _channelByConnectionPathLookup.Add(connectionPath, connection);
             _channelByMessagePathLookup.Add(messagesPath, connection);
             return connection;
