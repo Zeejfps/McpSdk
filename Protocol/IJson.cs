@@ -30,7 +30,7 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, Json[] jsonArray);
     }
 
-    public interface IJsonObject
+    public interface IJsonObject : IEnumerable<KeyValuePair<string, IJsonProperty>>
     {
         IJsonProperty this[string propertyName] { get; }
         string ToString();
