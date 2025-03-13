@@ -79,7 +79,7 @@ namespace McpSdk.Adapter.SseServer
         {
             try
             {
-                while (_textWriter.BaseStream.CanWrite && !_cts.IsCancellationRequested)
+                while (!_cts.IsCancellationRequested && _textWriter.BaseStream.CanWrite)
                 {
                     await Task.Delay(1000);
                 }
