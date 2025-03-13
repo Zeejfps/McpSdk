@@ -2,5 +2,5 @@
 
 public interface ISseServer
 {
-    ISseConnection StartListening(string connectionPath, string messagesPath);
+    ISseChannel CreateChannel(string connectionPath, string messagesPath);
 }

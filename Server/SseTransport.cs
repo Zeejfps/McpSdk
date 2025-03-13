@@ -10,36 +10,38 @@ namespace McpSdk.Server
         private readonly ISseServer _sseServer;
         
         private string _sessionId;
-        private ISseConnection _sseConnection;
+        private ISseChannel _sseChannel;
         
         public SseTransport(IJson json, ISseServer sseServer) : base(json)
         {
             _sseServer = sseServer;
         }
 
-        protected override async Task OnStart(CancellationToken cancellationToken = default)
+        protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             try
             {
                 _sessionId = Guid.NewGuid().ToString("N");
-                _sseConnection = _sseServer.StartListening("/sse", $"/messages?{_sessionId}");
-                _sseConnection.ClientConnected += OnClientConnected;
-                _sseConnection.MessageReceived += OnMessageReceived;
+                _sseChannel = _sseServer.CreateChannel("/sse", $"/messages?{_sessionId}");
+                _sseChannel.ClientConnected += OnClientConnected;
+                _sseChannel.MessageReceived += OnMessageReceived;
             }
             catch (Exception e)
             {
-                if (_sseConnection != null)
+                if (_sseChannel != null)
                 {
-                    _sseConnection.ClientConnected -= OnClientConnected;
-                    _sseConnection.MessageReceived -= OnMessageReceived;
+                    _sseChannel.ClientConnected -= OnClientConnected;
+                    _sseChannel.MessageReceived -= OnMessageReceived;
                 }
                 Console.Error.WriteLine(e);
             }
+            
+            return Task.CompletedTask;
         }
 
         private void OnClientConnected()
         {
-            _sseConnection.Send(new SseEvent
+            _sseChannel.Send(new SseEvent
             {
                 Kind = "endpoint",
                 Data = $"/messages?{_sessionId}"
@@ -48,7 +50,7 @@ namespace McpSdk.Server
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
-            await _sseConnection.Send(new SseEvent
+            await _sseChannel.Send(new SseEvent
             {
                 Kind = "message",
                 Data = $"{requestAsJson}"

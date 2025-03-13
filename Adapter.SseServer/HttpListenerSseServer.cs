@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,31 +7,14 @@ using McpSdk.Server;
 
 namespace McpSdk.Adapter.SseServer
 {
-    internal sealed class SseConnection : ISseConnection
-    {
-        public event Action ClientConnected;
-        public event Action<string> MessageReceived;
-        
-        public Task Send(SseEvent sseEvent)
-        {
-            return    Task.CompletedTask;
-        }
-
-        public void Start(Stream outputStream)
-        {
-            
-        }
-    }
-    
-    
     public sealed class HttpListenerSseServer : ISseServer
     {
         private readonly HttpListener _listener;
         private CancellationTokenSource _cts;
         private Task _listeningTask;
 
-        private readonly Dictionary<string, SseConnection> _connectionByMessagePathLookup = new Dictionary<string, SseConnection>();
-        private readonly Dictionary<string, SseConnection> _connectionByConnectionPathLookup = new Dictionary<string, SseConnection>();
+        private readonly Dictionary<string, SseChannel> _channelByMessagePathLookup = new Dictionary<string, SseChannel>();
+        private readonly Dictionary<string, SseChannel> _channelByConnectionPathLookup = new Dictionary<string, SseChannel>();
         
         public HttpListenerSseServer()
         {
@@ -47,11 +29,11 @@ namespace McpSdk.Adapter.SseServer
             return Task.CompletedTask;
         }
         
-        public ISseConnection StartListening(string connectionPath, string messagesPath)
+        public ISseChannel CreateChannel(string connectionPath, string messagesPath)
         {
-            var connection = new SseConnection();
-            _connectionByMessagePathLookup.Add(connectionPath, connection);
-            _connectionByConnectionPathLookup.Add(messagesPath, connection);
+            var connection = new SseChannel();
+            _channelByMessagePathLookup.Add(connectionPath, connection);
+            _channelByConnectionPathLookup.Add(messagesPath, connection);
             return connection;
         }
 
@@ -63,25 +45,24 @@ namespace McpSdk.Adapter.SseServer
                 var request = httpContext.Request;
                 var response = httpContext.Response;
                 var method = request.HttpMethod;
-                var path = request.Url.AbsolutePath;
+                var path = request.Url.PathAndQuery;
                 var isGetMethod = method.Equals("GET", StringComparison.OrdinalIgnoreCase);
                 var isPostMethod = method.Equals("POST", StringComparison.OrdinalIgnoreCase);
-                var hasRequiredHeaders = request.ContentType?.Contains("text/event-stream") ?? false;
+                var hasEventStreamHeaders = request.ContentType?.Contains("text/event-stream") ?? false;
                 
-                if (isGetMethod && hasRequiredHeaders)
+                if (isGetMethod && hasEventStreamHeaders)
                 {
-                    if (_connectionByConnectionPathLookup.TryGetValue(path, out var connection))
+                    if (_channelByConnectionPathLookup.TryGetValue(path, out var connection))
                     {
-                        response.ContentType = "text/event-stream";
-                        response.Headers.Add("Cache-Control", "no-cache");
-                        response.Headers.Add("Connection", "keep-alive");
-                        connection.Start(response.OutputStream);
+                        connection.Establish(response);
                     }
                 }
                 else if (isPostMethod)
                 {
-                    response.StatusCode = (int)HttpStatusCode.OK;
-                    response.Close();
+                    if (_channelByMessagePathLookup.TryGetValue(path, out var connection))
+                    {
+                        connection.HandlePostMessage(request, response);
+                    }
                 }
             }
         }
