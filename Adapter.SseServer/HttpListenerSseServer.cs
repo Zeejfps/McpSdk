@@ -15,13 +15,15 @@ namespace McpSdk.Adapter.SseServer
         private CancellationTokenSource _cts;
         private Task _listeningTask;
 
-        private readonly Dictionary<string, SseChannel> _channelByMessagePathLookup = new Dictionary<string, SseChannel>();
-        private readonly Dictionary<string, SseChannel> _channelByConnectionPathLookup = new Dictionary<string, SseChannel>();
+        private readonly Dictionary<string, SseChannel> _channelsByMessagePath = new Dictionary<string, SseChannel>();
         private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
         
-        public HttpListenerSseServer(ILoggerFactory loggerFactory)
+        public HttpListenerSseServer(string connectionEndpoint, ILoggerFactory loggerFactory)
         {
+            ConnectionPath = connectionEndpoint;
             _loggerFactory = loggerFactory;
+            _logger = loggerFactory.Create<HttpListenerSseServer>();
             _listener = new HttpListener();
         }
         
@@ -32,13 +34,23 @@ namespace McpSdk.Adapter.SseServer
             _cts = new CancellationTokenSource();
             await Listen();
         }
-        
-        public ISseChannel GetChannel(string connectionPath, string messagesPath)
+
+        public string ConnectionPath { get; private set; }
+
+        public ISseChannel CreateChannel(string messagesPath)
         {
-            var connection = new SseChannel(_loggerFactory);
-            _channelByConnectionPathLookup.Add(connectionPath, connection);
-            _channelByMessagePathLookup.Add(messagesPath, connection);
-            return connection;
+            if (!_channelsByMessagePath.TryGetValue(messagesPath, out var channel))
+            { 
+                channel = new SseChannel(_loggerFactory);
+                _channelsByMessagePath[messagesPath] = channel;
+            }
+            
+            return channel;
+        }
+
+        public void DestroyChannel(string messagesPath)
+        {
+            _channelsByMessagePath.Remove(messagesPath);
         }
 
         private async Task Listen()
@@ -50,20 +62,24 @@ namespace McpSdk.Adapter.SseServer
                 var response = httpContext.Response;
                 var method = request.HttpMethod;
                 var path = request.Url.PathAndQuery;
+                var isConnectionPath = path.Equals(ConnectionPath, StringComparison.OrdinalIgnoreCase);
                 var isGetMethod = method.Equals("GET", StringComparison.OrdinalIgnoreCase);
                 var isPostMethod = method.Equals("POST", StringComparison.OrdinalIgnoreCase);
                 var hasEventStreamHeaders = request.AcceptTypes?.Contains("text/event-stream") ?? false;
                 
-                if (isGetMethod && hasEventStreamHeaders)
+                if (isGetMethod && hasEventStreamHeaders && isConnectionPath)
                 {
-                    if (_channelByConnectionPathLookup.TryGetValue(path, out var connection))
+                    foreach (var channel in _channelsByMessagePath.Values)
                     {
-                        connection.Open(response);
+                        if (channel.IsOpened)
+                            continue;
+                        
+                        channel.Open(response);
                     }
                 }
                 else if (isPostMethod)
                 {
-                    if (_channelByMessagePathLookup.TryGetValue(path, out var connection))
+                    if (_channelsByMessagePath.TryGetValue(path, out var connection))
                     {
                         connection.HandlePostMessage(request, response);
                     }

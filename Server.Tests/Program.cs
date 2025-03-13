@@ -5,14 +5,13 @@ using McpSdk.Protocol.Models;
 using McpSdk.Server;
 
 var loggerFactory = new ServerConsoleLoggerFactory();
-var sseServer = new HttpListenerSseServer(loggerFactory);
+var sseServer = new HttpListenerSseServer("/sse", loggerFactory);
 var json = new NewtonsoftJson();
 var mcpServer = new ServerBuilder(json)
     .WithName("Demo Server")
     .WithVersion("1.0.0")
     .WithLogger(loggerFactory)
-    //.WithStdioTransport()
-    .WithSseTransport(sseServer, "/sse", "/messages")
+    .WithSseTransport(sseServer, "/messages")
     .WithToolsCapability(tools =>
     {
         tools.AddTool(toolWriter =>
@@ -48,6 +47,10 @@ var mcpServer = new ServerBuilder(json)
     })
     .Build();
 
+await mcpServer.Start();
+await mcpServer.Stop();
+await mcpServer.Start();
+await mcpServer.Stop();
 await mcpServer.Start();
 
 await sseServer.Start();

@@ -9,7 +9,6 @@ namespace McpSdk.Server
     public sealed class SseTransport : JsonRpcTransport
     {
         private readonly ISseServer _sseServer;
-        private readonly string _connectionEndpoint;
         private readonly string _messagesEndpoint;
 
         private string _sessionId;
@@ -19,11 +18,9 @@ namespace McpSdk.Server
             IJson json,
             ISseServer sseServer,
             ILoggerFactory loggerFactory,
-            string connectionEndpoint,
             string messagesEndpoint) : base(json, loggerFactory)
         {
             _sseServer = sseServer;
-            _connectionEndpoint = connectionEndpoint;
             _messagesEndpoint = messagesEndpoint;
         }
 
@@ -32,7 +29,7 @@ namespace McpSdk.Server
             try
             {
                 _sessionId = Guid.NewGuid().ToString("N");
-                _sseChannel = _sseServer.GetChannel(_connectionEndpoint, $"{_messagesEndpoint}?{_sessionId}");
+                _sseChannel = _sseServer.CreateChannel($"{_messagesEndpoint}?{_sessionId}");
                 _sseChannel.ClientConnected += OnClientConnected;
                 _sseChannel.MessageReceived += OnMessageReceived;
             }
@@ -53,7 +50,9 @@ namespace McpSdk.Server
         {
             _sseChannel.ClientConnected -= OnClientConnected;
             _sseChannel.MessageReceived -= OnMessageReceived;
+            Logger.LogDebug("Stopping Sse Channel");
             await _sseChannel.Close();
+            _sseServer.DestroyChannel($"{_messagesEndpoint}?{_sessionId}");
         }
 
         private void OnClientConnected()

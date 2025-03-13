@@ -49,6 +49,7 @@ namespace McpSdk.Server
             if (!_isRunning)
                 return;
 
+            _logger.LogDebug("Stopping Mcp Server...");
             _transport.RequestReceived -= OnRequestReceived;
             _transport.NotificationReceived -= OnNotificationReceived;
             _isRunning = false;

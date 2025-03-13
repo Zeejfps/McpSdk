@@ -25,8 +25,13 @@ namespace McpSdk.Adapter.SseServer
             _logger = loggerFactory.Create<SseChannel>();
         }
 
+        public bool IsOpened { get; private set; }
+
         public void Open(HttpListenerResponse response)
         {
+            if (IsOpened)
+                return;
+            
             _response = response;
             response.ContentType = "text/event-stream";
             response.Headers.Add("Cache-Control", "no-cache");
@@ -34,11 +39,15 @@ namespace McpSdk.Adapter.SseServer
             _textWriter = new StreamWriter(response.OutputStream);
             _cts = new CancellationTokenSource();
             _listenForDisconnect = ListenForDisconnect();
+            IsOpened = true;
             ClientConnected?.Invoke();
         }
 
         public Task Close()
         {
+            if (!IsOpened)
+                return Task.CompletedTask;
+            
             _cts.Cancel();
             _cts.Dispose();
             

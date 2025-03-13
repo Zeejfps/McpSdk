@@ -33,6 +33,7 @@ namespace McpSdk.Shared
 
         public Task Stop()
         {
+            Logger.LogDebug("Stopping transport...");
             return OnStop();
         }
 
