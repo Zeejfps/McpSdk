@@ -41,7 +41,6 @@ namespace McpSdk.Server
 
         private void OnClientConnected()
         {
-            Console.WriteLine("Client connected");
             _sseChannel.Send(new SseEvent
             {
                 Kind = "endpoint",
