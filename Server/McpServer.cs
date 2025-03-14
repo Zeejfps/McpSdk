@@ -82,6 +82,10 @@ namespace McpSdk.Server
             {
                 OnCallToolRequestReceived(requestId, payload);
             }
+            else if (method == "prompts/list")
+            {
+                OnListPromptsRequestReceived(requestId, payload);
+            }
         }
 
         private async void OnInitializeRequestReceived(int requestId, IJsonObject reqPayload)
@@ -162,6 +166,23 @@ namespace McpSdk.Server
             }
         }
 
+        private async void OnListPromptsRequestReceived(int requestId, IJsonObject arguments)
+        {
+            try
+            {
+                if (_toolsController == null)
+                {
+                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
+            }
+        }
+        
         private void OnNotificationReceived(string notification)
         {
             _logger.LogDebug($"Received Notification: '{notification}'");
