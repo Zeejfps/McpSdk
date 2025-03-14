@@ -5,6 +5,7 @@ public sealed class StringInput : ToolInput
     public string Description { get; set; }
     public int? MinLength { get; set; }
     public int? MaxLength { get; set; }
+    public string[] Options { get; set; }
 
     public StringInput() {}
 
@@ -13,6 +14,7 @@ public sealed class StringInput : ToolInput
         MinLength = jsonObject["minLength"]?.AsInt();
         MaxLength = jsonObject["maxLength"]?.AsInt();
         Description = jsonObject["description"]?.AsString();
+        Options = jsonObject["enum"]?.AsStringArray();
     }
     
     public override void AsJson(IJsonWriter writer)
@@ -22,6 +24,8 @@ public sealed class StringInput : ToolInput
             writer.Write("minLength", MinLength.Value);
         if (MaxLength.HasValue)
             writer.Write("maxLength", MaxLength.Value);
+        if (Options != null && Options.Length > 0) 
+            writer.Write("enum", Options);
         writer.Write("description", Description);
     }
 }
