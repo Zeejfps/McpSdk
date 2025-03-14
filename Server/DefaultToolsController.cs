@@ -7,13 +7,13 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server
 {
-    public class DefaultToolsController : IToolsController
+    public sealed class DefaultToolsController : IToolsController
     {
         private readonly IJson _json;
         private readonly Dictionary<string, ITool> _toolByNameLookup = new();
         
         public event Action ListChanged;
-        public bool IsListChangedNotificationSupported => true;
+        public bool IsListChangedNotificationSupported => false;
         
         public DefaultToolsController(IJson json)
         {
@@ -55,6 +55,17 @@ namespace McpSdk.Server
 
             var toolArguments = request.ToolArguments;
             return await tool.Call(toolArguments);
+        }
+    }
+
+    public static class DefaultToolsControllerExtensions
+    {
+        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, Action<DefaultToolsController> configure)
+        {
+            var toolsController = new DefaultToolsController(builder.Json);
+            configure(toolsController);
+            builder.WithToolsCapability(toolsController);
+            return builder;
         }
     }
 }

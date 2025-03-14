@@ -42,4 +42,14 @@ namespace McpSdk.Server
                 OnMessageReceived(messageAsJson);
         }
     }
+
+    public static class StdioTransportServerBuilderExtensions
+    {
+        public static ServerBuilder WithStdioTransport(this ServerBuilder builder)
+        {
+            var factory = new StdioTransportFactory(builder.Json);
+            builder.WithTransport(factory);
+            return builder;
+        }
+    }
 }

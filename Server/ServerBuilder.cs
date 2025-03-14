@@ -7,7 +7,7 @@ namespace McpSdk.Server
 {
     public sealed class ServerBuilder
     {
-        private readonly IJson _json;
+        public IJson Json { get; }
 
         private string _name;
         private string _version;
@@ -17,25 +17,19 @@ namespace McpSdk.Server
 
         public ServerBuilder(IJson json)
         {
-            _json = json;
+            Json = json;
             _loggerFactory = new NullLoggerFactory();
         }
-
+        
         public ServerBuilder WithLogger(ILoggerFactory loggerFactory)
         {
             _loggerFactory = loggerFactory;
             return this;
         }
 
-        public ServerBuilder WithStdioTransport()
+        public ServerBuilder WithTransport(ITransportFactory transportFactory)
         {
-            _transportFactory = new StdioTransportFactory(_json);
-            return this;
-        }
-
-        public ServerBuilder WithSseTransport(ISseSession sseSession)
-        {
-            _transportFactory = new SseTransportFactory(_json, sseSession);
+            _transportFactory = transportFactory;
             return this;
         }
         
@@ -51,14 +45,11 @@ namespace McpSdk.Server
             return this;
         }
         
-        public ServerBuilder WithToolsCapability(Action<DefaultToolsController> addTools)
+        public ServerBuilder WithPromptsCapability(IPromptController promptController)
         {
-            var toolsController = new DefaultToolsController(_json);
-            addTools(toolsController);
-            _toolsController = toolsController;
             return this;
         }
-
+        
         public ServerBuilder WithToolsCapability(IToolsController toolsController)
         {
             _toolsController = toolsController;

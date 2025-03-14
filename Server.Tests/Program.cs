@@ -16,7 +16,7 @@ sseServer.SessionStarted += async session =>
         .WithVersion("1.0.0")
         .WithLogger(loggerFactory)
         .WithSseTransport(session)
-        .WithToolsCapability(tools =>
+        .WithDefaultToolsCapability(tools =>
         {
             tools.AddTool(new TestTool());
         })

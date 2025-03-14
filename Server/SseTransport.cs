@@ -59,4 +59,15 @@ namespace McpSdk.Server
             });
         }
     }
+
+    public static class SseTransportServerBuilderExtensions
+    {
+        public static ServerBuilder WithSseTransport(this ServerBuilder builder, ISseSession sseSession)
+        {
+            var sseTransportFactory = new SseTransportFactory(builder.Json, sseSession);
+            builder.WithTransport(sseTransportFactory);
+            return builder;
+        }
+        
+    }
 }
