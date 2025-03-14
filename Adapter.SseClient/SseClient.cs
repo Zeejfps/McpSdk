@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Client;
+using McpSdk.Shared;
 
 namespace McpSdk.Adapter.SseClient
 {
@@ -13,11 +14,14 @@ namespace McpSdk.Adapter.SseClient
     {
         private readonly HttpClient _httpClient;
         private readonly SseMessageReader _sseMessageReader;
-    
+        private readonly ILogger _logger;
+        
         private Task _startListeningTask;
+        private CancellationTokenSource _cts;
 
-        public SseClient()
+        public SseClient(ILoggerFactory loggerFactory)
         {
+            _logger = loggerFactory.Create<SseClient>();
             _httpClient = new HttpClient();
             _sseMessageReader = new SseMessageReader();
         }
@@ -35,15 +39,25 @@ namespace McpSdk.Adapter.SseClient
             response.EnsureSuccessStatusCode();
         }
 
-        public Task Disconnect()
-        {
-            throw new NotImplementedException();
-        }
-
         public Task Connect(string url, CancellationToken cancellationToken = default)
         {
-            _startListeningTask = StartListening(url, cancellationToken);
+            _cts = new CancellationTokenSource();
+            var linkedTokenSrc = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
+            _startListeningTask = StartListening(url, linkedTokenSrc.Token);
             return Task.CompletedTask;
+        }
+
+        public async Task Disconnect()
+        {
+            try
+            {
+                _cts.Cancel();
+                await _startListeningTask;
+            }
+            catch (OperationCanceledException)
+            {
+                
+            }
         }
 
         private async Task StartListening(string sseUrl, CancellationToken cancellationToken)
@@ -61,7 +75,7 @@ namespace McpSdk.Adapter.SseClient
                     using var stream = await response.Content.ReadAsStreamAsync();
                     using var reader = new StreamReader(stream);
                     // Continuously read the stream.
-                    while (!reader.EndOfStream)
+                    while (!cancellationToken.IsCancellationRequested && !reader.EndOfStream)
                     {
                         // Read a line from the stream.
                         var line = await reader.ReadLineAsync();
@@ -70,7 +84,7 @@ namespace McpSdk.Adapter.SseClient
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    _logger.LogError(ex);
                 }
             }   
         }

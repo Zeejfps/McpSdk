@@ -6,10 +6,10 @@ using McpSdk.Client.Tests;
 using McpSdk.Protocol.Models;
 
 var json = new NewtonsoftJson();//new SystemJson();
-var sseClientFactory = new SseClientFactory();
+var loggerFactory = new ClientConsoleLoggerFactory();
+var sseClientFactory = new SseClientFactory(loggerFactory);
 var rootsControllerFactory = new RootsControllerFactory();
 var samplingControllerFactory = new SamplingControllerFactory();
-var loggerFactory = new ClientConsoleLoggerFactory();
 var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
