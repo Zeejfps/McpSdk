@@ -38,10 +38,18 @@ namespace McpSdk.Server
             _resourcesController = resourcesController;
 
             _requestHandlersByPathLookup.Add("initialize", HandleInitializeRequest);
-            _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
-            _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
-            _requestHandlersByPathLookup.Add("prompts/list", HandleListPromptsRequest);
-            _requestHandlersByPathLookup.Add("prompts/get", HandleGetPromptRequest);
+
+            if (_toolsController != null)
+            {
+                _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
+                _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
+            }
+
+            if (_promptController != null)
+            {
+                _requestHandlersByPathLookup.Add("prompts/list", HandleListPromptsRequest);
+                _requestHandlersByPathLookup.Add("prompts/get", HandleGetPromptRequest);
+            }
         }
 
         public async Task Start()
@@ -93,7 +101,7 @@ namespace McpSdk.Server
                 {
                     await _transport.SendErrorResponse(
                         requestId,
-                        ErrorCode.MethodNotFound, $"Method {path} not found");
+                        ErrorCode.MethodNotFound, $"Method {path} is not supported");
                 }
             }
             catch (Exception ex)
@@ -144,47 +152,26 @@ namespace McpSdk.Server
 
         private async Task HandleListToolsRequest(int requestId, IJsonObject reqPayload)
         {
-            if (_toolsController == null)
-            {
-                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
-                return;
-            }
-
             var result = await _toolsController.ListTools();
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
         private async Task HandleCallToolRequest(int requestId, IJsonObject arguments)
         {
-            if (_toolsController == null)
-            {
-                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
-                return;
-            }
-                
             var result = await _toolsController.CallTool(new CallToolRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
         private async Task HandleListPromptsRequest(int requestId, IJsonObject arguments)
         {
-            if (_promptController == null)
-            {
-                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
-                return;
-            }
-
             var result = await _promptController.ListPrompts();
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
         private async Task HandleGetPromptRequest(int requestId, IJsonObject arguments)
         {
-            if (_promptController == null)
-            {
-                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
-                return;
-            }
+            var result = await _promptController.GetPrompt(new GetPromptRequest(arguments));
+            await _transport.SendOkResponse(requestId, result.AsJson);
         }
         
         private void OnNotificationReceived(string notification, IJsonObject arguments)

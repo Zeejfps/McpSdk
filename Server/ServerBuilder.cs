@@ -71,8 +71,9 @@ namespace McpSdk.Server
             var serverInfo = new ServerInfo(_name, _version);
             var tools = _toolsController;
             var prompts = _promptsController;
+            
             var resources = _resourcesController;
-            return new McpServer(
+            var server =  new McpServer(
                 transport,
                 serverInfo, 
                 loggerFactory,
@@ -80,6 +81,18 @@ namespace McpSdk.Server
                 prompts,
                 resources
             );
+            
+            // NOTE(Zee): Potential change
+            // if (prompts != null)
+            // {
+            //     server.RegisterHandler("tools/list", (requestId, IJsonObject arguments) =>
+            //     {
+            //         var result = await prompts.ListPrompts();
+            //         await transport.SendOkResponse(requestId, result.AsJson);
+            //     });
+            // }
+
+            return server;
         }
     }
 }
