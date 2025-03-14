@@ -3,6 +3,7 @@
     public sealed class ServerCapabilities
     {
         public ToolsCapability Tools { get; set; }
+        public PromptsCapability Prompts { get; set; }
 
         public ServerCapabilities() {}
         

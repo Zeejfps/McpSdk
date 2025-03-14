@@ -11,16 +11,23 @@ namespace McpSdk.Server
         private readonly ITransport _transport;
         private readonly ServerInfo _serverInfo;
         private readonly IToolsController _toolsController;
+        private readonly IPromptController _promptController;
         private readonly ILogger _logger;
         
         private bool _isRunning;
         
-        public McpServer(ITransport transport, ServerInfo serverInfo, ILoggerFactory loggerFactory, IToolsController toolsController)
+        public McpServer(
+            ITransport transport,
+            ServerInfo serverInfo,
+            ILoggerFactory loggerFactory,
+            IToolsController toolsController,
+            IPromptController promptController)
         {
             _transport = transport;
             _serverInfo = serverInfo;
             _logger = loggerFactory.Create<McpServer>();
             _toolsController = toolsController;
+            _promptController = promptController;
         }
 
         public async Task Start()
@@ -94,6 +101,9 @@ namespace McpSdk.Server
                 var capabilities = new ServerCapabilities();
                 if (_toolsController != null)
                     capabilities.Tools = new ToolsCapability(_toolsController.IsListChangedNotificationSupported);
+
+                if (_promptController != null)
+                    capabilities.Prompts = new PromptsCapability(_promptController.IsListChangedNotificationSupported);;
                 
                 var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
                 await _transport.SendOkResponse(requestId, result.AsJson);

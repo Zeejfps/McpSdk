@@ -1,5 +1,4 @@
-﻿using System;
-using McpSdk.Protocol;
+﻿using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Shared;
 
@@ -13,6 +12,7 @@ namespace McpSdk.Server
         private string _version;
         private ITransportFactory _transportFactory;
         private IToolsController _toolsController;
+        private IPromptController _promptsController;
         private ILoggerFactory _loggerFactory;
 
         public ServerBuilder(IJson json)
@@ -45,8 +45,9 @@ namespace McpSdk.Server
             return this;
         }
         
-        public ServerBuilder WithPromptsCapability(IPromptController promptController)
+        public ServerBuilder WithPromptsCapability(IPromptController promptsController)
         {
+            _promptsController = promptsController;
             return this;
         }
         
@@ -62,7 +63,8 @@ namespace McpSdk.Server
             var transport = _transportFactory.Create(loggerFactory);
             var serverInfo = new ServerInfo(_name, _version);
             var tools = _toolsController;
-            return new McpServer(transport, serverInfo, loggerFactory, tools);
+            var prompts = _promptsController;
+            return new McpServer(transport, serverInfo, loggerFactory, tools, prompts);
         }
     }
 }
