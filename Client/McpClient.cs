@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Protocol.Models.ClientCapabilities;
 using McpSdk.Shared;
 
 namespace McpSdk.Client
@@ -93,12 +94,12 @@ namespace McpSdk.Client
             await _transport.Start();
             
             var clientProtocolVersion = "2024-11-05";
-            var capabilities = new ClientCapabilities();
+            var capabilities = new ClientCapabilitiesModel();
             if (_roots != null)
-                capabilities.RootsCapability = new RootsCapability(_roots.IsListChangedNotificationSupported);
+                capabilities.RootsCapability = new RootsCapabilityModel(_roots.IsListChangedNotificationSupported);
 
             if (_sampling != null)
-                capabilities.SamplingCapability = new SamplingCapability();
+                capabilities.SamplingCapability = new SamplingCapabilityModel();
             
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
             var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.AsJson);

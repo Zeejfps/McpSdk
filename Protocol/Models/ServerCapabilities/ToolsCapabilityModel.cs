@@ -1,15 +1,15 @@
-﻿namespace McpSdk.Protocol.Models
+﻿namespace McpSdk.Protocol.Models.ServerCapabilities
 {
-    public sealed class ToolsCapability
+    public sealed class ToolsCapabilityModel
     {
         public bool IsListChangedNotificationSupported { get; }
 
-        public ToolsCapability(bool isListChangedNotificationSupported)
+        public ToolsCapabilityModel(bool isListChangedNotificationSupported)
         {
             IsListChangedNotificationSupported = isListChangedNotificationSupported;
         }
         
-        public ToolsCapability(IJsonObject jsonObject)
+        public ToolsCapabilityModel(IJsonObject jsonObject)
         {
             IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;   
         }

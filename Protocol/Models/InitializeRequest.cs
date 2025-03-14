@@ -1,12 +1,14 @@
-﻿namespace McpSdk.Protocol.Models
+﻿using McpSdk.Protocol.Models.ClientCapabilities;
+
+namespace McpSdk.Protocol.Models
 {
     public sealed class InitializeRequest
     {
         public string ProtocolVersion { get; }
         public ClientInfo ClientInfo { get; }
-        public ClientCapabilities ClientCapabilities { get; }
+        public ClientCapabilitiesModel ClientCapabilities { get; }
         
-        public InitializeRequest(string protocolVersion, ClientCapabilities capabilities, ClientInfo clientInfo)
+        public InitializeRequest(string protocolVersion, ClientCapabilitiesModel capabilities, ClientInfo clientInfo)
         {
             ProtocolVersion = protocolVersion;
             ClientCapabilities = capabilities;
@@ -18,7 +20,7 @@
             ProtocolVersion = jsonObject["protocolVersion"].AsString();
             
             var capabilities = jsonObject["capabilities"].AsObject();
-            ClientCapabilities = new ClientCapabilities(capabilities);
+            ClientCapabilities = new ClientCapabilitiesModel(capabilities);
             
             var clientInfoObj = jsonObject["clientInfo"]?.AsObject();
             if (clientInfoObj != null)

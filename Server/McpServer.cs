@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Protocol.Models.ServerCapabilities;
 using McpSdk.Shared;
 
 namespace McpSdk.Server
@@ -98,12 +99,12 @@ namespace McpSdk.Server
                     return;
                 }
 
-                var capabilities = new ServerCapabilities();
+                var capabilities = new ServerCapabilitiesModel();
                 if (_toolsController != null)
-                    capabilities.Tools = new ToolsCapability(_toolsController.IsListChangedNotificationSupported);
+                    capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
 
                 if (_promptController != null)
-                    capabilities.Prompts = new PromptsCapability(_promptController.IsListChangedNotificationSupported);;
+                    capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);;
                 
                 var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
                 await _transport.SendOkResponse(requestId, result.AsJson);

@@ -1,15 +1,15 @@
-﻿namespace McpSdk.Protocol.Models
+﻿namespace McpSdk.Protocol.Models.ClientCapabilities
 {
-    public sealed class RootsCapability
+    public sealed class RootsCapabilityModel
     {
         private bool IsListChangedNotificationSupported { get; }
 
-        public RootsCapability(bool isListChangedNotificationSupported)
+        public RootsCapabilityModel(bool isListChangedNotificationSupported)
         {
             IsListChangedNotificationSupported = isListChangedNotificationSupported;
         }
 
-        public RootsCapability(IJsonObject jsonObject)
+        public RootsCapabilityModel(IJsonObject jsonObject)
         {
             IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;
         }

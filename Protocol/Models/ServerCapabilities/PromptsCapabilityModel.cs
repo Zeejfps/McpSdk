@@ -1,15 +1,15 @@
-namespace McpSdk.Protocol.Models;
+namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class PromptsCapability
+public sealed class PromptsCapabilityModel
 {
     public bool IsListChangedNotificationSupported { get; }
 
-    public PromptsCapability(bool isListChangedNotificationSupported)
+    public PromptsCapabilityModel(bool isListChangedNotificationSupported)
     {
         IsListChangedNotificationSupported = isListChangedNotificationSupported;
     }
 
-    public PromptsCapability(IJsonObject jsonObject)
+    public PromptsCapabilityModel(IJsonObject jsonObject)
     {
         IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;
     }

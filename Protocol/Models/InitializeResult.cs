@@ -1,13 +1,15 @@
-﻿namespace McpSdk.Protocol.Models
+﻿using McpSdk.Protocol.Models.ServerCapabilities;
+
+namespace McpSdk.Protocol.Models
 {
     public sealed class InitializeResult
     {
         public string ProtocolVersion { get; }
-        public ServerCapabilities Capabilities { get; }
+        public ServerCapabilitiesModel Capabilities { get; }
 
         public ServerInfo ServerInfo { get; }
         
-        public InitializeResult(string protocolVersion, ServerCapabilities capabilities, ServerInfo serverInfo)
+        public InitializeResult(string protocolVersion, ServerCapabilitiesModel capabilities, ServerInfo serverInfo)
         {
             ProtocolVersion = protocolVersion;
             Capabilities = capabilities;
