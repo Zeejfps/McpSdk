@@ -1,4 +1,4 @@
-﻿using Adapter.ConsoleLogger;
+﻿using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseServer;
 using McpSdk.Server;
@@ -8,14 +8,14 @@ var loggerFactory = new ServerConsoleLoggerFactory();
 var logger = loggerFactory.Create<Program>();
 var json = new NewtonsoftJson();
 var sseServer = new HttpListenerSseServer("/sse", "/messages", loggerFactory);
-sseServer.SessionStarted += async session =>
+sseServer.SessionStarted += async sseSession =>
 {
     logger.LogDebug("Session started...");
     var mcpServer = new ServerBuilder(json)
         .WithName("Demo Server")
         .WithVersion("1.0.0")
         .WithLogger(loggerFactory)
-        .WithSseTransport(session)
+        .WithSseTransport(sseSession)
         .WithDefaultToolsCapability(tools =>
         {
             tools.AddTool(new TestTool());

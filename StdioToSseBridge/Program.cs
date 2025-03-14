@@ -1,4 +1,4 @@
-﻿using Adapter.ConsoleLogger;
+﻿using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.SseClient;
 using StdioToSseBridge;
 

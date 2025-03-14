@@ -1,7 +1,7 @@
 using System;
 using McpSdk.Shared;
 
-namespace Adapter.ConsoleLogger
+namespace McpSdk.Adapter.ConsoleLogger
 {
     internal sealed class ClientConsoleLogger : ILogger
     {

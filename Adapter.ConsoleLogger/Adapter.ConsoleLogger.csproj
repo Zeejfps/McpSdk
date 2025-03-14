@@ -2,6 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <AssemblyName>McpSdk.Adapter.ConsoleLogger</AssemblyName>
+        <RootNamespace>McpSdk.Adapter.ConsoleLogger</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

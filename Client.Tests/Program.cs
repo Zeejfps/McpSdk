@@ -1,4 +1,4 @@
-﻿using Adapter.ConsoleLogger;
+﻿using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseClient;
 using McpSdk.Client;
