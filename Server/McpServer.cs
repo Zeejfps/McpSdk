@@ -113,7 +113,7 @@ namespace McpSdk.Server
                 {
                     await _transport.SendErrorResponse(
                         requestId,
-                        ErrorCode.MethodNotFound, $"Method {path} is not supported");
+                        ErrorCode.MethodNotFound, $"Method '{path}' is not supported");
                 }
             }
             catch (Exception ex)
