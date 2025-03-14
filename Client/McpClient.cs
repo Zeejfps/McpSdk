@@ -79,9 +79,9 @@ namespace McpSdk.Client
             }
         }
 
-        private void OnNotificationReceived(string notification)
+        private void OnNotificationReceived(string notification, IJsonObject args)
         {
-            _logger.LogDebug($"Notification Received: '{notification}'");
+            _logger.LogDebug($"Notification Received: {notification}, {args}");
         }
         
         public async Task Connect()

@@ -100,17 +100,17 @@ namespace McpSdk.Shared
             var response = _json.Parse(messageAsJson);
             var idProp = response["id"];
             var method = response["method"]?.AsString();
+            var methodParams = response["params"]?.AsObject();
 
             if (method != null)
             {
                 if (idProp == null)
                 {
-                    NotificationReceived?.Invoke(method);
+                    NotificationReceived?.Invoke(method, methodParams);
                 }
                 else
                 {
                     var id = idProp.AsInt();
-                    var methodParams = response["params"]?.AsObject();
                     RequestReceived?.Invoke(id, method, methodParams);
                 }
             }

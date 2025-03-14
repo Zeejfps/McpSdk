@@ -183,9 +183,9 @@ namespace McpSdk.Server
             }
         }
         
-        private void OnNotificationReceived(string notification)
+        private void OnNotificationReceived(string notification, IJsonObject arguments)
         {
-            _logger.LogDebug($"Received Notification: '{notification}'");
+            _logger.LogDebug($"Received Notification: {notification}, {arguments}");
         }
     }
 }
