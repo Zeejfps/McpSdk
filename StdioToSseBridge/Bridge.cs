@@ -22,27 +22,42 @@ public sealed class Bridge
     public async Task Run()
     {
         _cts = new CancellationTokenSource();
+        var cancellationToken = _cts.Token;
         _startedSrc = new TaskCompletionSource<bool>();
         _sseClient.EventReceived += OnSseEventReceived;
         _sseClient.Disconnected += OnSseClientDisconnected;
-        await _sseClient.Connect("http://localhost:3000/sse");
+        await _sseClient.Connect("http://localhost:3000/sse", cancellationToken);
         await _startedSrc.Task;
         _logger.LogDebug("Bridge Connected");
-        await ReadStdIn();
+        await ReadStdIn(cancellationToken);
+        _logger.LogDebug("Bridge Disconnected");
     }
 
     private void OnSseClientDisconnected()
     {
+        _startedSrc.TrySetCanceled();
         _cts.Cancel();
+        _logger.LogDebug("Disconnecting bridge...");
     }
 
-    private async Task ReadStdIn()
+    private async Task ReadStdIn(CancellationToken cancellationToken = default)
     {
-        string? line;
-        while (!_cts.IsCancellationRequested && (line = await Console.In.ReadLineAsync().ConfigureAwait(false)) != null)
+        try
         {
-            _logger.LogDebug($"Sending: {line} to {_url}");
-            await _sseClient.SendMessage(_url, line);
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var line = await Console.In.ReadLineAsync(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (line == null)
+                    break;
+                
+                _logger.LogDebug($"Sending: {line} to {_url}");
+                await _sseClient.SendMessage(_url, line, cancellationToken);
+            }
+            _logger.LogDebug("Canceled");
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 

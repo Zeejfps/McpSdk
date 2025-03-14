@@ -96,6 +96,7 @@ namespace McpSdk.Adapter.SseClient
 
         private void OnDisconnected()
         {
+            _logger.LogDebug("Disconnected");
             Disconnected?.Invoke();
         }
     }
