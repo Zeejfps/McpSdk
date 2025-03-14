@@ -27,6 +27,7 @@ public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput
                     "string" => new StringInput(property),
                     "number" => new NumberInput(property),
                     "boolean" => new BooleanInput(property),
+                    "array" => new ArrayInput(property),
                     _ => null
                 };
                 if (input != null)

@@ -34,7 +34,11 @@ public sealed class TestTool : ITool
                     "testBool", new BooleanInput()
                 },
                 {
-                    "testArray", new BooleanInput()
+                    "testArray", new ArrayInput("string")
+                    {
+                        MinItems = 0,
+                        MaxItems = 10,
+                    }
                 }
             }
         );
