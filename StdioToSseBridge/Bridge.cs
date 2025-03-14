@@ -37,7 +37,7 @@ public sealed class Bridge
     {
         _startedSrc.TrySetCanceled();
         _cts.Cancel();
-        Console.In.Close();
+        Environment.Exit(0);
     }
 
     private async Task ReadStdIn(CancellationToken cancellationToken = default)
@@ -46,20 +46,13 @@ public sealed class Bridge
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (Console.KeyAvailable)
-                {
-                    var line = await Console.In.ReadLineAsync(cancellationToken);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (line == null)
-                        break;
-
-                    _logger.LogDebug($"Sending: {line} to {_url}");
-                    await _sseClient.SendMessage(_url, line, cancellationToken);
-                }
-                else
-                {
-                    await Task.Delay(100, cancellationToken);
-                }
+                var line = await Console.In.ReadLineAsync(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (line == null)
+                    break;
+                
+                _logger.LogDebug($"Sending: {line} to {_url}");
+                await _sseClient.SendMessage(_url, line, cancellationToken);
             }
             _logger.LogDebug("Canceled");
         }
