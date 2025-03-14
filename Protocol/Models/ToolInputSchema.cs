@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models;
 
 public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput>>
 {
-    private readonly Dictionary<string, ToolInput> _inputsByNameLookup = new();
+    private readonly Dictionary<string, ToolInput> _requiredInputsByNameLookup = new();
+    private readonly Dictionary<string, ToolInput> _optionalInputsByNameLookup = new();
     
     public ToolInputSchema() {}
 
@@ -28,30 +30,37 @@ public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput
                     _ => null
                 };
                 if (input != null)
-                    _inputsByNameLookup.Add(name, input);
+                    _requiredInputsByNameLookup.Add(name, input);
             }
         }
 
     }
     
-    public ToolInputSchema Add(string name, ToolInput writeInput)
+    public ToolInputSchema Add(string name, ToolInput input)
     {
-        _inputsByNameLookup[name] = writeInput;
+        _requiredInputsByNameLookup[name] = input;
         return this;
     }
 
+    // public ToolInputSchema AddOption(string name, ToolInput input)
+    // {
+    //     _optionalInputsByNameLookup[name] = input;
+    //     return this;
+    // }
+    
     public void AsJson(IJsonWriter writer)
     {
         writer.Write("type", "object");
         writer.Write("properties", propertyWriter =>
         {
-            foreach (var kvp in _inputsByNameLookup)
+            foreach (var kvp in _requiredInputsByNameLookup)
             {
                 var name = kvp.Key;
                 var input = kvp.Value;
                 propertyWriter.Write(name, input.AsJson);
             }
         });
+        writer.Write("required", _requiredInputsByNameLookup.Keys.ToArray());
     }
     
     public IJsonObject AsJsonObject(IJson json)
@@ -61,7 +70,7 @@ public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput
 
     public IEnumerator<KeyValuePair<string, ToolInput>> GetEnumerator()
     {
-        return _inputsByNameLookup.GetEnumerator();
+        return _requiredInputsByNameLookup.GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
