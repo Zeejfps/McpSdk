@@ -170,7 +170,7 @@ namespace McpSdk.Server
         {
             try
             {
-                if (_toolsController == null)
+                if (_promptController == null)
                 {
                     await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
                     return;
