@@ -9,6 +9,7 @@ public sealed class Bridge
     private readonly ILogger _logger;
     private Task _readStdInTask;
     private string _url;
+    private CancellationTokenSource _cts;
     private TaskCompletionSource<bool> _startedSrc;
 
     public Bridge(ISseClient sseClient, ILoggerFactory loggerFactory)
@@ -20,18 +21,25 @@ public sealed class Bridge
 
     public async Task Run()
     {
+        _cts = new CancellationTokenSource();
         _startedSrc = new TaskCompletionSource<bool>();
         _sseClient.EventReceived += OnSseEventReceived;
+        _sseClient.Disconnected += OnSseClientDisconnected;
         await _sseClient.Connect("http://localhost:3000/sse");
         await _startedSrc.Task;
         _logger.LogDebug("Bridge Connected");
         await ReadStdIn();
     }
 
+    private void OnSseClientDisconnected()
+    {
+        _cts.Cancel();
+    }
+
     private async Task ReadStdIn()
     {
         string? line;
-        while ((line = await Console.In.ReadLineAsync().ConfigureAwait(false)) != null)
+        while (!_cts.IsCancellationRequested && (line = await Console.In.ReadLineAsync().ConfigureAwait(false)) != null)
         {
             _logger.LogDebug($"Sending: {line} to {_url}");
             await _sseClient.SendMessage(_url, line);
