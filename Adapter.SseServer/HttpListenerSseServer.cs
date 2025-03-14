@@ -63,7 +63,7 @@ namespace McpSdk.Adapter.SseServer
                 var isGetMethod = method.Equals("GET", StringComparison.OrdinalIgnoreCase);
                 var isPostMethod = method.Equals("POST", StringComparison.OrdinalIgnoreCase);
                 var hasEventStreamHeaders = request.AcceptTypes?.Contains("text/event-stream") ?? false;
-                _logger.LogDebug($"Client connected: {method}, {path}, {string.Join(",", request.AcceptTypes)}");
+                _logger.LogDebug($"Client connected: {method}, {path}");
 
                 if (isGetMethod && hasEventStreamHeaders && isConnectionPath)
                 {

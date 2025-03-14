@@ -27,6 +27,7 @@ namespace McpSdk.Server
                     Kind = "endpoint",
                     Data = _sseSession.Path
                 });
+                Logger.LogDebug($"Sending Endpoint Event: {_sseSession.Path}");
                 
                 _sseSession.MessageReceived += OnMessageReceived;
             }

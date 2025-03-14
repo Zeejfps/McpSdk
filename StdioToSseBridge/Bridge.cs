@@ -7,8 +7,9 @@ public sealed class Bridge
 {
     private readonly ISseClient _sseClient;
     private readonly ILogger _logger;
-    
+    private Task _readStdInTask;
     private string _url;
+    private TaskCompletionSource<bool> _startedSrc;
 
     public Bridge(ISseClient sseClient, ILoggerFactory loggerFactory)
     {
@@ -19,16 +20,18 @@ public sealed class Bridge
 
     public async Task Run()
     {
+        _startedSrc = new TaskCompletionSource<bool>();
         _sseClient.EventReceived += OnSseEventReceived;
         await _sseClient.Connect("http://localhost:3000/sse");
+        await _startedSrc.Task;
         _logger.LogDebug("Bridge Connected");
-        await ReadStdIn().ConfigureAwait(false);
+        await ReadStdIn();
     }
 
     private async Task ReadStdIn()
     {
         string? line;
-        while ((line = await Console.In.ReadLineAsync()) != null)
+        while ((line = await Console.In.ReadLineAsync().ConfigureAwait(false)) != null)
         {
             _logger.LogDebug($"Sending: {line} to {_url}");
             await _sseClient.SendMessage(_url, line);
@@ -40,7 +43,9 @@ public sealed class Bridge
         _logger.LogDebug($"Received: {sseEvent}");
         if (sseEvent.Kind == "endpoint")
         {
-            _url = $"http://localhost:3000/{sseEvent.Data}";
+            _url = $"http://localhost:3000{sseEvent.Data}";
+            _logger.LogDebug($"Message URL: {_url}");
+            _startedSrc.SetResult(true);
         }
         else if (sseEvent.Kind == "message")
         {
