@@ -24,7 +24,7 @@ namespace McpSdk.Protocol.Models
             Tools = tools;
         }
 
-        public void Write(IJsonWriter writer)
+        public void AsJson(IJsonWriter writer)
         {
             writer.Write("tools", Tools
                 .Select<Tool, Json>(tool => tool.AsJson)

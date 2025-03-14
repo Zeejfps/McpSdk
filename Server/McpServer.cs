@@ -138,10 +138,7 @@ namespace McpSdk.Server
                 }
 
                 var result = await _toolsController.ListTools();
-                await _transport.SendOkResponse(requestId, payload =>
-                {
-                    result.Write(payload);
-                });
+                await _transport.SendOkResponse(requestId, result.AsJson);
             }
             catch (Exception ex)
             {
