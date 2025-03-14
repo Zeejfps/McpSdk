@@ -14,6 +14,8 @@ namespace McpSdk.Adapter.SseServer
         public event Action<ISseSession> SessionStarted; 
         
         private readonly HttpListener _listener;
+        private readonly string _connectionPath;
+
         private CancellationTokenSource _cts;
         private Task _listeningTask;
 
@@ -24,7 +26,7 @@ namespace McpSdk.Adapter.SseServer
         
         public HttpListenerSseServer(string connectionEndpoint, string messagesEndpoint, ILoggerFactory loggerFactory)
         {
-            ConnectionPath = connectionEndpoint;
+            _connectionPath = connectionEndpoint;
             _messagesEndpoint = messagesEndpoint;
             _loggerFactory = loggerFactory;
             _logger = loggerFactory.Create<HttpListenerSseServer>();
@@ -47,9 +49,7 @@ namespace McpSdk.Adapter.SseServer
             _listeningTask = null;
             return Task.CompletedTask;
         }
-
-        public string ConnectionPath { get; private set; }
-
+        
         private async Task Listen()
         {
             while (!_cts.IsCancellationRequested)
@@ -59,11 +59,10 @@ namespace McpSdk.Adapter.SseServer
                 var response = httpContext.Response;
                 var method = request.HttpMethod;
                 var path = request.Url.PathAndQuery;
-                var isConnectionPath = path.Equals(ConnectionPath, StringComparison.OrdinalIgnoreCase);
+                var isConnectionPath = path.Equals(_connectionPath, StringComparison.OrdinalIgnoreCase);
                 var isGetMethod = method.Equals("GET", StringComparison.OrdinalIgnoreCase);
                 var isPostMethod = method.Equals("POST", StringComparison.OrdinalIgnoreCase);
                 var hasEventStreamHeaders = request.AcceptTypes?.Contains("text/event-stream") ?? false;
-                _logger.LogDebug($"Client connected: {method}, {path}");
 
                 if (isGetMethod && hasEventStreamHeaders && isConnectionPath)
                 {
