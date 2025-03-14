@@ -19,7 +19,8 @@ namespace McpSdk.Server
         private readonly IResourcesController _resourcesController;
         private readonly ILogger _logger;
         private readonly Dictionary<string, RequestHandler> _requestHandlersByPathLookup = new();
-
+        private readonly ServerCapabilitiesModel _capabilities = new();
+        
         private bool _isRunning;
 
         public McpServer(
@@ -41,14 +42,25 @@ namespace McpSdk.Server
 
             if (_toolsController != null)
             {
+                _capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
                 _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
                 _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
             }
 
             if (_promptController != null)
             {
+                _capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
                 _requestHandlersByPathLookup.Add("prompts/list", HandleListPromptsRequest);
                 _requestHandlersByPathLookup.Add("prompts/get", HandleGetPromptRequest);
+            }
+            
+            if (_resourcesController != null)
+            {
+                _capabilities.Resources = new ResourcesCapabilityModel
+                {
+                    IsListChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
+                    IsResourceChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
+                };
             }
         }
 
@@ -125,28 +137,8 @@ namespace McpSdk.Server
                     $"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}");
                 return;
             }
-
-            var capabilities = new ServerCapabilitiesModel();
-            if (_toolsController != null)
-            {
-                capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
-            }
-
-            if (_promptController != null)
-            {
-                capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
-            }
-
-            if (_resourcesController != null)
-            {
-                capabilities.Resources = new ResourcesCapabilityModel
-                {
-                    IsListChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
-                    IsResourceChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
-                };
-            }
             
-            var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
+            var result = new InitializeResult(serverProtocolVersion, _capabilities, _serverInfo);
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
