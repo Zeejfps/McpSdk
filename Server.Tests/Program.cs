@@ -1,8 +1,8 @@
 ﻿using Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseServer;
-using McpSdk.Protocol.Models;
 using McpSdk.Server;
+using McpSdk.Server.Tests;
 
 var loggerFactory = new ServerConsoleLoggerFactory();
 var logger = loggerFactory.Create<Program>();
@@ -18,36 +18,7 @@ sseServer.SessionStarted += async session =>
         .WithSseTransport(session)
         .WithToolsCapability(tools =>
         {
-            tools.AddTool(toolWriter =>
-            {
-                toolWriter
-                    .WriteName("get-forecast")
-                    .WriteDescription("asdawdawd")
-                    .WriteInputSchema(inputSchemaWriter =>
-                    {
-                        inputSchemaWriter
-                            .Number("latitude", z =>
-                            {
-                                z.Min(-90).Max(90).Describe("Latitude of the location");
-                            })
-                            .Number("longitude", z =>
-                            {
-                                z.Min(-180).Max(180).Describe("Longitude of the location");
-                            })
-                            .Boolean("testBool", boolWriter => { })
-                            .Array("testArray", arrayWriter =>
-                            {
-                                arrayWriter.MinItems(0).MaxItems(10).Boolean();
-                            });
-                    });
-            }, args =>
-            {
-                var latitude = args["latitude"].AsDouble();
-                var longitude = args["longitude"].AsDouble();
-                var content = new TextContent($"Lat: {latitude}, Long: {longitude}");
-                var result = new CallToolResult([content], false);
-                return Task.FromResult(result);
-            });
+            tools.AddTool(new TestTool());
         })
         .Build();
 

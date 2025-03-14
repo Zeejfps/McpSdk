@@ -7,43 +7,28 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server
 {
-    public delegate void WriteToolFunc(ToolWriter toolWriter);
-    public delegate Task<CallToolResult> CallToolFunc(IJsonObject args);
-
     public class DefaultToolsController : IToolsController
     {
         private readonly IJson _json;
-        private readonly Dictionary<string, Tool> _toolByNameLookup = new();
-        private readonly Dictionary<string, CallToolFunc> _funcByToolNameLookup = new();
-    
+        private readonly Dictionary<string, ITool> _toolByNameLookup = new();
+        
+        public event Action ListChanged;
+        public bool IsListChangedNotificationSupported => true;
+        
         public DefaultToolsController(IJson json)
         {
             _json = json;
         }
-        
-        public void AddTool(WriteToolFunc writeTool, CallToolFunc callToolFunc)
-        {
-            var toolAsString = _json.Stringify(jsonWriter =>
-            {
-                writeTool(new ToolWriter(jsonWriter));
-            });
-            var tool = new Tool(_json.Parse(toolAsString));
-            AddTool(tool, callToolFunc);
-        }
 
-        public void AddTool(Tool tool, CallToolFunc callToolFunc)
+        public void AddTool(ITool tool)
         {
-            _toolByNameLookup.Add(tool.Name, tool);
-            _funcByToolNameLookup.Add(tool.Name, callToolFunc);
+            _toolByNameLookup.Add(tool.Info.Name, tool);
             ListChanged?.Invoke();
         }
-
-        public event Action ListChanged;
-        public bool IsListChangedNotificationSupported => true;
-
+        
         public Task<ListToolsResult> ListTools()
         {
-            var tools = _toolByNameLookup.Values.ToArray();
+            var tools = _toolByNameLookup.Values.Select(tool => tool.Info).ToArray();
             var result = new ListToolsResult(tools);
             return Task.FromResult(result);
         }
@@ -57,7 +42,7 @@ namespace McpSdk.Server
                 return new CallToolResult([content], true);
             }
 
-            var inputSchema = tool.InputSchema.AsJsonObject(_json);
+            var inputSchema = tool.Info.InputSchema.AsJsonObject(_json);
             if (!request.ToolArguments.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];
@@ -69,8 +54,7 @@ namespace McpSdk.Server
             }
 
             var toolArguments = request.ToolArguments;
-            var callToolFunc = _funcByToolNameLookup[toolName];
-            return await callToolFunc(toolArguments);
+            return await tool.Call(toolArguments);
         }
     }
 }
