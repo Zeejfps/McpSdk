@@ -37,7 +37,7 @@ public sealed class Bridge
     {
         _startedSrc.TrySetCanceled();
         _cts.Cancel();
-        _logger.LogDebug("Disconnecting bridge...");
+        Console.In.Close();
     }
 
     private async Task ReadStdIn(CancellationToken cancellationToken = default)
@@ -46,13 +46,20 @@ public sealed class Bridge
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var line = await Console.In.ReadLineAsync(cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (line == null)
-                    break;
-                
-                _logger.LogDebug($"Sending: {line} to {_url}");
-                await _sseClient.SendMessage(_url, line, cancellationToken);
+                if (Console.KeyAvailable)
+                {
+                    var line = await Console.In.ReadLineAsync(cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (line == null)
+                        break;
+
+                    _logger.LogDebug($"Sending: {line} to {_url}");
+                    await _sseClient.SendMessage(_url, line, cancellationToken);
+                }
+                else
+                {
+                    await Task.Delay(100, cancellationToken);
+                }
             }
             _logger.LogDebug("Canceled");
         }
