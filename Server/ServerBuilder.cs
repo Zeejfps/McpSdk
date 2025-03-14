@@ -13,6 +13,7 @@ namespace McpSdk.Server
         private ITransportFactory _transportFactory;
         private IToolsController _toolsController;
         private IPromptController _promptsController;
+        private IResourcesController _resourcesController;
         private ILoggerFactory _loggerFactory;
 
         public ServerBuilder(IJson json)
@@ -44,6 +45,12 @@ namespace McpSdk.Server
             _version = version;
             return this;
         }
+
+        public ServerBuilder WithResourcesCapability(IResourcesController resourcesController)
+        {
+            _resourcesController = resourcesController;
+            return this;
+        }
         
         public ServerBuilder WithPromptsCapability(IPromptController promptsController)
         {
@@ -64,7 +71,15 @@ namespace McpSdk.Server
             var serverInfo = new ServerInfo(_name, _version);
             var tools = _toolsController;
             var prompts = _promptsController;
-            return new McpServer(transport, serverInfo, loggerFactory, tools, prompts);
+            var resources = _resourcesController;
+            return new McpServer(
+                transport,
+                serverInfo, 
+                loggerFactory,
+                tools, 
+                prompts,
+                resources
+            );
         }
     }
 }

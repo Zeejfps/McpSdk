@@ -16,6 +16,7 @@ namespace McpSdk.Server
         private readonly ServerInfo _serverInfo;
         private readonly IToolsController _toolsController;
         private readonly IPromptController _promptController;
+        private readonly IResourcesController _resourcesController;
         private readonly ILogger _logger;
         private readonly Dictionary<string, RequestHandler> _requestHandlersByPathLookup = new();
 
@@ -26,13 +27,15 @@ namespace McpSdk.Server
             ServerInfo serverInfo,
             ILoggerFactory loggerFactory,
             IToolsController toolsController,
-            IPromptController promptController)
+            IPromptController promptController,
+            IResourcesController resourcesController)
         {
             _transport = transport;
             _serverInfo = serverInfo;
             _logger = loggerFactory.Create<McpServer>();
             _toolsController = toolsController;
             _promptController = promptController;
+            _resourcesController = resourcesController;
 
             _requestHandlersByPathLookup.Add("initialize", HandleInitializeRequest);
             _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
@@ -117,11 +120,24 @@ namespace McpSdk.Server
 
             var capabilities = new ServerCapabilitiesModel();
             if (_toolsController != null)
+            {
                 capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
+            }
 
             if (_promptController != null)
+            {
                 capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
-                
+            }
+
+            if (_resourcesController != null)
+            {
+                capabilities.Resources = new ResourcesCapabilityModel
+                {
+                    IsListChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
+                    IsResourceChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
+                };
+            }
+            
             var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
