@@ -60,9 +60,9 @@ namespace McpSdk.Server
 
     public static class DefaultToolsControllerExtensions
     {
-        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, Action<DefaultToolsController> configure)
+        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, Action<DefaultToolsController> configure)
         {
-            var toolsController = new DefaultToolsController(builder.Json);
+            var toolsController = new DefaultToolsController(json);
             configure(toolsController);
             builder.WithToolsCapability(toolsController);
             return builder;

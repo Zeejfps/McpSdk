@@ -62,9 +62,9 @@ namespace McpSdk.Server
 
     public static class SseTransportServerBuilderExtensions
     {
-        public static ServerBuilder WithSseTransport(this ServerBuilder builder, ISseSession sseSession)
+        public static ServerBuilder WithSseTransport(this ServerBuilder builder, IJson json, ISseSession sseSession)
         {
-            var sseTransportFactory = new SseTransportFactory(builder.Json, sseSession);
+            var sseTransportFactory = new SseTransportFactory(json, sseSession);
             builder.WithTransport(sseTransportFactory);
             return builder;
         }

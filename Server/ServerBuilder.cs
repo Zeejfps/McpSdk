@@ -1,13 +1,10 @@
-﻿using McpSdk.Protocol;
-using McpSdk.Protocol.Models;
+﻿using McpSdk.Protocol.Models;
 using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
     public sealed class ServerBuilder
     {
-        public IJson Json { get; }
-
         private string _name;
         private string _version;
         private ITransportFactory _transportFactory;
@@ -16,9 +13,8 @@ namespace McpSdk.Server
         private IResourcesController _resourcesController;
         private ILoggerFactory _loggerFactory;
 
-        public ServerBuilder(IJson json)
+        public ServerBuilder()
         {
-            Json = json;
             _loggerFactory = new NullLoggerFactory();
         }
         

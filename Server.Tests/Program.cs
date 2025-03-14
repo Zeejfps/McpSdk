@@ -11,12 +11,12 @@ var sseServer = new HttpListenerSseServer("/sse", "/messages", loggerFactory);
 sseServer.SessionStarted += async sseSession =>
 {
     logger.LogDebug("Session started...");
-    var mcpServer = new ServerBuilder(json)
+    var mcpServer = new ServerBuilder()
         .WithName("Demo Server")
         .WithVersion("1.0.0")
         .WithLogger(loggerFactory)
-        .WithSseTransport(sseSession)
-        .WithDefaultToolsCapability(tools =>
+        .WithSseTransport(json, sseSession)
+        .WithDefaultToolsCapability(json, tools =>
         {
             tools.AddTool(new TestTool());
         })
