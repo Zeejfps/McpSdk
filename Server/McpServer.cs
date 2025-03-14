@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -7,6 +8,8 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
+    internal delegate Task RequestHandler(int requestId, IJsonObject arguments);
+    
     internal sealed class McpServer : IServer
     {
         private readonly ITransport _transport;
@@ -14,9 +17,10 @@ namespace McpSdk.Server
         private readonly IToolsController _toolsController;
         private readonly IPromptController _promptController;
         private readonly ILogger _logger;
-        
+        private readonly Dictionary<string, RequestHandler> _requestHandlersByPathLookup = new();
+
         private bool _isRunning;
-        
+
         public McpServer(
             ITransport transport,
             ServerInfo serverInfo,
@@ -29,6 +33,12 @@ namespace McpSdk.Server
             _logger = loggerFactory.Create<McpServer>();
             _toolsController = toolsController;
             _promptController = promptController;
+
+            _requestHandlersByPathLookup.Add("initialize", HandleInitializeRequest);
+            _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
+            _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
+            _requestHandlersByPathLookup.Add("prompts/list", HandleListPromptsRequest);
+            _requestHandlersByPathLookup.Add("prompts/get", HandleGetPromptRequest);
         }
 
         public async Task Start()
@@ -67,56 +77,21 @@ namespace McpSdk.Server
             _logger.LogDebug("Mcp Server Stopped");
         }
 
-        private void OnRequestReceived(int requestId, string method, IJsonObject payload)
-        {
-            _logger.LogDebug($"Received Request: Id: {requestId}, Method: {method}, Payload: {payload}");
-            if (method == "initialize")
-            {
-                OnInitializeRequestReceived(requestId, payload);
-            }
-            else if (method == "tools/list")
-            {
-                OnListToolsRequestReceived(requestId, payload);
-            }
-            else if (method == "tools/call")
-            {
-                OnCallToolRequestReceived(requestId, payload);
-            }
-            else if (method == "prompts/list")
-            {
-                OnListPromptsRequestReceived(requestId, payload);
-            }
-            else if (method == "prompts/get")
-            {
-                OnGetPromptRequestReceived(requestId, payload);
-            }
-        }
-
-        private async void OnInitializeRequestReceived(int requestId, IJsonObject reqPayload)
+        private async void OnRequestReceived(int requestId, string path, IJsonObject payload)
         {
             try
             {
-                var serverProtocolVersion = "2024-11-05";
-                var request = new InitializeRequest(reqPayload);
-                if (request.ProtocolVersion != serverProtocolVersion)
+                _logger.LogDebug($"Received Request: Id: {requestId}, Method: {path}, Payload: {payload}");
+                if (_requestHandlersByPathLookup.TryGetValue(path, out var requestHandler))
+                {
+                    await requestHandler.Invoke(requestId, payload);
+                }
+                else
                 {
                     await _transport.SendErrorResponse(
                         requestId,
-                        ErrorCode.InvalidParams,
-                        $"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}");
-                    return;
+                        ErrorCode.MethodNotFound, $"Method {path} not found");
                 }
-
-                var capabilities = new ServerCapabilitiesModel();
-                if (_toolsController != null)
-                    capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
-
-                if (_promptController != null)
-                    capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);;
-                
-                var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
-                await _transport.SendOkResponse(requestId, result.AsJson);
-                
             }
             catch (Exception ex)
             {
@@ -127,79 +102,72 @@ namespace McpSdk.Server
             }
         }
 
-        private async void OnListToolsRequestReceived(int requestId, IJsonObject reqPayload)
+        private async Task HandleInitializeRequest(int requestId, IJsonObject reqPayload)
         {
-            try
+            var serverProtocolVersion = "2024-11-05";
+            var request = new InitializeRequest(reqPayload);
+            if (request.ProtocolVersion != serverProtocolVersion)
             {
-                if (_toolsController == null)
-                {
-                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
-                    return;
-                }
-
-                var result = await _toolsController.ListTools();
-                await _transport.SendOkResponse(requestId, result.AsJson);
+                await _transport.SendErrorResponse(
+                    requestId,
+                    ErrorCode.InvalidParams,
+                    $"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}");
+                return;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex);
-                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
-            }
-        }
 
-        private async void OnCallToolRequestReceived(int requestId, IJsonObject arguments)
-        {
-            try
-            {
-                if (_toolsController == null)
-                {
-                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
-                    return;
-                }
+            var capabilities = new ServerCapabilitiesModel();
+            if (_toolsController != null)
+                capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
+
+            if (_promptController != null)
+                capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
                 
-                var result = await _toolsController.CallTool(new CallToolRequest(arguments));
-                await _transport.SendOkResponse(requestId, result.AsJson);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex);
-                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
-            }
+            var result = new InitializeResult(serverProtocolVersion, capabilities, _serverInfo);
+            await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async void OnListPromptsRequestReceived(int requestId, IJsonObject arguments)
+        private async Task HandleListToolsRequest(int requestId, IJsonObject reqPayload)
         {
-            try
+            if (_toolsController == null)
             {
-                if (_promptController == null)
-                {
-                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
-                    return;
-                }
+                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
+                return;
+            }
 
-                var result = await _promptController.ListPrompts();
-                await _transport.SendOkResponse(requestId, result.AsJson);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex);
-                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
-            }
+            var result = await _toolsController.ListTools();
+            await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async void OnGetPromptRequestReceived(int requestId, IJsonObject arguments)
+        private async Task HandleCallToolRequest(int requestId, IJsonObject arguments)
         {
-            try
+            if (_toolsController == null)
             {
-                if (_promptController == null)
-                {
-                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
-                    return;
-                }
+                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support tools");
+                return;
             }
-            catch (Exception ex)
+                
+            var result = await _toolsController.CallTool(new CallToolRequest(arguments));
+            await _transport.SendOkResponse(requestId, result.AsJson);
+        }
+
+        private async Task HandleListPromptsRequest(int requestId, IJsonObject arguments)
+        {
+            if (_promptController == null)
             {
-                _logger.LogError(ex);
+                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
+                return;
+            }
+
+            var result = await _promptController.ListPrompts();
+            await _transport.SendOkResponse(requestId, result.AsJson);
+        }
+
+        private async Task HandleGetPromptRequest(int requestId, IJsonObject arguments)
+        {
+            if (_promptController == null)
+            {
+                await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
+                return;
             }
         }
         
