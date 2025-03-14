@@ -86,6 +86,10 @@ namespace McpSdk.Server
             {
                 OnListPromptsRequestReceived(requestId, payload);
             }
+            else if (method == "prompts/get")
+            {
+                OnGetPromptRequestReceived(requestId, payload);
+            }
         }
 
         private async void OnInitializeRequestReceived(int requestId, IJsonObject reqPayload)
@@ -175,11 +179,30 @@ namespace McpSdk.Server
                     await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
                     return;
                 }
+
+                var result = await _promptController.ListPrompts();
+                await _transport.SendOkResponse(requestId, result.AsJson);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
                 await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal server error");
+            }
+        }
+
+        private async void OnGetPromptRequestReceived(int requestId, IJsonObject arguments)
+        {
+            try
+            {
+                if (_promptController == null)
+                {
+                    await _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Server does not support prompts");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
             }
         }
         
