@@ -14,11 +14,11 @@ var sseClientFactory = new SseClientFactory(
 );
 var rootsControllerFactory = new RootsControllerFactory();
 var samplingControllerFactory = new SamplingControllerFactory();
-var client = new ClientBuilder(json)
+var client = new ClientBuilder()
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     .WithLogger(loggerFactory)
-    .WithSseTransport(sseClientFactory)
+    .WithSseTransport(json, sseClientFactory)
     //.WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
     .WithRootsCapability(rootsControllerFactory)
     .WithSamplingCapability(samplingControllerFactory)

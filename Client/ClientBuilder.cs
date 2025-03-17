@@ -7,8 +7,6 @@ namespace McpSdk.Client
 {
     public sealed class ClientBuilder
     {
-        private readonly IJson _json;
-        
         private string _name;
         private string _version;
         private ITransportFactory _transportFactory;
@@ -16,9 +14,8 @@ namespace McpSdk.Client
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
         private ILoggerFactory _loggerFactory;
 
-        public ClientBuilder(IJson json)
+        public ClientBuilder()
         {
-            _json = json;
             _loggerFactory = new NullLoggerFactory();
         }
 
@@ -39,20 +36,8 @@ namespace McpSdk.Client
             _loggerFactory = loggerFactory;
             return this;
         }
-
-        public ClientBuilder WithStdioTransport(string command, string[] args)
-        {
-            _transportFactory = new StdioTransportFactory(_json, command, args);
-            return this;
-        }
-
-        public ClientBuilder WithSseTransport(ISseClientFactory sseClientFactory)
-        {
-            _transportFactory = new SseTransportFactory(_json, sseClientFactory);
-            return this;
-        }
         
-        public ClientBuilder WithCustomTransport(ITransportFactory transportFactory)
+        public ClientBuilder WithTransport(ITransportFactory transportFactory)
         {
             _transportFactory = transportFactory;
             return this;
