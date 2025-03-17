@@ -5,6 +5,8 @@
         public ToolsCapabilityModel Tools { get; set; }
         public PromptsCapabilityModel Prompts { get; set; }
         public ResourcesCapabilityModel Resources { get; set; }
+        public LoggingCapabilityModel Logging { get; set; }
+        public CompletionCapabilityModel Completion { get; set; }
 
         public ServerCapabilitiesModel() {}
         
@@ -21,6 +23,14 @@
             var resourcesObj = jsonObject["resources"]?.AsObject();
             if (resourcesObj != null)
                 Resources = new ResourcesCapabilityModel(resourcesObj);
+            
+            var loggingObj = jsonObject["logging"]?.AsObject();
+            if (loggingObj != null)
+                Logging = new LoggingCapabilityModel(loggingObj);
+            
+            var completionObj = jsonObject["completion"]?.AsObject();
+            if (completionObj != null)
+                Completion = new CompletionCapabilityModel(completionObj);
         }
         
         public void AsJson(IJsonWriter writer)
@@ -33,6 +43,12 @@
             
             if (Resources != null)
                 writer.Write("resources", Resources.AsJson);
+            
+            if (Logging != null)
+                writer.Write("logging", Logging.AsJson);
+            
+            if (Completion != null)
+                writer.Write("completion", Completion.AsJson);
         }
     }
 }
