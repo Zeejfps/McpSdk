@@ -1,16 +1,30 @@
-﻿namespace McpSdk.Protocol.Models;
+﻿using System.Linq;
+
+namespace McpSdk.Protocol.Models;
 
 public sealed class ListResourcesResult
 {
     public Resource[] Resources { get; set; }
-    
-    public void AsJson(IJsonWriter jsonwriter)
-    {
-        
-    }
-}
 
-public sealed class Resource
-{
+    public ListResourcesResult(Resource[] resources)
+    {
+        Resources = resources;
+    }
+
+    public ListResourcesResult(IJsonObject jsonObject)
+    {
+        var resources = jsonObject["resources"].AsObjectArray();
+        Resources = new Resource[resources.Length];
+        for (var i = 0; i < resources.Length; i++)
+        {
+            Resources[i] = new Resource(resources[i]);
+        }
+    }
     
+    public void AsJson(IJsonWriter jsonWriter)
+    {
+        jsonWriter.Write("resources", Resources
+            .Select<Resource, Json>(resource => resource.AsJson)
+            .ToArray());
+    }
 }
