@@ -1,23 +1,30 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class Resource
+    public sealed class ResourceContent
     {
         public string Uri { get; }
         public string MimeType { get; }
         public string Text { get; }
+        public string Blob { get; }
         
-        public Resource(IJsonObject jsonObject)
+        public ResourceContent(IJsonObject jsonObject)
         {
             Uri = jsonObject["uri"].AsString();
             MimeType = jsonObject["mimeType"].AsString();
-            Text = jsonObject["text"].AsString();
+            Text = jsonObject["text"]?.AsString();
+            Blob = jsonObject["blob"]?.AsString();
         }
 
         public void AsJson(IJsonWriter writer)
         {
             writer.Write("uri", Uri);
             writer.Write("mimeType", MimeType);
-            writer.Write("text", Text);
+            
+            if (Text != null)
+                writer.Write("text", Text);
+            
+            if (Blob != null)
+                writer.Write("text", Text);
         }
     }
 }
