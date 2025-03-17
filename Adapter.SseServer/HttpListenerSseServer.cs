@@ -15,17 +15,25 @@ namespace McpSdk.Adapter.SseServer
         
         private readonly HttpListener _listener;
         private readonly string _connectionPath;
-
-        private CancellationTokenSource _cts;
-        private Task _listeningTask;
-
+        private readonly string _hostName;
+        private readonly int _port;
         private readonly Dictionary<string, SseSession> _sessionByPathLookup = new Dictionary<string, SseSession>();
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly string _messagesEndpoint;
         
-        public HttpListenerSseServer(string connectionEndpoint, string messagesEndpoint, ILoggerFactory loggerFactory)
+        private CancellationTokenSource _cts;
+        private Task _listeningTask;
+        
+        public HttpListenerSseServer(
+            string hostName,
+            int port,
+            string connectionEndpoint,
+            string messagesEndpoint,
+            ILoggerFactory loggerFactory)
         {
+            _hostName = hostName;
+            _port = port;
             _connectionPath = connectionEndpoint;
             _messagesEndpoint = messagesEndpoint;
             _loggerFactory = loggerFactory;
@@ -35,19 +43,26 @@ namespace McpSdk.Adapter.SseServer
         
         public async Task Start()
         {
-            _listener.Prefixes.Add("http://localhost:3000/");
+            _listener.Prefixes.Add($"http://{_hostName}:{_port}/");
             _listener.Start();
             _cts = new CancellationTokenSource();
             await Listen();
         }
 
-        public Task Stop()
+        public async Task Stop()
         {
             _cts.Cancel();
             _cts.Dispose();
-            _listener.Stop();
-            _listeningTask = null;
-            return Task.CompletedTask;
+            
+            try
+            {
+                _listener.Stop();
+                await _listeningTask;
+            }
+            catch (OperationCanceledException)
+            {
+                
+            }
         }
         
         private async Task Listen()

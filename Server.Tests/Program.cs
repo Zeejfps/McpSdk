@@ -6,7 +6,13 @@ using McpSdk.Server.Tests;
 
 var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();
-var sseServer = new HttpListenerSseServer("/sse", "/messages", loggerFactory);
+var sseServer = new HttpListenerSseServer(
+    "localhost", 
+    3000, 
+    "/sse", 
+    "/messages",
+    loggerFactory
+);
 sseServer.SessionStarted += async sseSession =>
 {
     var mcpServer = new ServerBuilder()
