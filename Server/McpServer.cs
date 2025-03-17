@@ -170,19 +170,22 @@ namespace McpSdk.Server
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
         
-        private Task HandleListResourceTemplatesRequest(int requestId, IJsonObject arguments)
+        private async Task HandleListResourceTemplatesRequest(int requestId, IJsonObject arguments)
         {
-            return _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Method not implemented");
+            var result = await _resourcesController.ListTemplates(new ListTemplatesRequest(arguments));
+            await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private Task HandleReadResourceRequest(int requestId, IJsonObject arguments)
+        private async Task HandleReadResourceRequest(int requestId, IJsonObject arguments)
         {
-            return _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Method not implemented");
+            var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments));
+            await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private Task HandleListResourcesRequest(int requestId, IJsonObject arguments)
+        private async Task HandleListResourcesRequest(int requestId, IJsonObject arguments)
         {
-            return _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Method not implemented");
+            var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments));
+            await _transport.SendOkResponse(requestId, result.AsJson);
         }
         
         private void OnNotificationReceived(string notification, IJsonObject arguments)
