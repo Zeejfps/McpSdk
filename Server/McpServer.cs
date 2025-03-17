@@ -41,6 +41,7 @@ namespace McpSdk.Server
 
             _requestHandlersByPathLookup.Add("initialize", HandleInitializeRequest);
 
+            // NOTE(Zee): Is there a better way to do this?
             if (_promptController != null)
             {
                 _capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
