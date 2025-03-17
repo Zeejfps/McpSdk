@@ -25,19 +25,24 @@ await client.Connect();
 ### Server Example
 
 ```C#
+using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
+using McpSdk.Adapter.SseServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
 
+var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();
-var testToolFactory = new TestToolsCapabilityFactory();
-
-var server = new ServerBuilder(json)
+var mcpServer = new ServerBuilder()
     .WithName("Demo Server")
     .WithVersion("1.0.0")
-    .WithStdioTransport()
-    .WithToolsCapability(testToolFactory)
+    .WithLogger(loggerFactory)
+    .WithSseTransport(json, sseSession)
+    .WithDefaultToolsCapability(json, tools =>
+    {
+        tools.AddTool(new TestTool());
+    })
     .Build();
 
-await server.Start();
+await mcpServer.Start();;
 ```
