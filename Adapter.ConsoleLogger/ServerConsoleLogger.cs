@@ -44,6 +44,5 @@ namespace McpSdk.Adapter.ConsoleLogger
             Console.Error.WriteLine(exception);
             Console.ResetColor();
         }
-        
     }
 }

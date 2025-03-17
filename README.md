@@ -31,18 +31,17 @@ using McpSdk.Adapter.SseServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
 
-var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();
 var mcpServer = new ServerBuilder()
     .WithName("Demo Server")
     .WithVersion("1.0.0")
-    .WithLogger(loggerFactory)
-    .WithSseTransport(json, sseSession)
+    .WithConsoleLogger()
+    .WithStdioTransport(json)
     .WithDefaultToolsCapability(json, tools =>
     {
         tools.AddTool(new TestTool());
     })
     .Build();
 
-await mcpServer.Start();;
+await mcpServer.Start();
 ```

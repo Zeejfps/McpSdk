@@ -1,0 +1,26 @@
+﻿using McpSdk.Adapter.ConsoleLogger;
+using McpSdk.Adapter.Newtonsoft.Json;
+
+namespace McpSdk.Server.Tests;
+
+public sealed class StdioTests
+{
+
+    public async void Run()
+    {
+        var json = new NewtonsoftJson();
+        var mcpServer = new ServerBuilder()
+            .WithName("Demo Server")
+            .WithVersion("1.0.0")
+            .WithConsoleLogger()
+            .WithStdioTransport(json)
+            .WithDefaultToolsCapability(json, tools =>
+            {
+                tools.AddTool(new TestTool());
+            })
+            .Build();
+
+        await mcpServer.Start();
+    }
+    
+}
