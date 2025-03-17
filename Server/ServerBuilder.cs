@@ -1,4 +1,5 @@
-﻿using McpSdk.Protocol.Models;
+﻿using System;
+using McpSdk.Protocol.Models;
 using McpSdk.Shared;
 
 namespace McpSdk.Server
@@ -62,13 +63,20 @@ namespace McpSdk.Server
 
         public IServer Build()
         {
+            if (_name == null)
+                throw new ArgumentNullException(nameof(_name), "Server name cannot be null.");
+            
+            if (_version == null)
+                throw new ArgumentNullException(nameof(_version), "Server version cannot be null.");
+            
             var loggerFactory = _loggerFactory;
             var transport = _transportFactory.Create(loggerFactory);
             var serverInfo = new ServerInfo(_name, _version);
+            
             var tools = _toolsController;
             var prompts = _promptsController;
-            
             var resources = _resourcesController;
+            
             var server =  new McpServer(
                 transport,
                 serverInfo, 
