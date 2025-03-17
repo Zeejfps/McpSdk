@@ -7,8 +7,7 @@ using McpSdk.Server.Tests;
 var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();
 var sseServer = new HttpListenerSseServer(
-    "localhost", 
-    3000, 
+    "http://localhost:3000", 
     "/sse", 
     "/messages",
     loggerFactory

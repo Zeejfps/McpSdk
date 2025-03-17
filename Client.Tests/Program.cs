@@ -7,14 +7,18 @@ using McpSdk.Protocol.Models;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var loggerFactory = new ClientConsoleLoggerFactory();
-var sseClientFactory = new SseClientFactory(loggerFactory);
+var sseClientFactory = new SseClientFactory(
+    "http://localhost:3000", 
+    "/sse",
+    loggerFactory
+);
 var rootsControllerFactory = new RootsControllerFactory();
 var samplingControllerFactory = new SamplingControllerFactory();
 var client = new ClientBuilder(json)
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     .WithLogger(loggerFactory)
-    .WithSseTransport(sseClientFactory, "http://localhost:3000")
+    .WithSseTransport(sseClientFactory)
     //.WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
     .WithRootsCapability(rootsControllerFactory)
     .WithSamplingCapability(samplingControllerFactory)

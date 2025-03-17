@@ -5,22 +5,17 @@ namespace StdioToSseBridge;
 
 public sealed class Bridge
 {
-    private readonly string _host;
-    private readonly int _port;
     private readonly ISseClient _sseClient;
     private readonly ILogger _logger;
     private Task _readStdInTask;
-    private string _url;
+    private string _messagesEndpoint;
     private CancellationTokenSource _cts;
     private TaskCompletionSource<bool> _startedSrc;
 
-    public Bridge(string host, int port, ISseClient sseClient, ILoggerFactory loggerFactory)
+    public Bridge(ISseClient sseClient, ILoggerFactory loggerFactory)
     {
-        _host = host;
-        _port = port;
         _sseClient = sseClient;
         _logger = loggerFactory.Create<Bridge>();
-        _url = $"http://{host}:{port}/messages";
     }
 
     public async Task Run()
@@ -30,7 +25,7 @@ public sealed class Bridge
         _startedSrc = new TaskCompletionSource<bool>();
         _sseClient.EventReceived += OnSseEventReceived;
         _sseClient.Disconnected += OnSseClientDisconnected;
-        await _sseClient.Connect($"http://{_host}:{_port}/sse", cancellationToken);
+        await _sseClient.Connect(cancellationToken);
         await _startedSrc.Task;
         _logger.LogDebug("Bridge Connected");
         await ReadStdIn(cancellationToken);
@@ -55,8 +50,8 @@ public sealed class Bridge
                 if (line == null)
                     break;
                 
-                _logger.LogDebug($"Sending: {line} to {_url}");
-                await _sseClient.SendMessage(_url, line, cancellationToken);
+                _logger.LogDebug($"Sending: {line} to {_messagesEndpoint}");
+                await _sseClient.SendMessage(_messagesEndpoint, line, cancellationToken);
             }
             _logger.LogDebug("Canceled");
         }
@@ -70,8 +65,8 @@ public sealed class Bridge
         _logger.LogDebug($"Received: {sseEvent}");
         if (sseEvent.Kind == "endpoint")
         {
-            _url = $"http://localhost:3000{sseEvent.Data}";
-            _logger.LogDebug($"Message URL: {_url}");
+            _messagesEndpoint = sseEvent.Data;
+            _logger.LogDebug($"Message Endpoint: {_messagesEndpoint}");
             _startedSrc.SetResult(true);
         }
         else if (sseEvent.Kind == "message")

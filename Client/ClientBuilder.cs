@@ -46,9 +46,9 @@ namespace McpSdk.Client
             return this;
         }
 
-        public ClientBuilder WithSseTransport(ISseClientFactory sseClientFactory, string host)
+        public ClientBuilder WithSseTransport(ISseClientFactory sseClientFactory)
         {
-            _transportFactory = new SseTransportFactory(_json, sseClientFactory, host);
+            _transportFactory = new SseTransportFactory(_json, sseClientFactory);
             return this;
         }
         

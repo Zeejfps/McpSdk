@@ -21,31 +21,37 @@ namespace McpSdk.Adapter.SseClient
         public event Action Disconnected;
         
         private readonly HttpClient _httpClient;
+        private readonly string _baseUrl;
+        private readonly string _connectionEndpoint;
         private readonly SseMessageReader _sseMessageReader;
         private readonly ILogger _logger;
         
         private Task _startListeningTask;
         private CancellationTokenSource _cts;
 
-        public SseClient(ILoggerFactory loggerFactory)
+        public SseClient(string baseUrl, string connectionEndpoint, ILoggerFactory loggerFactory)
         {
+            _baseUrl = baseUrl.TrimEnd('/');
+            _connectionEndpoint = connectionEndpoint;
             _logger = loggerFactory.Create<SseClient>();
             _httpClient = new HttpClient();
             _sseMessageReader = new SseMessageReader();
         }
 
-        public async Task SendMessage(string url, string jsonBody, CancellationToken cancellationToken = default)
+        public async Task SendMessage(string endpoint, string jsonBody, CancellationToken cancellationToken = default)
         {
             var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content, cancellationToken);
+            var fullUrl = $"{_baseUrl}{endpoint}";
+            var response = await _httpClient.PostAsync(fullUrl, content, cancellationToken);
             response.EnsureSuccessStatusCode();
         }
 
-        public Task Connect(string url, CancellationToken cancellationToken = default)
+        public Task Connect(CancellationToken cancellationToken = default)
         {
             _cts = new CancellationTokenSource();
             var linkedTokenSrc = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, cancellationToken);
-            _startListeningTask = StartListening(url, linkedTokenSrc.Token);
+            var fullUrl = $"{_baseUrl}{_connectionEndpoint}";
+            _startListeningTask = StartListening(fullUrl, linkedTokenSrc.Token);
             return Task.CompletedTask;
         }
 

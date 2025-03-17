@@ -4,9 +4,10 @@ using StdioToSseBridge;
 
 var serverLogger = new ServerConsoleLoggerFactory();
 var logger = serverLogger.Create<Program>();
-var sseClientFactory = new SseClientFactory(serverLogger);
+var baseUrl = "http://localhost:3000";
+var sseClientFactory = new SseClientFactory(baseUrl, "/sse", serverLogger);
 var sseClient = sseClientFactory.Create();
-var bridge = new Bridge("localhost", 3000, sseClient, serverLogger);
+var bridge = new Bridge(sseClient, serverLogger);
 
 try
 {

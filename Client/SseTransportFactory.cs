@@ -7,19 +7,17 @@ namespace McpSdk.Client
     {
         private readonly IJson _json;
         private readonly ISseClientFactory _sseClientFactory;
-        private readonly string _host;
 
-        public SseTransportFactory(IJson json, ISseClientFactory sseClientFactory, string host)
+        public SseTransportFactory(IJson json, ISseClientFactory sseClientFactory)
         {
             _json = json;
             _sseClientFactory = sseClientFactory;
-            _host = host;
         }
 
         public ITransport Create(ILoggerFactory loggerFactory)
         {
             var sseClient = _sseClientFactory.Create();
-            return new SseTransport(sseClient, _json, loggerFactory, _host);
+            return new SseTransport(sseClient, _json, loggerFactory);
         }
     }
 }

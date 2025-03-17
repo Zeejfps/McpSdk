@@ -15,8 +15,7 @@ namespace McpSdk.Adapter.SseServer
         
         private readonly HttpListener _listener;
         private readonly string _connectionPath;
-        private readonly string _hostName;
-        private readonly int _port;
+        private readonly string _baseUrl;
         private readonly Dictionary<string, SseSession> _sessionByPathLookup = new Dictionary<string, SseSession>();
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
@@ -26,14 +25,12 @@ namespace McpSdk.Adapter.SseServer
         private Task _listeningTask;
         
         public HttpListenerSseServer(
-            string hostName,
-            int port,
+            string baseUrl,
             string connectionEndpoint,
             string messagesEndpoint,
             ILoggerFactory loggerFactory)
         {
-            _hostName = hostName;
-            _port = port;
+            _baseUrl = baseUrl.TrimEnd('/');
             _connectionPath = connectionEndpoint;
             _messagesEndpoint = messagesEndpoint;
             _loggerFactory = loggerFactory;
@@ -43,7 +40,10 @@ namespace McpSdk.Adapter.SseServer
         
         public async Task Start()
         {
-            _listener.Prefixes.Add($"http://{_hostName}:{_port}/");
+            var prefix = _baseUrl;
+            if (!prefix.EndsWith("/"))
+                prefix += "/";
+            _listener.Prefixes.Add(prefix);
             _listener.Start();
             _cts = new CancellationTokenSource();
             await Listen();
