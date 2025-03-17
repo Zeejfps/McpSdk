@@ -31,21 +31,15 @@ namespace McpSdk.Server
             IPromptController promptController,
             IResourcesController resourcesController)
         {
-            _transport = transport;
-            _serverInfo = serverInfo;
+            _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+            _serverInfo = serverInfo ?? throw new ArgumentNullException(nameof(serverInfo));
             _logger = loggerFactory.Create<McpServer>();
+            
             _toolsController = toolsController;
             _promptController = promptController;
             _resourcesController = resourcesController;
 
             _requestHandlersByPathLookup.Add("initialize", HandleInitializeRequest);
-
-            if (_toolsController != null)
-            {
-                _capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
-                _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
-                _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
-            }
 
             if (_promptController != null)
             {
@@ -61,6 +55,16 @@ namespace McpSdk.Server
                     IsListChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
                     IsResourceChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
                 };
+                _requestHandlersByPathLookup.Add("resources/list", HandleListResourcesRequest);
+                _requestHandlersByPathLookup.Add("resources/read", HandleReadResourceRequest);
+                _requestHandlersByPathLookup.Add("resources/templates/list", HandleListResourceTemplatesRequest);
+            }
+            
+            if (_toolsController != null)
+            {
+                _capabilities.Tools = new ToolsCapabilityModel(_toolsController.IsListChangedNotificationSupported);
+                _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
+                _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
             }
         }
 
@@ -164,6 +168,21 @@ namespace McpSdk.Server
         {
             var result = await _promptController.GetPrompt(new GetPromptRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);
+        }
+        
+        private Task HandleListResourceTemplatesRequest(int requestId, IJsonObject arguments)
+        {
+            return _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Method not implemented");
+        }
+
+        private Task HandleReadResourceRequest(int requestId, IJsonObject arguments)
+        {
+            return _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Method not implemented");
+        }
+
+        private Task HandleListResourcesRequest(int requestId, IJsonObject arguments)
+        {
+            return _transport.SendErrorResponse(requestId, ErrorCode.MethodNotFound, "Method not implemented");
         }
         
         private void OnNotificationReceived(string notification, IJsonObject arguments)
