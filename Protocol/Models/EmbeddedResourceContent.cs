@@ -2,12 +2,12 @@
 
 public sealed class EmbeddedResourceContent : Content
 { 
-    public ResourceContent Resource { get; }
+    public ResourceContents Resource { get; }
         
     public EmbeddedResourceContent(IJsonObject jsonObject)
     {
         var resourceObj = jsonObject["resource"].AsObject();
-        Resource = new ResourceContent(resourceObj);
+        Resource = ResourceContents.FromJsonObject(resourceObj);
     }
 
     public override void AsJson(IJsonWriter writer)
