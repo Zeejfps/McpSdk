@@ -4,7 +4,7 @@ namespace McpSdk.Protocol.Models;
 
 public sealed class ListResourcesResult
 {
-    public Resource[] Resources { get; set; }
+    public Resource[] Resources { get; }
 
     public ListResourcesResult(Resource[] resources)
     {
