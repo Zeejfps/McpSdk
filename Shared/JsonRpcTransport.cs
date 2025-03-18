@@ -52,6 +52,14 @@ namespace McpSdk.Shared
             await Send(requestAsJson, cancellationToken);
         }
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="payload"></param>
+        /// <param name="cancellationToken"></param>
+        /// <exception cref="TransportErrorException"></exception>
+        /// <returns></returns>
         public async Task<IJsonObject> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
@@ -81,7 +89,7 @@ namespace McpSdk.Shared
             await Send(response, cancellationToken);
         }
         
-        public async Task SendErrorResponse(int requestId, ErrorCode code, string message, Json data, CancellationToken cancellationToken = default)
+        public async Task SendErrorResponse(int requestId, ErrorCode code, string message, Json data = null, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
@@ -171,7 +179,8 @@ namespace McpSdk.Shared
                 var errorObj = errorProp.AsObject();
                 var code = errorObj["code"].AsInt();
                 var message = errorObj["message"].AsString();
-                throw new Exception($"Error ({code}): {message}");
+                var data = errorObj["data"]?.AsObject();
+                throw new TransportErrorException((ErrorCode)code, message, data);
             }
             return response["result"].AsObject();
         }
