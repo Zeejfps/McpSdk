@@ -37,7 +37,7 @@ namespace McpSdk.Shared
             return OnStop();
         }
 
-        public async Task SendNotification(string notification, IJsonObject arguments = null, CancellationToken cancellationToken = default)
+        public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
         {
             var requestAsJson = _json.Stringify(request =>
             {
@@ -54,29 +54,19 @@ namespace McpSdk.Shared
         
         public async Task<IJsonObject> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
-            return await SendJrpcRequest(method, req => req.Write("params", payload), cancellationToken);
-        }
-
-        public async Task<IJsonObject> SendRequest(string method, IJsonObject payload, CancellationToken cancellationToken = default)
-        {
-            return await SendJrpcRequest(method, req => req.Write("params", payload), cancellationToken);
-        }
-        
-        private async Task<IJsonObject> SendJrpcRequest(string method, Action<IJsonWriter> writeParams, CancellationToken cancellationToken = default)
-        {
             var id = NextRequestId();
             var request = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("id", id);
                 req.Write("method", method);
-                writeParams(req);
+                req.Write("params", payload);
             });
             
             Logger.LogDebug($"Sending request: {request}");
             await Send(request, cancellationToken);
             var response = await WaitForResponse(id, cancellationToken);
-            return ReadResult(response);
+            return ReadResult(response);        
         }
 
         public async Task SendOkResponse(int requestId, Json writeResult, CancellationToken cancellationToken = default)

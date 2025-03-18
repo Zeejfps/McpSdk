@@ -201,7 +201,7 @@ namespace McpSdk.Server
             _logger.LogDebug($"Received Notification: {notification}, {arguments}");
         }
 
-        private async void SendNotification(string notification, IJsonObject arguments = null)
+        private async void SendNotification(string notification, Json arguments = null)
         {
             try
             {

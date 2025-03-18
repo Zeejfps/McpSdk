@@ -28,14 +28,14 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, IJsonObject[] objs);
         IJsonWriter Write(string propertyName, Json json);
         IJsonWriter Write(string propertyName, Json[] jsonArray);
-        IJsonWriter Write(IJsonObject obj);
+        IJsonWriter Write(string propertyName, IJsonProperty property);
     }
 
     public interface IJsonObject : IEnumerable<KeyValuePair<string, IJsonProperty>>
     {
         IJsonProperty this[string propertyName] { get; }
-        string ToString();
         bool IsValid(IJsonObject schema, out IList<string> errors);
+        void AsJson(IJsonWriter writer);
     }
 
     public interface IJsonProperty

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using McpSdk.Protocol;
@@ -52,6 +53,14 @@ namespace McpSdk.Adapter.Newtonsoft.Json
         {
             var jSchema = JSchema.Parse(schema.ToString());
             return _jToken.IsValid(jSchema, out errors);
+        }
+
+        public void AsJson(IJsonWriter writer)
+        {
+            foreach (var kvp in this)
+            {
+                writer.Write(kvp.Key, kvp.Value);
+            }
         }
     }
 }

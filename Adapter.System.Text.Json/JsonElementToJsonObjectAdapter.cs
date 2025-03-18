@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using Json.Schema;
 using McpSdk.Protocol;
+using NotImplementedException = System.NotImplementedException;
 
 namespace McpSdk.Adapter.System.Text.Json;
 
@@ -53,6 +54,14 @@ internal sealed class JsonElementToJsonObjectAdapter : IJsonObject
         }
         errors = null;
         return true;
+    }
+
+    public void AsJson(IJsonWriter writer)
+    {
+        foreach (var kvp in this)
+        {
+            writer.Write(kvp.Key, kvp.Value);
+        }
     }
 
     IEnumerator IEnumerable.GetEnumerator()
