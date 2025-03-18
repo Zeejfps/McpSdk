@@ -2,10 +2,12 @@
 {
     public sealed class Tool
     {
-        public string Name { get; }
-        public string Description { get; }
-        public ToolInputSchema InputSchema { get; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public ToolInputSchema InputSchema { get; set; }
 
+        public Tool() {}
+        
         public Tool(string name, string description, ToolInputSchema schema)
         {
             Name = name;
