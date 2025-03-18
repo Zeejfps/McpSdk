@@ -5,6 +5,16 @@ namespace McpSdk.Protocol.Models
 {
     public sealed class CallToolResult
     {
+        public static CallToolResult Ok(params Content[] content)
+        {
+            return new CallToolResult(content, false);
+        }
+
+        public static CallToolResult Error(params Content[] content)
+        {
+            return new CallToolResult(content, true);
+        }
+        
         public CallToolResult(Content[] content, bool isError)
         {
             Content = content;

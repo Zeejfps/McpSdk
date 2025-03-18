@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace McpSdk.Protocol.Models;
 
-public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput>>
+public sealed class ObjectSchema : ToolInput, IEnumerable<KeyValuePair<string, ToolInput>>
 {
     private readonly Dictionary<string, ToolInput> _requiredInputsByNameLookup = new();
     private readonly Dictionary<string, ToolInput> _optionalInputsByNameLookup = new();
     
-    public ToolInputSchema() {}
+    public ObjectSchema() {}
 
-    public ToolInputSchema(IJsonObject jsonObject)
+    public ObjectSchema(IJsonObject jsonObject)
     {
         var properties = jsonObject["properties"]?.AsObject();
         if (properties != null)
@@ -37,7 +36,7 @@ public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput
 
     }
     
-    public ToolInputSchema Add(string name, ToolInput input)
+    public ObjectSchema Add(string name, ToolInput input)
     {
         _requiredInputsByNameLookup[name] = input;
         return this;
@@ -49,7 +48,7 @@ public sealed class ToolInputSchema : IEnumerable<KeyValuePair<string, ToolInput
     //     return this;
     // }
     
-    public void AsJson(IJsonWriter writer)
+    public override void AsJson(IJsonWriter writer)
     {
         writer.Write("type", "object");
         writer.Write("properties", propertyWriter =>

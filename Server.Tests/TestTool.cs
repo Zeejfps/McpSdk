@@ -12,7 +12,7 @@ public sealed class TestTool : ITool
         Info = new Tool(
             "get-forecast",
             "asdawdawd",
-            new ToolInputSchema
+            new ObjectSchema
             {
                 {
                     "latitude", new NumberInput
