@@ -54,13 +54,23 @@ namespace McpSdk.Shared
         
         public async Task<IJsonObject> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
+            return await SendJrpcRequest(method, req => req.Write("params", payload), cancellationToken);
+        }
+
+        public async Task<IJsonObject> SendRequest(string method, IJsonObject payload, CancellationToken cancellationToken = default)
+        {
+            return await SendJrpcRequest(method, req => req.Write("params", payload), cancellationToken);
+        }
+        
+        private async Task<IJsonObject> SendJrpcRequest(string method, Action<IJsonWriter> writeParams, CancellationToken cancellationToken = default)
+        {
             var id = NextRequestId();
             var request = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("id", id);
                 req.Write("method", method);
-                req.Write("params", payload);
+                writeParams(req);
             });
             
             Logger.LogDebug($"Sending request: {request}");
