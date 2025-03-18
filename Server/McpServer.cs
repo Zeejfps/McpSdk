@@ -47,6 +47,8 @@ namespace McpSdk.Server
                 _capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
                 _requestHandlersByPathLookup.Add("prompts/list", HandleListPromptsRequest);
                 _requestHandlersByPathLookup.Add("prompts/get", HandleGetPromptRequest);
+                if (_promptController.IsListChangedNotificationSupported)
+                    _promptController.ListChanged += OnPromptsListChanged;
             }
             
             if (_resourcesController != null)
@@ -67,6 +69,11 @@ namespace McpSdk.Server
                 _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
                 _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
             }
+        }
+
+        private async void OnPromptsListChanged()
+        {
+            SendNotification("notifications/prompts/list_changed");
         }
 
         public async Task Start()
@@ -192,6 +199,18 @@ namespace McpSdk.Server
         private void OnNotificationReceived(string notification, IJsonObject arguments)
         {
             _logger.LogDebug($"Received Notification: {notification}, {arguments}");
+        }
+
+        private async void SendNotification(string notification, IJsonObject arguments = null)
+        {
+            try
+            {
+                await _transport.SendNotification(notification, arguments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
         }
     }
 }

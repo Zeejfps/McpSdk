@@ -37,12 +37,16 @@ namespace McpSdk.Shared
             return OnStop();
         }
 
-        public async Task SendNotification(string notification, CancellationToken cancellationToken = default)
+        public async Task SendNotification(string notification, IJsonObject arguments = null, CancellationToken cancellationToken = default)
         {
             var requestAsJson = _json.Stringify(request =>
             {
                 request.Write("jsonrpc", JsonRpcVersion);
                 request.Write("method", notification);
+                if (arguments != null)
+                {
+                    request.Write("params", arguments);
+                }
             });
             Logger.LogDebug($"Sending notification: {requestAsJson}");
             await Send(requestAsJson, cancellationToken);
