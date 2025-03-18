@@ -8,7 +8,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
-    internal sealed class StdioTransport : JsonRpcTransport
+    public sealed class StdioTransport : JsonRpcTransport
     {
         private TextWriter _standardOut;
         private Task _readStdInTask;

@@ -3,7 +3,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
-    internal sealed class StdioTransportFactory : ITransportFactory
+    public sealed class StdioTransportFactory : ITransportFactory
     {
         private readonly IJson _json;
 
