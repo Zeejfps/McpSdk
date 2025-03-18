@@ -1,13 +1,13 @@
 using System;
-using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Shared;
 
 public sealed class TransportErrorException : Exception
 {
-    public ITransportError Error { get; }
+    public Error Error { get; }
         
-    public TransportErrorException(ITransportError error) : base($"Error ({error.Code}): {error.Message}")
+    public TransportErrorException(Error error) : base($"Error ({error.Code}): {error.Message}")
     {
         Error = error;
     }

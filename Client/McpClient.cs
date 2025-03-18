@@ -58,7 +58,10 @@ namespace McpSdk.Client
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal client error");
+                await _transport.SendErrorResponse(
+                    requestId,
+                    new Error(ErrorCode.InternalError, "Internal client error")
+                );
             }
         }
 
@@ -75,7 +78,10 @@ namespace McpSdk.Client
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(requestId, ErrorCode.InternalError, "Internal client error");
+                await _transport.SendErrorResponse(
+                    requestId, 
+                    new Error(ErrorCode.InternalError, "Internal client error")
+                );
             }
         }
 

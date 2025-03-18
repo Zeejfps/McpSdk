@@ -125,7 +125,10 @@ namespace McpSdk.Server
                 {
                     await _transport.SendErrorResponse(
                         requestId,
-                        ErrorCode.MethodNotFound, $"Method '{path}' is not supported");
+                        new Error(
+                            code: ErrorCode.MethodNotFound,
+                            message: $"Method '{path}' is not supported")
+                        );
                 }
             }
             catch (Exception ex)
@@ -133,7 +136,8 @@ namespace McpSdk.Server
                 _logger.LogError(ex);
                 await _transport.SendErrorResponse(
                     requestId,
-                    ErrorCode.InternalError, "Internal server error");
+                    new Error(code: ErrorCode.InternalError, message: "Internal server error")
+                );
             }
         }
 
@@ -145,8 +149,11 @@ namespace McpSdk.Server
             {
                 await _transport.SendErrorResponse(
                     requestId,
-                    ErrorCode.InvalidParams,
-                    $"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}");
+                    new Error(
+                        code:  ErrorCode.InvalidParams, 
+                        message:$"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}"
+                    )
+                );
                 return;
             }
             

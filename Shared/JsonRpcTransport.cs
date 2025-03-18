@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Shared
 {
@@ -89,19 +90,13 @@ namespace McpSdk.Shared
             await Send(response, cancellationToken);
         }
         
-        public async Task SendErrorResponse(int requestId, ErrorCode code, string message, Json data = null, CancellationToken cancellationToken = default)
+        public async Task SendErrorResponse(int requestId, Error error, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
                 req.Write("id", requestId);
-                req.Write("error", error =>
-                {
-                    error.Write("code", (int)code);
-                    error.Write("message", message);
-                    if (data != null)
-                        error.Write("data", data);
-                });
+                req.Write("error", error.AsJson);
             });
             Logger.LogDebug($"Sending Error response: {response}");
             await Send(response, cancellationToken);
@@ -178,10 +173,7 @@ namespace McpSdk.Shared
                 return Response.FromResult(response["result"].AsObject());
             
             var errorObj = errorProp.AsObject();
-            var code = errorObj["code"].AsInt();
-            var message = errorObj["message"].AsString();
-            var data = errorObj["data"]?.AsObject();
-            return Response.FromError(new TransportError((ErrorCode)code, message, data));
+            return Response.FromError(new Error(errorObj));
         }
         
         private int NextRequestId()
