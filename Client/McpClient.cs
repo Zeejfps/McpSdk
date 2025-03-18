@@ -102,8 +102,10 @@ namespace McpSdk.Client
                 capabilities.SamplingCapability = new SamplingCapabilityModel();
             
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
-            var resultJsonObject = await _transport.SendRequest("initialize", initializeRequest.AsJson);
-            var initializeResult = new InitializeResult(resultJsonObject);
+            var initializeResponse = await _transport.SendRequest("initialize", initializeRequest.AsJson);
+            var initializeResult = initializeResponse.Unwrap(
+                result => new InitializeResult(result),
+                error => throw new TransportErrorException(error));
             
             var serverProtocolVersion = initializeResult.ProtocolVersion;
             if (serverProtocolVersion != clientProtocolVersion)
@@ -119,14 +121,20 @@ namespace McpSdk.Client
 
         public async Task<ListToolsResult> ListTools()
         {
-            var result = await _transport.SendRequest("tools/list", payload => { });
-            return new ListToolsResult(result);
+            var response = await _transport.SendRequest("tools/list", payload => { });
+            return response.Unwrap(
+                result => new ListToolsResult(result), 
+                error => throw new TransportErrorException(error)
+            );
         }
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var result = await _transport.SendRequest("tools/call", request.AsJson);
-            return new CallToolResult(result);
+            var response = await _transport.SendRequest("tools/call", request.AsJson);
+            return response.Unwrap(
+                result => new CallToolResult(result),
+                error => throw new TransportErrorException(error)
+            );
         }
     }
 }

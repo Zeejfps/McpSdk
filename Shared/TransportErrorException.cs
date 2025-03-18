@@ -5,14 +5,10 @@ namespace McpSdk.Shared;
 
 public sealed class TransportErrorException : Exception
 {
-    public ErrorCode Code { get; }
-    public new string Message { get; }
-    public new IJsonObject? Data { get; }
+    public ITransportError Error { get; }
         
-    public TransportErrorException(ErrorCode code, string message, IJsonObject data) : base($"Error ({code}): {message}")
+    public TransportErrorException(ITransportError error) : base($"Error ({error.Code}): {error.Message}")
     {
-        Code = code;
-        Message = message;
-        Data = data;
+        Error = error;
     }
 }

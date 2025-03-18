@@ -60,7 +60,7 @@ namespace McpSdk.Shared
         /// <param name="cancellationToken"></param>
         /// <exception cref="TransportErrorException"></exception>
         /// <returns></returns>
-        public async Task<IJsonObject> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
+        public async Task<Response> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
             var request = _json.Stringify(req =>
@@ -74,7 +74,7 @@ namespace McpSdk.Shared
             Logger.LogDebug($"Sending request: {request}");
             await Send(request, cancellationToken);
             var response = await WaitForResponse(id, cancellationToken);
-            return ReadResult(response);        
+            return ParseResponse(response);        
         }
 
         public async Task SendOkResponse(int requestId, Json writeResult, CancellationToken cancellationToken = default)
@@ -171,23 +171,36 @@ namespace McpSdk.Shared
             return tsc.Task;
         }
         
-        private IJsonObject ReadResult(IJsonObject response)
+        private Response ParseResponse(IJsonObject response)
         {
             var errorProp = response["error"];
-            if (errorProp != null)
-            {
-                var errorObj = errorProp.AsObject();
-                var code = errorObj["code"].AsInt();
-                var message = errorObj["message"].AsString();
-                var data = errorObj["data"]?.AsObject();
-                throw new TransportErrorException((ErrorCode)code, message, data);
-            }
-            return response["result"].AsObject();
+            if (errorProp == null)
+                return Response.FromResult(response["result"].AsObject());
+            
+            var errorObj = errorProp.AsObject();
+            var code = errorObj["code"].AsInt();
+            var message = errorObj["message"].AsString();
+            var data = errorObj["data"]?.AsObject();
+            return Response.FromError(new TransportError((ErrorCode)code, message, data));
         }
         
         private int NextRequestId()
         {
             return Interlocked.Increment(ref _nextMessageId);
+        }
+    }
+
+    internal sealed class TransportError : ITransportError
+    {
+        public ErrorCode Code { get; }
+        public string Message { get; }
+        public IJsonObject Data { get; }
+        
+        public TransportError(ErrorCode code, string message, IJsonObject data)
+        {
+            Code = code;
+            Message = message;
+            Data = data;
         }
     }
 }
