@@ -6,7 +6,7 @@ namespace McpSdk.Server.Tests;
 public sealed class StdioTests
 {
 
-    public async void Run()
+    public async Task Run()
     {
         var json = new NewtonsoftJson();
         var mcpServer = new ServerBuilder()
@@ -21,6 +21,10 @@ public sealed class StdioTests
             .Build();
 
         await mcpServer.Start();
+        while (true)
+        {
+            await Task.Delay(1000);
+        }
     }
     
 }

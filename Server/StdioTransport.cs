@@ -17,11 +17,11 @@ namespace McpSdk.Server
         {
         }
 
-        protected override Task OnStart(CancellationToken cancellationToken = default)
+        protected override async Task OnStart(CancellationToken cancellationToken = default)
         {
             _standardOut = Console.Out;
             _readStdInTask = ReadStdIn(Console.In);
-            return Task.CompletedTask;
+            await Task.Yield();
         }
 
         protected override Task OnStop(CancellationToken cancellationToken = default)
@@ -39,7 +39,11 @@ namespace McpSdk.Server
         {
             string messageAsJson;
             while ((messageAsJson = await standardIn.ReadLineAsync().ConfigureAwait(false)) != null)
+            {
+                Logger.LogDebug("Reading stdin...");
                 OnMessageReceived(messageAsJson);
+            }
+            Logger.LogDebug("Null message received");
         }
     }
 

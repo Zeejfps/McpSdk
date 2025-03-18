@@ -101,36 +101,44 @@ namespace McpSdk.Shared
         
         protected void OnMessageReceived(string messageAsJson)
         {
-            var response = _json.Parse(messageAsJson);
-            var idProp = response["id"];
-            var method = response["method"]?.AsString();
-            var methodParams = response["params"]?.AsObject();
-
-            if (method != null)
+            try
             {
-                if (idProp == null)
+                Logger.LogDebug($"Received message: {messageAsJson}");
+                var response = _json.Parse(messageAsJson);
+                var idProp = response["id"];
+                var method = response["method"]?.AsString();
+                var methodParams = response["params"]?.AsObject();
+
+                if (method != null)
                 {
-                    NotificationReceived?.Invoke(method, methodParams);
+                    if (idProp == null)
+                    {
+                        NotificationReceived?.Invoke(method, methodParams);
+                    }
+                    else
+                    {
+                        var id = idProp.AsInt();
+                        RequestReceived?.Invoke(id, method, methodParams);
+                    }
                 }
                 else
                 {
+                    if (idProp == null)
+                    {
+                        return;
+                    }
+
                     var id = idProp.AsInt();
-                    RequestReceived?.Invoke(id, method, methodParams);
+                    if (!_tscByMessageId.TryGetValue(id, out var tsc))
+                        return;
+
+                    _tscByMessageId.Remove(id);
+                    tsc.TrySetResult(response);
                 }
             }
-            else
+            catch (Exception e)
             {
-                if (idProp == null)
-                {
-                    return;
-                }
-                
-                var id = idProp.AsInt();
-                if (!_tscByMessageId.TryGetValue(id, out var tsc))
-                    return;
-                
-                _tscByMessageId.Remove(id);
-                tsc.TrySetResult(response);
+                Logger.LogError(e);
             }
         }
         
