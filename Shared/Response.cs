@@ -1,8 +1,9 @@
 using System;
+using McpSdk.Protocol;
 
-namespace McpSdk.Protocol;
+namespace McpSdk.Shared;
 
-public readonly struct Response
+public sealed class Response : IResponse
 {
     public bool IsOk { get; }
     public bool IsError { get; }

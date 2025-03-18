@@ -60,7 +60,7 @@ namespace McpSdk.Shared
         /// <param name="cancellationToken"></param>
         /// <exception cref="TransportErrorException"></exception>
         /// <returns></returns>
-        public async Task<Response> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
+        public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
             var request = _json.Stringify(req =>
@@ -187,20 +187,6 @@ namespace McpSdk.Shared
         private int NextRequestId()
         {
             return Interlocked.Increment(ref _nextMessageId);
-        }
-    }
-
-    internal sealed class TransportError : ITransportError
-    {
-        public ErrorCode Code { get; }
-        public string Message { get; }
-        public IJsonObject Data { get; }
-        
-        public TransportError(ErrorCode code, string message, IJsonObject data)
-        {
-            Code = code;
-            Message = message;
-            Data = data;
         }
     }
 }
