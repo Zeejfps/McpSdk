@@ -1,5 +1,4 @@
-﻿using System;
-using McpSdk.Protocol;
+﻿using McpSdk.Protocol;
 using Newtonsoft.Json;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
@@ -145,6 +144,12 @@ namespace McpSdk.Adapter.Newtonsoft.Json
                 _writer.WriteEndObject();
             }
             _writer.WriteEndArray();
+            return this;
+        }
+
+        public IJsonWriter Write(IJsonObject obj)
+        {
+            _writer.WriteRawValue(obj.ToString());
             return this;
         }
     }

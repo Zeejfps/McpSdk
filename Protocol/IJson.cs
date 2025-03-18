@@ -28,6 +28,7 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, IJsonObject[] objs);
         IJsonWriter Write(string propertyName, Json json);
         IJsonWriter Write(string propertyName, Json[] jsonArray);
+        IJsonWriter Write(IJsonObject obj);
     }
 
     public interface IJsonObject : IEnumerable<KeyValuePair<string, IJsonProperty>>
