@@ -154,7 +154,7 @@ namespace McpSdk.Shared
         
         protected abstract Task OnStart(CancellationToken cancellationToken = default);
         protected abstract Task OnStop(CancellationToken cancellationToken = default);
-        protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken);
+        protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken = default);
 
         private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
         {
