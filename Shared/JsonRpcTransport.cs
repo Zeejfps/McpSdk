@@ -113,12 +113,12 @@ namespace McpSdk.Shared
                 {
                     if (idProp == null)
                     {
-                        NotificationReceived?.Invoke(method, methodParams);
+                        OnNotificationReceived(method, methodParams);
                     }
                     else
                     {
                         var id = idProp.AsInt();
-                        RequestReceived?.Invoke(id, method, methodParams);
+                        OnRequestReceived(id, method, methodParams);
                     }
                 }
                 else
@@ -140,6 +140,16 @@ namespace McpSdk.Shared
             {
                 Logger.LogError(e);
             }
+        }
+
+        protected virtual void OnNotificationReceived(string method, IJsonObject methodParams)
+        {
+            NotificationReceived?.Invoke(method, methodParams);
+        }
+
+        protected virtual void OnRequestReceived(int requestId, string method, IJsonObject methodParams)
+        {
+            RequestReceived?.Invoke(requestId, method, methodParams);
         }
         
         protected abstract Task OnStart(CancellationToken cancellationToken = default);
