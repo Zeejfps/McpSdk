@@ -96,10 +96,10 @@ namespace McpSdk.TransportBridge
         {
             _logger.LogDebug("Starting...");
            
+            RegisterListeners();
             var startUnityTransportTask = _dstTransport.Start();
             var startStdioTransportTask = _srcTransport.Start();
             await Task.WhenAll(startUnityTransportTask, startStdioTransportTask);
-            RegisterListeners();
             _logger.LogDebug("Started");
             while (_isRunning)
             {
