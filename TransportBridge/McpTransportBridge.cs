@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -12,6 +11,7 @@ namespace McpSdk.TransportBridge
         private readonly ILogger _logger;
         private readonly ITransport _srcTransport;
         private readonly ITransport _dstTransport;
+        private bool _isRunning;
         
         public McpTransportBridge(ILoggerFactory loggerFactory, ITransport srcTransport, ITransport dstTransport)
         {
@@ -70,20 +70,25 @@ namespace McpSdk.TransportBridge
             }
         }
 
-        public async Task Start(CancellationToken cancellationToken = default)
+        public async Task Run()
         {
             _logger.LogDebug("Starting...");
-            var startUnityTransportTask = _dstTransport.Start(cancellationToken);
-            var startStdioTransportTask = _srcTransport.Start(cancellationToken);
+            var startUnityTransportTask = _dstTransport.Start();
+            var startStdioTransportTask = _srcTransport.Start();
             await Task.WhenAll(startUnityTransportTask, startStdioTransportTask);
             _logger.LogDebug("Started");
+            while (_isRunning)
+            {
+                await Task.Delay(2000);
+            }
+            _logger.LogDebug("Stopped");
         }
 
-        public async Task Stop(CancellationToken cancellationToken = default)
+        public async Task Interrupt()
         {
+            _isRunning = false;
             _logger.LogDebug("Stopping...");
             await Task.WhenAll(_srcTransport.Stop(), _dstTransport.Stop());
-            _logger.LogDebug("Stopped");
         }
     }
 }
