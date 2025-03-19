@@ -43,6 +43,19 @@ namespace McpSdk.TransportBridge
             }
         }
 
+        private async void SrcTransport_OnNotificationReceived(string notification, IJsonObject arguments)
+        {
+            try
+            {
+                _logger.LogDebug("SrcTransport_OnNotificationReceived");
+                await _dstTransport.SendNotification(notification, arguments.AsJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
+        }
+
         private async void DstTransport_OnRequestReceived(int requestId, string method, IJsonObject arguments)
         {
             try
@@ -65,15 +78,28 @@ namespace McpSdk.TransportBridge
                 await _dstTransport.SendErrorResponse(requestId, new Error(ErrorCode.InternalError, ex.Message));
             }
         }
+        
+        private async void DstTransport_OnNotificationReceived(string notification, IJsonObject arguments)
+        {
+            try
+            {
+                _logger.LogDebug("DstTransport_OnNotificationReceived");
+                await _srcTransport.SendNotification(notification, arguments.AsJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
+        }
 
         public async Task Run()
         {
             _logger.LogDebug("Starting...");
-            _srcTransport.RequestReceived += SrcTransport_OnRequestReceived;
-            _dstTransport.RequestReceived += DstTransport_OnRequestReceived;
+           
             var startUnityTransportTask = _dstTransport.Start();
             var startStdioTransportTask = _srcTransport.Start();
             await Task.WhenAll(startUnityTransportTask, startStdioTransportTask);
+            RegisterListeners();
             _logger.LogDebug("Started");
             while (_isRunning)
             {
@@ -81,14 +107,31 @@ namespace McpSdk.TransportBridge
             }
             _logger.LogDebug("Stopping...");
             await Task.WhenAll(_srcTransport.Stop(), _dstTransport.Stop());
-            _srcTransport.RequestReceived -= SrcTransport_OnRequestReceived;
-            _dstTransport.RequestReceived -= DstTransport_OnRequestReceived;
+            UnregisterListeners();
             _logger.LogDebug("Stopped");
         }
 
         public void Interrupt()
         {
             _isRunning = false;
+        }
+
+        private void RegisterListeners()
+        {
+            _srcTransport.RequestReceived += SrcTransport_OnRequestReceived;
+            _srcTransport.NotificationReceived += SrcTransport_OnNotificationReceived;
+            
+            _dstTransport.RequestReceived += DstTransport_OnRequestReceived;
+            _dstTransport.NotificationReceived += DstTransport_OnNotificationReceived;
+        }
+
+        private void UnregisterListeners()
+        {
+            _srcTransport.RequestReceived -= SrcTransport_OnRequestReceived;
+            _srcTransport.NotificationReceived -= SrcTransport_OnNotificationReceived;
+            
+            _dstTransport.RequestReceived -= DstTransport_OnRequestReceived;
+            _dstTransport.NotificationReceived -= DstTransport_OnNotificationReceived;
         }
     }
 }
