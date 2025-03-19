@@ -9,7 +9,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Client
 {
-    internal sealed class StdioTransport : JsonRpcTransport
+    public sealed class StdioTransport : JsonRpcTransport
     {
         private readonly string _command;
         private readonly string _arguments;

@@ -1,19 +1,22 @@
 ﻿using McpSdk.Adapter.ConsoleLogger;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseClient;
-using StdioToSseBridge;
+using McpSdk.TransportBridge;
+using StdioTransport = McpSdk.Server.StdioTransport;
+using SseTransport = McpSdk.Client.SseTransport;
 
 var serverLogger = new ServerConsoleLoggerFactory();
-var logger = serverLogger.Create<Program>();
 var baseUrl = "http://localhost:3000";
 var sseClientFactory = new SseClientFactory(baseUrl, "/sse", serverLogger);
 var sseClient = sseClientFactory.Create();
-var bridge = new Bridge(sseClient, serverLogger);
+var json = new NewtonsoftJson();
+var stdioTransport = new StdioTransport(json, serverLogger);
+var sseTransport = new SseTransport(sseClient, json, serverLogger);
+var bridge = new McpTransportBridge(serverLogger, stdioTransport, sseTransport);
 
-try
+await bridge.Start();
+
+while (true)
 {
-    await bridge.Run();
-}
-catch (Exception e)
-{
-    logger.LogError(e);
+    await Task.Delay(2000);
 }

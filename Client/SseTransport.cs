@@ -5,7 +5,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Client
 {
-    internal sealed class SseTransport : JsonRpcTransport
+    public sealed class SseTransport : JsonRpcTransport
     {
         private readonly ISseClient _sseClient;
         private string _messagesEndpoint;

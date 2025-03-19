@@ -3,7 +3,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Client
 {
-    internal sealed class SseTransportFactory : ITransportFactory
+    public sealed class SseTransportFactory : ITransportFactory
     {
         private readonly IJson _json;
         private readonly ISseClientFactory _sseClientFactory;
