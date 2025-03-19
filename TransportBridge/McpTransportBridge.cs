@@ -48,7 +48,10 @@ namespace McpSdk.TransportBridge
             try
             {
                 _logger.LogDebug("SrcTransport_OnNotificationReceived");
-                await _dstTransport.SendNotification(notification, arguments.AsJson);
+                if (arguments == null)
+                    await _dstTransport.SendNotification(notification);
+                else
+                    await _dstTransport.SendNotification(notification, arguments.AsJson);
             }
             catch (Exception ex)
             {
@@ -84,7 +87,10 @@ namespace McpSdk.TransportBridge
             try
             {
                 _logger.LogDebug("DstTransport_OnNotificationReceived");
-                await _srcTransport.SendNotification(notification, arguments.AsJson);
+                if (arguments == null)
+                    await _srcTransport.SendNotification(notification);
+                else
+                    await _srcTransport.SendNotification(notification, arguments.AsJson);
             }
             catch (Exception ex)
             {
