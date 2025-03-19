@@ -16,12 +16,8 @@ namespace McpSdk.TransportBridge
         public McpTransportBridge(ILoggerFactory loggerFactory, ITransport srcTransport, ITransport dstTransport)
         {
             _logger = loggerFactory.Create<McpTransportBridge>();
-            
             _srcTransport = srcTransport;
-            _srcTransport.RequestReceived += SrcTransport_OnRequestReceived;
-            
             _dstTransport = dstTransport;
-            _dstTransport.RequestReceived += DstTransport_OnRequestReceived;
         }
 
         private async void SrcTransport_OnRequestReceived(int requestId, string method, IJsonObject arguments)
@@ -73,6 +69,8 @@ namespace McpSdk.TransportBridge
         public async Task Run()
         {
             _logger.LogDebug("Starting...");
+            _srcTransport.RequestReceived += SrcTransport_OnRequestReceived;
+            _dstTransport.RequestReceived += DstTransport_OnRequestReceived;
             var startUnityTransportTask = _dstTransport.Start();
             var startStdioTransportTask = _srcTransport.Start();
             await Task.WhenAll(startUnityTransportTask, startStdioTransportTask);
@@ -81,14 +79,16 @@ namespace McpSdk.TransportBridge
             {
                 await Task.Delay(2000);
             }
+            _logger.LogDebug("Stopping...");
+            await Task.WhenAll(_srcTransport.Stop(), _dstTransport.Stop());
+            _srcTransport.RequestReceived -= SrcTransport_OnRequestReceived;
+            _dstTransport.RequestReceived -= DstTransport_OnRequestReceived;
             _logger.LogDebug("Stopped");
         }
 
-        public async Task Interrupt()
+        public void Interrupt()
         {
             _isRunning = false;
-            _logger.LogDebug("Stopping...");
-            await Task.WhenAll(_srcTransport.Stop(), _dstTransport.Stop());
         }
     }
 }
