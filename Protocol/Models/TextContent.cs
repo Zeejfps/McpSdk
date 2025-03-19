@@ -19,4 +19,6 @@ public sealed class TextContent : Content
     }
 
     public string Text { get; }
+    
+    public static implicit operator TextContent(string text) => new(text); 
 }
