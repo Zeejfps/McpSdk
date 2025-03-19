@@ -10,9 +10,19 @@ namespace McpSdk.Protocol.Models
             return new CallToolResult(content, false);
         }
 
+        public static CallToolResult Ok(Content content)
+        {
+            return new CallToolResult([content], false);
+        }
+        
         public static CallToolResult Error(params Content[] content)
         {
             return new CallToolResult(content, true);
+        }
+        
+        public static CallToolResult Error(Content content)
+        {
+            return new CallToolResult([content], true);
         }
         
         public CallToolResult(Content[] content, bool isError)
