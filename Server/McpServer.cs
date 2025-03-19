@@ -82,17 +82,15 @@ namespace McpSdk.Server
             {
                 if (_isRunning)
                     return;
-                
-                _transport.RequestReceived += OnRequestReceived;
-                _transport.NotificationReceived += OnNotificationReceived;
+              
+                RegisterListeners();
                 await _transport.Start();
                 _isRunning = true;
                 _logger.LogDebug("Mcp Server Started");
             }
             catch (Exception)
             {
-                _transport.RequestReceived -= OnRequestReceived;
-                _transport.NotificationReceived -= OnNotificationReceived;
+                UnregisterListeners();
                 throw;
             }
         }
@@ -102,14 +100,41 @@ namespace McpSdk.Server
             if (!_isRunning)
                 return;
 
+            UnregisterListeners();
             _logger.LogDebug("Stopping Mcp Server...");
+            _isRunning = false;
+            await _transport.Stop();
+            _logger.LogDebug("Mcp Server Stopped");
+        }
+
+        private void RegisterListeners()
+        {
+            if (_toolsController != null)
+                _toolsController.ListChanged += ToolsControllerOnListChanged;
+                
+            _transport.RequestReceived += OnRequestReceived;
+            _transport.NotificationReceived += OnNotificationReceived;
+        }
+
+        private void UnregisterListeners()
+        {
+            if (_toolsController != null)
+                _toolsController.ListChanged -= ToolsControllerOnListChanged;
+            
             _transport.RequestReceived -= OnRequestReceived;
             _transport.NotificationReceived -= OnNotificationReceived;
-            _isRunning = false;
-            
-            await _transport.Stop();
-            
-            _logger.LogDebug("Mcp Server Stopped");
+        }
+
+        private async void ToolsControllerOnListChanged()
+        {
+            try
+            {
+                await _transport.SendNotification("notifications/tools/list_changed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
         }
 
         private async void OnRequestReceived(int requestId, string path, IJsonObject payload)
