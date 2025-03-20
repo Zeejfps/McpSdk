@@ -19,6 +19,11 @@ public sealed class TextContent : Content
     }
 
     public string Text { get; }
-    
+
+    public override string ToString()
+    {
+        return Text;
+    }
+
     public static implicit operator TextContent(string text) => new(text); 
 }
