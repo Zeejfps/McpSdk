@@ -19,14 +19,17 @@
         {
             Name = jsonObj["name"].AsString();
             Description = jsonObj["description"].AsString();
-            InputSchema = new ObjectSchema(jsonObj["inputSchema"].AsObject());
+            var inputSchemaObj = jsonObj["inputSchema"]?.AsObject();
+            if (inputSchemaObj != null)
+                InputSchema = new ObjectSchema(inputSchemaObj);
         }
 
         public void AsJson(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("description", Description);
-            writer.Write("inputSchema", InputSchema.AsJson);
+            if (InputSchema != null)
+                writer.Write("inputSchema", InputSchema.AsJson);
         }
     }
 }
