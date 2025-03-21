@@ -4,10 +4,10 @@ using System.Linq;
 
 namespace McpSdk.Protocol.Models;
 
-public sealed class ObjectSchema : ToolInput, IEnumerable<KeyValuePair<string, ToolInput>>
+public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, JsonSchema>>
 {
-    private readonly Dictionary<string, ToolInput> _requiredInputsByNameLookup = new();
-    private readonly Dictionary<string, ToolInput> _optionalInputsByNameLookup = new();
+    private readonly Dictionary<string, JsonSchema> _requiredInputsByNameLookup = new();
+    private readonly Dictionary<string, JsonSchema> _optionalInputsByNameLookup = new();
     
     public ObjectSchema() {}
 
@@ -21,12 +21,12 @@ public sealed class ObjectSchema : ToolInput, IEnumerable<KeyValuePair<string, T
                 var name = kvp.Key;
                 var property = kvp.Value.AsObject();
                 var type = property["type"].AsString();
-                ToolInput input = type switch
+                JsonSchema input = type switch
                 {
-                    "string" => new StringInput(property),
-                    "number" => new NumberInput(property),
-                    "boolean" => new BooleanInput(property),
-                    "array" => new ArrayInput(property),
+                    "string" => new StringSchema(property),
+                    "number" => new NumberSchema(property),
+                    "boolean" => new BooleanSchema(property),
+                    "array" => new ArraySchema(property),
                     _ => null
                 };
                 if (input != null)
@@ -36,7 +36,7 @@ public sealed class ObjectSchema : ToolInput, IEnumerable<KeyValuePair<string, T
 
     }
     
-    public ObjectSchema Add(string name, ToolInput input)
+    public ObjectSchema Add(string name, JsonSchema input)
     {
         _requiredInputsByNameLookup[name] = input;
         return this;
@@ -68,7 +68,7 @@ public sealed class ObjectSchema : ToolInput, IEnumerable<KeyValuePair<string, T
         return json.Object(AsJson);
     }
 
-    public IEnumerator<KeyValuePair<string, ToolInput>> GetEnumerator()
+    public IEnumerator<KeyValuePair<string, JsonSchema>> GetEnumerator()
     {
         return _requiredInputsByNameLookup.GetEnumerator();
     }

@@ -1,18 +1,18 @@
 namespace McpSdk.Protocol.Models;
 
-public sealed class NumberInput : ToolInput
+public sealed class NumberSchema : JsonSchema
 {
     public double? Minimum { get; set; }
     public double? Maximum { get; set; }
     public string Description { get; set; }
     public double[] Options { get; set; }
 
-    public NumberInput()
+    public NumberSchema()
     {
         
     }
 
-    public NumberInput(IJsonObject jsonObject)
+    public NumberSchema(IJsonObject jsonObject)
     {
         Minimum = jsonObject["minimum"]?.AsDouble();
         Maximum = jsonObject["maximum"]?.AsDouble();

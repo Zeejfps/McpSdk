@@ -15,7 +15,7 @@ public sealed class TestTool : ITool
             new ObjectSchema
             {
                 {
-                    "latitude", new NumberInput
+                    "latitude", new NumberSchema
                     {
                         Minimum = -90.0,
                         Maximum = 90.0,
@@ -23,7 +23,7 @@ public sealed class TestTool : ITool
                     }
                 },
                 {
-                    "longitude", new NumberInput
+                    "longitude", new NumberSchema
                     {
                         Minimum = -180.0,
                         Maximum = 180.0,
@@ -31,10 +31,10 @@ public sealed class TestTool : ITool
                     }
                 },
                 {
-                    "testBool", new BooleanInput()
+                    "testBool", new BooleanSchema()
                 },
                 {
-                    "testArray", new ArrayInput("string")
+                    "testArray", new ArraySchema("string")
                     {
                         MinItems = 0,
                         MaxItems = 10,

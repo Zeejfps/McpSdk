@@ -1,13 +1,13 @@
 namespace McpSdk.Protocol.Models;
 
-public sealed class BooleanInput : ToolInput
+public sealed class BooleanSchema : JsonSchema
 {
-    public BooleanInput()
+    public BooleanSchema()
     {
         
     }
 
-    public BooleanInput(IJsonObject jsonObject)
+    public BooleanSchema(IJsonObject jsonObject)
     {
         
     }

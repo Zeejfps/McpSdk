@@ -1,15 +1,15 @@
 namespace McpSdk.Protocol.Models;
 
-public sealed class StringInput : ToolInput
+public sealed class StringSchema : JsonSchema
 {
     public string Description { get; set; }
     public int? MinLength { get; set; }
     public int? MaxLength { get; set; }
     public string[] Options { get; set; }
 
-    public StringInput() {}
+    public StringSchema() {}
 
-    public StringInput(IJsonObject jsonObject)
+    public StringSchema(IJsonObject jsonObject)
     {
         MinLength = jsonObject["minLength"]?.AsInt();
         MaxLength = jsonObject["maxLength"]?.AsInt();

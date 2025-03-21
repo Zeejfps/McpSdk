@@ -1,18 +1,18 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class ArrayInput : ToolInput
+public sealed class ArraySchema : JsonSchema
 {
     public string Type { get; }
     public int? MinItems { get; set; }
     public int? MaxItems { get; set; }
     public string Description { get; set; }
 
-    public ArrayInput(string type)
+    public ArraySchema(string type)
     {
         Type = type;
     }
 
-    public ArrayInput(IJsonObject jsonObject)
+    public ArraySchema(IJsonObject jsonObject)
     {
         MinItems = jsonObject["minItems"]?.AsInt();
         MaxItems = jsonObject["maxItems"]?.AsInt();
