@@ -21,7 +21,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public string[] AsStringArray()
         {
-            return _jToken.Value<string[]>();
+            return _jToken.ToObject<string[]>();
         }
 
         public double AsDouble()
@@ -31,7 +31,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public double[] AsDoubleArray()
         {
-            return _jToken.Value<double[]>();
+            return _jToken.ToObject<double[]>();
         }
 
         public int AsInt()
@@ -41,7 +41,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public int[] AsIntArray()
         {
-            return _jToken.Value<int[]>();
+            return _jToken.ToObject<int[]>();
         }
 
         public float AsFloat()
@@ -51,7 +51,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public float[] AsFloatArray()
         {
-            return _jToken.Value<float[]>();
+            return _jToken.ToObject<float[]>();
         }
 
         public bool AsBool()
@@ -61,7 +61,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public bool[] AsBoolArray()
         {
-            return _jToken.Value<bool[]>();
+            return _jToken.ToObject<bool[]>();
         }
 
         public IJsonObject AsObject()
