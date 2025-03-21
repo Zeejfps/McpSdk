@@ -2,6 +2,7 @@ namespace McpSdk.Protocol.Models;
 
 public sealed class StringSchema : JsonSchema
 {
+    public const string Type = "string";
     public string Description { get; set; }
     public int? MinLength { get; set; }
     public int? MaxLength { get; set; }
@@ -19,7 +20,7 @@ public sealed class StringSchema : JsonSchema
     
     public override void AsJson(IJsonWriter writer)
     {
-        writer.Write("type", "string");
+        writer.Write("type", Type);
         if (MinLength.HasValue)
             writer.Write("minLength", MinLength.Value);
         if (MaxLength.HasValue)

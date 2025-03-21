@@ -2,6 +2,8 @@ namespace McpSdk.Protocol.Models;
 
 public sealed class NumberSchema : JsonSchema
 {
+    public const string Type = "number";
+    
     public double? Minimum { get; set; }
     public double? Maximum { get; set; }
     public string Description { get; set; }
@@ -22,7 +24,7 @@ public sealed class NumberSchema : JsonSchema
     
     public override void AsJson(IJsonWriter writer)
     {
-        writer.Write("type", "number");
+        writer.Write("type", Type);
         
         if (Minimum.HasValue)
             writer.Write("minimum", Minimum.Value);
