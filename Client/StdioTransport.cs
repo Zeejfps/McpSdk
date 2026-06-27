@@ -72,9 +72,13 @@ namespace McpSdk.Client
         {
             try
             {
-                _process.Kill();
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                _process?.Kill();
                 _cts?.Cancel();
-                await Task.WhenAll(_readStdOutTask, _readStdErrTask).ConfigureAwait(false);
+                var waitForReadersTask = Task.WhenAll(_readStdOutTask, _readStdErrTask);
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5), timeoutCts.Token);
+                await Task.WhenAny(waitForReadersTask, timeoutTask).ConfigureAwait(false);
+                timeoutCts.Cancel();
             }
             catch (OperationCanceledException)
             {
