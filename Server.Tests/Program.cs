@@ -3,6 +3,14 @@ using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
+using McpSdk.Server.Tests.Conformance;
+
+if (args.Length > 0 && args[0] == "conformance")
+{
+    var failures = await ConformanceTests.RunAll();
+    Environment.Exit(failures);
+    return;
+}
 
 var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();

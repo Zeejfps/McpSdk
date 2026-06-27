@@ -31,7 +31,7 @@ namespace McpSdk.Client
             _transport.SendNotification("notifications/roots/list_changed");
         }
 
-        private void OnRequestReceived(int requestId, string method, IJsonObject args)
+        private void OnRequestReceived(RequestId requestId, string method, IJsonObject args)
         {
             if (method == "roots/list")
             {
@@ -43,7 +43,7 @@ namespace McpSdk.Client
             }
         }
 
-        private async void OnCreateMessageRequestReceived(int requestId, IJsonObject methodParams)
+        private async void OnCreateMessageRequestReceived(RequestId requestId, IJsonObject methodParams)
         {
             try
             {
@@ -65,7 +65,7 @@ namespace McpSdk.Client
             }
         }
 
-        private async void OnListRootsRequestReceived(int requestId, IJsonObject _)
+        private async void OnListRootsRequestReceived(RequestId requestId, IJsonObject _)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace McpSdk.Client
             _transport.NotificationReceived += OnNotificationReceived;
             await _transport.Start();
             
-            var clientProtocolVersion = "2024-11-05";
+            var clientProtocolVersion = ProtocolVersion.Latest;
             var capabilities = new ClientCapabilitiesModel();
             if (_roots != null)
                 capabilities.RootsCapability = new RootsCapabilityModel(_roots.IsListChangedNotificationSupported);
@@ -114,10 +114,15 @@ namespace McpSdk.Client
                 error => throw new TransportErrorException(error));
             
             var serverProtocolVersion = initializeResult.ProtocolVersion;
-            if (serverProtocolVersion != clientProtocolVersion)
-                throw new ClientException($"Invalid protocol version. Expected {clientProtocolVersion}, got {serverProtocolVersion}");
-            
-            await _transport.SendNotification("initialized");
+            if (!ProtocolVersion.IsSupported(serverProtocolVersion))
+            {
+                await _transport.Stop();
+                throw new ClientException(
+                    $"Server responded with unsupported protocol version '{serverProtocolVersion}'. " +
+                    $"Supported versions: {string.Join(", ", ProtocolVersion.Supported)}");
+            }
+
+            await _transport.SendNotification("notifications/initialized");
             
             if (_roots != null && _roots.IsListChangedNotificationSupported)
                 _roots.ListChanged += OnRootsListChanged;

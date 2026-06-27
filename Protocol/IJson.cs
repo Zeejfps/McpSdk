@@ -20,6 +20,7 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, double[] value);
         IJsonWriter Write(string propertyName, int value);
         IJsonWriter Write(string propertyName, int[] value);
+        IJsonWriter Write(string propertyName, long value);
         IJsonWriter Write(string propertyName, float value);
         IJsonWriter Write(string propertyName, float[] value);
         IJsonWriter Write(string propertyName, bool value);
@@ -40,12 +41,15 @@ namespace McpSdk.Protocol
 
     public interface IJsonProperty
     {
+        /// <summary>True when the underlying JSON value is a string (used to distinguish string ids from numeric ids).</summary>
+        bool IsString { get; }
         string AsString();
         string[] AsStringArray();
         double AsDouble();
         double[] AsDoubleArray();
         int AsInt();
         int[] AsIntArray();
+        long AsLong();
         float AsFloat();
         float[] AsFloatArray();
         bool AsBool();

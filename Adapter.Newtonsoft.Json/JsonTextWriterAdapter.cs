@@ -69,6 +69,13 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return this;
         }
 
+        public IJsonWriter Write(string propertyName, long value)
+        {
+            _writer.WritePropertyName(propertyName);
+            _writer.WriteValue(value);
+            return this;
+        }
+
         public IJsonWriter Write(string propertyName, float value)
         {
             _writer.WritePropertyName(propertyName);

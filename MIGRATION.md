@@ -52,26 +52,29 @@ client/server libraries.
 
 The unblocker; everything else builds on it.
 
-- [ ] **Version constants.** New `Protocol/ProtocolVersion.cs`: `Latest = "2025-11-25"` and a
-  `Supported` set `["2025-11-25","2025-06-18","2025-03-26","2024-11-05"]`. Delete the hardcoded
-  `"2024-11-05"` strings (`Client/McpClient.cs:102`, `Server/McpServer.cs:171`).
-- [ ] **Real negotiation** (replaces strict-equality reject at `McpClient.cs:117`, `McpServer.cs:173`):
-  - *Server:* echo the client's version if supported; otherwise return `Latest`. Never error on mismatch.
-  - *Client:* send `Latest`; if the server's reply isn't in `Supported`, disconnect cleanly.
-- [ ] **String-or-number request IDs.** `JsonRpcTransport` keys on `Dictionary<int,…>` and calls
-  `idProp.AsInt()` (`JsonRpcTransport.cs:15,123,134`). Introduce a `RequestId` struct (string or long)
-  threaded through `ITransport.SendOkResponse/SendErrorResponse`, the `RequestReceived` callback, and
-  both `McpServer`/`McpClient` handlers.
-- [ ] **Bug:** `McpClient.cs:120` sends `"initialized"` — should be `notifications/initialized`.
-- [ ] **Bug:** `InitializeResult(IJsonObject)` (`Protocol/Models/InitializeResult.cs:21`) parses *only*
-  `protocolVersion` and drops server capabilities — the client can't gate features. Parse
-  `capabilities` + `serverInfo`.
-- [ ] **`Implementation` metadata.** Add optional `title` (2025-06-18) and `description` (2025-11-25)
-  to `ClientInfo` / `ServerInfo`.
-- [ ] **`_meta` passthrough.** Add optional `_meta` read/write on requests, results, notifications.
+- [x] **Version constants.** New `Protocol/ProtocolVersion.cs`: `Latest = "2025-11-25"` and a
+  `Supported` set `["2025-11-25","2025-06-18","2025-03-26","2024-11-05"]`. Deleted the hardcoded
+  `"2024-11-05"` strings (`Client/McpClient.cs`, `Server/McpServer.cs`).
+- [x] **Real negotiation** (replaced the strict-equality rejects):
+  - *Server:* echoes the client's version if supported; otherwise returns `Latest`. Never errors on mismatch.
+  - *Client:* sends `Latest`; if the server's reply isn't in `Supported`, calls `Stop()` and throws.
+- [x] **String-or-number request IDs.** Introduced a `RequestId` struct (string or long) in
+  `Protocol/RequestId.cs`, threaded through `ITransport.SendOkResponse/SendErrorResponse`, the
+  `RequestReceived` callback, `JsonRpcTransport` (now keyed on `Dictionary<RequestId,…>`), and both
+  `McpServer`/`McpClient` handlers (plus `McpTransportBridge`). Added `IJsonProperty.IsString`/`AsLong`
+  and `IJsonWriter.Write(long)` to the JSON abstraction (both adapters).
+- [x] **Bug:** `McpClient` sent `"initialized"` — now `notifications/initialized`.
+- [x] **Bug:** `InitializeResult(IJsonObject)` parsed *only* `protocolVersion` — now parses
+  `capabilities` + `serverInfo` (also fixed `ClientInfo`/`ServerInfo` reading capitalized `"Name"`/`"Version"`).
+- [x] **`Implementation` metadata.** Added optional `title` (2025-06-18) and `description` (2025-11-25)
+  to `ClientInfo` / `ServerInfo`, wired through both builders (`WithTitle`/`WithDescription`).
+- [x] **`_meta` passthrough.** Added a reusable `Protocol/Models/Meta.cs` primitive (opaque JSON
+  object) with read/write applied to the `initialize` request + result; available for other models in
+  later phases.
 
-**Exit:** initialize handshake negotiates correctly with a `2025-11-25` peer *and* a legacy
-`2024-11-05` peer; string-ID peers work.
+**Exit:** ✅ initialize handshake negotiates correctly with a `2025-11-25` peer *and* a legacy
+`2024-11-05` peer; string-ID peers work. Verified by `Server.Tests/Conformance` (21 assertions,
+run via `dotnet run --project Server.Tests -- conformance`).
 
 ---
 

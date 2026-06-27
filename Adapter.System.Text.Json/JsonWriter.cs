@@ -64,6 +64,12 @@ internal sealed class JsonWriter : IJsonWriter
         return this;
     }
 
+    public IJsonWriter Write(string propertyName, long value)
+    {
+        _jsonWriter.WriteNumber(propertyName, value);
+        return this;
+    }
+
     public IJsonWriter Write(string propertyName, float value)
     {
         _jsonWriter.WriteNumber(propertyName, value);

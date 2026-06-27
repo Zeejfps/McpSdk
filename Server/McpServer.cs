@@ -8,7 +8,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
-    internal delegate Task RequestHandler(int requestId, IJsonObject arguments);
+    internal delegate Task RequestHandler(RequestId requestId, IJsonObject arguments);
     
     internal sealed class McpServer : IServer
     {
@@ -137,7 +137,7 @@ namespace McpSdk.Server
             }
         }
 
-        private async void OnRequestReceived(int requestId, string path, IJsonObject payload)
+        private async void OnRequestReceived(RequestId requestId, string path, IJsonObject payload)
         {
             try
             {
@@ -166,63 +166,57 @@ namespace McpSdk.Server
             }
         }
 
-        private async Task HandleInitializeRequest(int requestId, IJsonObject reqPayload)
+        private async Task HandleInitializeRequest(RequestId requestId, IJsonObject reqPayload)
         {
-            var serverProtocolVersion = "2024-11-05";
             var request = new InitializeRequest(reqPayload);
-            if (request.ProtocolVersion != serverProtocolVersion)
-            {
-                await _transport.SendErrorResponse(
-                    requestId,
-                    new Error(
-                        code:  ErrorCode.InvalidParams, 
-                        message:$"Protocol mismatch. Expected {serverProtocolVersion}, received: {request.ProtocolVersion}"
-                    )
-                );
-                return;
-            }
-            
-            var result = new InitializeResult(serverProtocolVersion, _capabilities, _serverInfo);
+
+            // Negotiate: honour the client's requested version when we support it,
+            // otherwise offer our latest. We never error on a version mismatch.
+            var negotiatedVersion = ProtocolVersion.IsSupported(request.ProtocolVersion)
+                ? request.ProtocolVersion
+                : ProtocolVersion.Latest;
+
+            var result = new InitializeResult(negotiatedVersion, _capabilities, _serverInfo);
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async Task HandleListToolsRequest(int requestId, IJsonObject reqPayload)
+        private async Task HandleListToolsRequest(RequestId requestId, IJsonObject reqPayload)
         {
             var result = await _toolsController.ListTools();
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async Task HandleCallToolRequest(int requestId, IJsonObject arguments)
+        private async Task HandleCallToolRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _toolsController.CallTool(new CallToolRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async Task HandleListPromptsRequest(int requestId, IJsonObject arguments)
+        private async Task HandleListPromptsRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _promptController.ListPrompts();
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async Task HandleGetPromptRequest(int requestId, IJsonObject arguments)
+        private async Task HandleGetPromptRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _promptController.GetPrompt(new GetPromptRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
         
-        private async Task HandleListResourceTemplatesRequest(int requestId, IJsonObject arguments)
+        private async Task HandleListResourceTemplatesRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ListTemplates(new ListTemplatesRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async Task HandleReadResourceRequest(int requestId, IJsonObject arguments)
+        private async Task HandleReadResourceRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);
         }
 
-        private async Task HandleListResourcesRequest(int requestId, IJsonObject arguments)
+        private async Task HandleListResourcesRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments));
             await _transport.SendOkResponse(requestId, result.AsJson);

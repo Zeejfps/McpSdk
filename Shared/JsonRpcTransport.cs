@@ -12,9 +12,9 @@ namespace McpSdk.Shared
         private const string JsonRpcVersion = "2.0";
 
         private readonly IJson _json;
-        private readonly Dictionary<int, TaskCompletionSource<IJsonObject>> _tscByMessageId = new();
-        
-        private int _nextMessageId;
+        private readonly Dictionary<RequestId, TaskCompletionSource<IJsonObject>> _tscByMessageId = new();
+
+        private long _nextMessageId;
         
         protected ILogger Logger { get; }
 
@@ -67,7 +67,7 @@ namespace McpSdk.Shared
             var request = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", id);
+                id.WriteTo(req, "id");
                 req.Write("method", method);
                 req.Write("params", payload);
             });
@@ -78,24 +78,24 @@ namespace McpSdk.Shared
             return ParseResponse(response);        
         }
 
-        public async Task SendOkResponse(int requestId, Json writeResult, CancellationToken cancellationToken = default)
+        public async Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", requestId);
+                requestId.WriteTo(req, "id");
                 req.Write("result", writeResult);
             });
             Logger.LogDebug($"Sending OK response: {response}");
             await Send(response, cancellationToken);
         }
-        
-        public async Task SendErrorResponse(int requestId, Error error, CancellationToken cancellationToken = default)
+
+        public async Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
         {
             var response = _json.Stringify(req =>
             {
                 req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", requestId);
+                requestId.WriteTo(req, "id");
                 req.Write("error", error.AsJson);
             });
             Logger.LogDebug($"Sending Error response: {response}");
@@ -120,7 +120,7 @@ namespace McpSdk.Shared
                     }
                     else
                     {
-                        var id = idProp.AsInt();
+                        var id = RequestId.FromJson(idProp);
                         OnRequestReceived(id, method, methodParams);
                     }
                 }
@@ -131,7 +131,7 @@ namespace McpSdk.Shared
                         return;
                     }
 
-                    var id = idProp.AsInt();
+                    var id = RequestId.FromJson(idProp);
                     if (!_tscByMessageId.TryGetValue(id, out var tsc))
                         return;
 
@@ -150,16 +150,16 @@ namespace McpSdk.Shared
             NotificationReceived?.Invoke(method, methodParams);
         }
 
-        protected virtual void OnRequestReceived(int requestId, string method, IJsonObject methodParams)
+        protected virtual void OnRequestReceived(RequestId requestId, string method, IJsonObject methodParams)
         {
             RequestReceived?.Invoke(requestId, method, methodParams);
         }
-        
+
         protected abstract Task OnStart(CancellationToken cancellationToken = default);
         protected abstract Task OnStop(CancellationToken cancellationToken = default);
         protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken = default);
 
-        private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
+        private Task<IJsonObject> WaitForResponse(RequestId messageId, CancellationToken cancellationToken = default)
         {
             var tsc = new TaskCompletionSource<IJsonObject>(cancellationToken);
             _tscByMessageId[messageId] = tsc;
@@ -176,9 +176,9 @@ namespace McpSdk.Shared
             return Response.FromError(new Error(errorObj));
         }
         
-        private int NextRequestId()
+        private RequestId NextRequestId()
         {
-            return Interlocked.Increment(ref _nextMessageId);
+            return new RequestId(Interlocked.Increment(ref _nextMessageId));
         }
     }
 }

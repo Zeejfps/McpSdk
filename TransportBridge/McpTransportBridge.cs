@@ -20,7 +20,7 @@ namespace McpSdk.TransportBridge
             _dstTransport = dstTransport;
         }
 
-        private async void SrcTransport_OnRequestReceived(int requestId, string method, IJsonObject arguments)
+        private async void SrcTransport_OnRequestReceived(RequestId requestId, string method, IJsonObject arguments)
         {
             try
             {
@@ -59,7 +59,7 @@ namespace McpSdk.TransportBridge
             }
         }
 
-        private async void DstTransport_OnRequestReceived(int requestId, string method, IJsonObject arguments)
+        private async void DstTransport_OnRequestReceived(RequestId requestId, string method, IJsonObject arguments)
         {
             try
             {

@@ -8,6 +8,8 @@ namespace McpSdk.Server
     {
         private string _name;
         private string _version;
+        private string _title;
+        private string _description;
         private ITransportFactory _transportFactory;
         private IToolsController _toolsController;
         private IPromptController _promptsController;
@@ -43,6 +45,18 @@ namespace McpSdk.Server
             return this;
         }
 
+        public ServerBuilder WithTitle(string title)
+        {
+            _title = title;
+            return this;
+        }
+
+        public ServerBuilder WithDescription(string description)
+        {
+            _description = description;
+            return this;
+        }
+
         public ServerBuilder WithResourcesCapability(IResourcesController resourcesController)
         {
             _resourcesController = resourcesController;
@@ -71,7 +85,7 @@ namespace McpSdk.Server
             
             var loggerFactory = _loggerFactory;
             var transport = _transportFactory.Create(loggerFactory);
-            var serverInfo = new ServerInfo(_name, _version);
+            var serverInfo = new ServerInfo(_name, _version, _title, _description);
             
             var tools = _toolsController;
             var prompts = _promptsController;

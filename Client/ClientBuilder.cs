@@ -9,6 +9,8 @@ namespace McpSdk.Client
     {
         private string _name;
         private string _version;
+        private string _title;
+        private string _description;
         private ITransportFactory _transportFactory;
         private IRootsCapabilityFactory _rootsCapabilityFactory;
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
@@ -28,6 +30,18 @@ namespace McpSdk.Client
         public ClientBuilder WithVersion(string version)
         {
             _version = version;
+            return this;
+        }
+
+        public ClientBuilder WithTitle(string title)
+        {
+            _title = title;
+            return this;
+        }
+
+        public ClientBuilder WithDescription(string description)
+        {
+            _description = description;
             return this;
         }
 
@@ -63,7 +77,7 @@ namespace McpSdk.Client
             if (_version == null)
                 throw new ArgumentNullException(nameof(_version), "Client version cannot be null.");
             
-            var clientInfo = new ClientInfo(_name, _version);
+            var clientInfo = new ClientInfo(_name, _version, _title, _description);
             
             var transport = _transportFactory?.Create(_loggerFactory);
             if (transport == null)
