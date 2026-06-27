@@ -53,8 +53,7 @@ namespace McpSdk.Server
 
         public Task<ListToolsResult> ListTools(ListToolsRequest request)
         {
-            // Snapshot the registration-ordered view so an offset cursor refers to the same slice.
-            var allTools = _toolsInOrder.Select(tool => tool.Info).ToArray();
+            var toolCount = _toolsInOrder.Count;
 
             // Recover where this page starts. An unrecognized/malformed cursor falls back to the
             // first page rather than erroring; offsets are clamped into range so a stale cursor
@@ -64,15 +63,19 @@ namespace McpSdk.Server
                 offset = decoded;
             if (offset < 0)
                 offset = 0;
-            if (offset > allTools.Length)
-                offset = allTools.Length;
+            if (offset > toolCount)
+                offset = toolCount;
 
-            var pageSize = PageSize is > 0 ? PageSize.Value : allTools.Length;
+            var pageSize = PageSize is > 0 ? PageSize.Value : toolCount;
+            var take = Math.Min(pageSize, toolCount - offset);
+            var slice = _toolsInOrder.GetRange(offset, take);
 
-            var page = allTools.Skip(offset).Take(pageSize).ToArray();
+            var page = new Tool[slice.Count];
+            for (var i = 0; i < slice.Count; i++)
+                page[i] = slice[i].Info;
 
             var nextOffset = offset + page.Length;
-            var nextCursor = nextOffset < allTools.Length
+            var nextCursor = nextOffset < toolCount
                 ? PaginationCursor.EncodeOffset(nextOffset)
                 : null;
 
