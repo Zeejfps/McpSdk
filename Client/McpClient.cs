@@ -108,7 +108,7 @@ namespace McpSdk.Client
                 capabilities.SamplingCapability = new SamplingCapabilityModel();
             
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
-            var initializeResponse = await _transport.SendRequest("initialize", initializeRequest.WriteMembers);
+            var initializeResponse = await _transport.SendRequest("initialize", initializeRequest);
             var initializeResult = initializeResponse.Unwrap(
                 result => new InitializeResult(result),
                 error => throw new TransportErrorException(error));
@@ -133,7 +133,7 @@ namespace McpSdk.Client
         public async Task<ListToolsResult> ListTools(ListToolsRequest request = null)
         {
             var listRequest = request ?? new ListToolsRequest();
-            var response = await _transport.SendRequest("tools/list", listRequest.WriteMembers);
+            var response = await _transport.SendRequest("tools/list", listRequest);
             return response.Unwrap(
                 result => new ListToolsResult(result),
                 error => throw new TransportErrorException(error)
@@ -142,7 +142,7 @@ namespace McpSdk.Client
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var response = await _transport.SendRequest("tools/call", request.WriteMembers);
+            var response = await _transport.SendRequest("tools/call", request);
             return response.Unwrap(
                 result => new CallToolResult(result),
                 error => throw new TransportErrorException(error)

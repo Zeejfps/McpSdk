@@ -12,6 +12,11 @@ namespace McpSdk.Server
         private readonly IJson _json;
         private readonly Dictionary<string, ITool> _toolByNameLookup = new();
 
+        // Parallel to the name lookup: preserves registration order so an offset-based pagination
+        // cursor refers to the same slice across calls. Dictionary enumeration order is not a
+        // documented guarantee, so we track order explicitly here. Both are mutated together.
+        private readonly List<ITool> _toolsInOrder = new();
+
         public event Action ListChanged;
         public bool IsListChangedNotificationSupported => false;
 
@@ -29,14 +34,27 @@ namespace McpSdk.Server
 
         public void AddTool(ITool tool)
         {
+            // Add to the lookup first: it throws on a duplicate name, keeping the ordered list in sync.
             _toolByNameLookup.Add(tool.Info.Name, tool);
+            _toolsInOrder.Add(tool);
             ListChanged?.Invoke();
+        }
+
+        public bool RemoveTool(string name)
+        {
+            if (!_toolByNameLookup.TryGetValue(name, out var tool))
+                return false;
+
+            _toolByNameLookup.Remove(name);
+            _toolsInOrder.Remove(tool);
+            ListChanged?.Invoke();
+            return true;
         }
 
         public Task<ListToolsResult> ListTools(ListToolsRequest request)
         {
-            // Snapshot a stable ordering so an offset cursor refers to the same slice across calls.
-            var allTools = _toolByNameLookup.Values.Select(tool => tool.Info).ToArray();
+            // Snapshot the registration-ordered view so an offset cursor refers to the same slice.
+            var allTools = _toolsInOrder.Select(tool => tool.Info).ToArray();
 
             // Recover where this page starts. An unrecognized/malformed cursor falls back to the
             // first page rather than erroring; offsets are clamped into range so a stale cursor
