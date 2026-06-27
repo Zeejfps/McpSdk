@@ -42,25 +42,29 @@ namespace McpSdk.Client
                 CreateNoWindow = true,
             };
 
-            // UTF-8 (no BOM) for the redirected streams. Not available on netstandard2.0, which falls
-            // back to the platform's console encoding.
-#if !NETSTANDARD2_0
-            processStartInfo.StandardInputEncoding = Utf8NoBom;
-            processStartInfo.StandardOutputEncoding = Utf8NoBom;
-            processStartInfo.StandardErrorEncoding = Utf8NoBom;
-#endif
-
             _process = Process.Start(processStartInfo);
             if (_process == null)
                 throw new ClientException("Failed to connect to the server.");
 
             _cts = new CancellationTokenSource();
-            _standardIn = _process.StandardInput;
-            // Delimit frames with LF (never the platform's CRLF) to match the stdio framing contract.
-            _standardIn.NewLine = JsonRpcFraming.LineDelimiter.ToString();
-            _readStdOutTask = ReadStdOut(_process.StandardOutput);
-            _readStdErrTask = ReadStdErr(_process.StandardError);
-            
+
+            // Force UTF-8 (no BOM) + LF on the redirected streams by wrapping the raw base streams
+            // ourselves. UTF8Encoding(false) has an empty preamble, so the writer never emits a BOM —
+            // and unlike ProcessStartInfo.Standard*Encoding (absent on netstandard2.0) this works on
+            // every target framework. AutoFlush is required so each frame reaches the child promptly.
+            _standardIn = new StreamWriter(_process.StandardInput.BaseStream, Utf8NoBom)
+            {
+                AutoFlush = true,
+                NewLine = JsonRpcFraming.LineDelimiter.ToString(),
+            };
+            // StreamReader detects and skips a leading BOM by default, so any BOM the child emits is
+            // stripped rather than parsed as part of the first frame.
+            var standardOut = new StreamReader(_process.StandardOutput.BaseStream, Utf8NoBom);
+            var standardErr = new StreamReader(_process.StandardError.BaseStream, Utf8NoBom);
+
+            _readStdOutTask = ReadStdOut(standardOut, _cts.Token);
+            _readStdErrTask = ReadStdErr(standardErr, _cts.Token);
+
             return Task.CompletedTask;
         }
 
@@ -70,7 +74,7 @@ namespace McpSdk.Client
             {
                 _process.Kill();
                 _cts?.Cancel();
-                await Task.WhenAll(_readStdOutTask, _readStdErrTask);
+                await Task.WhenAll(_readStdOutTask, _readStdErrTask).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -84,20 +88,22 @@ namespace McpSdk.Client
             await _standardIn.WriteLineAsync(line).ConfigureAwait(false);
         }
 
-        private async Task ReadStdOut(StreamReader standardOut)
+        private async Task ReadStdOut(StreamReader standardOut, CancellationToken cancellationToken)
         {
             string messageAsJson;
-            while (!_cts.IsCancellationRequested && (messageAsJson = await standardOut.ReadLineAsync()) != null)
+            while (!cancellationToken.IsCancellationRequested &&
+                   (messageAsJson = await standardOut.ReadLineAsync().ConfigureAwait(false)) != null)
             {
                 Logger.LogDebug($"[SERVER-OUT] {messageAsJson}");
                 OnMessageReceived(messageAsJson);
             }
         }
-        
-        private async Task ReadStdErr(StreamReader standardErr)
+
+        private async Task ReadStdErr(StreamReader standardErr, CancellationToken cancellationToken)
         {
             string message;
-            while (!_cts.IsCancellationRequested && (message = await standardErr.ReadLineAsync()) != null)
+            while (!cancellationToken.IsCancellationRequested &&
+                   (message = await standardErr.ReadLineAsync().ConfigureAwait(false)) != null)
             {
                 Logger.LogDebug($"[SERVER-ERR]: {message}");
             }
