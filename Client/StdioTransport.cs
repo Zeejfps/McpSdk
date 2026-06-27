@@ -90,10 +90,15 @@ namespace McpSdk.Client
 
         private async Task ReadStdOut(StreamReader standardOut, CancellationToken cancellationToken)
         {
-            string messageAsJson;
-            while (!cancellationToken.IsCancellationRequested &&
-                   (messageAsJson = await standardOut.ReadLineAsync().ConfigureAwait(false)) != null)
+            while (!cancellationToken.IsCancellationRequested)
             {
+                var messageAsJson = await standardOut
+                    .ReadLineAsync()
+                    .ConfigureAwait(false);
+                
+                if (messageAsJson == null)
+                    break;
+                
                 Logger.LogDebug($"[SERVER-OUT] {messageAsJson}");
                 OnMessageReceived(messageAsJson);
             }
@@ -101,10 +106,15 @@ namespace McpSdk.Client
 
         private async Task ReadStdErr(StreamReader standardErr, CancellationToken cancellationToken)
         {
-            string message;
-            while (!cancellationToken.IsCancellationRequested &&
-                   (message = await standardErr.ReadLineAsync().ConfigureAwait(false)) != null)
+            while (!cancellationToken.IsCancellationRequested)
             {
+                var message = await standardErr
+                    .ReadLineAsync()
+                    .ConfigureAwait(false);
+                
+                if (message == null)
+                    break;
+
                 Logger.LogDebug($"[SERVER-ERR]: {message}");
             }
         }
