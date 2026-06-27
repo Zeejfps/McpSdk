@@ -15,6 +15,8 @@ internal sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
 
     public bool IsString => _element.ValueKind == JsonValueKind.String;
 
+    public bool IsArray => _element.ValueKind == JsonValueKind.Array;
+
     public string? AsString()
     {
         return _element.GetString();

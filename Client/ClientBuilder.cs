@@ -14,6 +14,7 @@ namespace McpSdk.Client
         private ITransportFactory _transportFactory;
         private IRootsCapabilityFactory _rootsCapabilityFactory;
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
+        private IElicitationCapabilityFactory _elicitationCapabilityFactory;
         private ILoggerFactory _loggerFactory;
 
         public ClientBuilder()
@@ -68,7 +69,13 @@ namespace McpSdk.Client
             _samplingCapabilityFactory = capabilityFactory;
             return this;
         }
-        
+
+        public ClientBuilder WithElicitationCapability(IElicitationCapabilityFactory capabilityFactory)
+        {
+            _elicitationCapabilityFactory = capabilityFactory;
+            return this;
+        }
+
         public IClient Build()
         {
             if (_name == null)
@@ -85,10 +92,11 @@ namespace McpSdk.Client
 
             var rootsCapability = _rootsCapabilityFactory?.Create();
             var samplingCapability = _samplingCapabilityFactory?.Create();
+            var elicitationCapability = _elicitationCapabilityFactory?.Create();
 
             var loggerFactory = _loggerFactory;
-            
-            return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability);
+
+            return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability, elicitationCapability);
         }
     }
 }

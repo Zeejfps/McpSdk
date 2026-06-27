@@ -58,6 +58,8 @@ namespace McpSdk.Protocol
     {
         /// <summary>True when the underlying JSON value is a string (used to distinguish string ids from numeric ids).</summary>
         bool IsString { get; }
+        /// <summary>True when the underlying JSON value is an array (used to distinguish a single content object from a content array).</summary>
+        bool IsArray { get; }
         string AsString();
         string[] AsStringArray();
         double AsDouble();

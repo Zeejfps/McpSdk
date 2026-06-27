@@ -172,17 +172,42 @@ cursor; the opaque cursor round-trips offsets and rejects junk. Verified by
 
 ## Phase E — Elicitation + richer sampling
 
-- [ ] **Elicitation** (new client capability). Server→client `elicitation/create` (carries `message`
-  + a restricted flat primitive `requestedSchema`); client replies `accept` / `decline` / `cancel`
-  with content. Mirror the existing roots/sampling wiring: new `ElicitationCapabilityModel`,
-  `IElicitationController`, `ElicitRequest` / `ElicitResult`, and a branch in
-  `McpClient.OnRequestReceived` (`McpClient.cs:34`). Include the 2025-11-25 `EnumSchema`
-  (titled/untitled, single/multi-select), URL-mode elicitation, and primitive default values.
-- [ ] **Sampling with tools.** `CreateMessageRequest` gains optional `tools` + `toolChoice`;
-  `SamplingMessage` / `CreateMessagesResult` gain tool-call/tool-result content
-  (`ISamplingController` + models).
+- [x] **Elicitation** (new client capability). Server→client `elicitation/create` handled by a new
+  branch in `McpClient.OnRequestReceived` (`McpClient.cs`), mirroring the roots/sampling wiring:
+  new `Protocol/Models/ClientCapabilities/ElicitationCapabilityModel.cs` (advertises `form` and/or
+  `url` modes; empty object ⇒ form-only per spec), `Client/IElicitationController.cs` (with
+  `SupportsFormMode`/`SupportsUrlMode` driving the capability) + `IElicitationCapabilityFactory.cs`,
+  `Protocol/Models/ElicitRequest.cs` and `ElicitResult.cs` (three-action `accept`/`decline`/`cancel`).
+  Wired through `ClientCapabilitiesModel`, `ClientBuilder.WithElicitationCapability`, and the
+  `McpClient` ctor. The client rejects a request whose mode it never advertised with `InvalidParams`
+  (-32602) and an absent controller with `MethodNotFound` (-32601), instead of hanging.
+- [x] **URL-mode elicitation** (2025-11-25). `ElicitRequest.ForUrl(message, url, elicitationId)` builds
+  a `mode:"url"` request; `ElicitResult.AcceptUrl()` is a content-less consent. Form mode carries the
+  restricted `requestedSchema`; URL mode carries `url` + `elicitationId`.
+- [x] **`EnumSchema`** (`Protocol/Models/EnumSchema.cs`, SEP-1330): all four shapes — untitled/titled
+  (`enum` vs `oneOf`/`anyOf` with `const`+`title`) × single/multi-select (scalar string vs `type:array`
+  with `items`, `minItems`/`maxItems`). New `Protocol/Models/RequestedSchema.cs` is the flat
+  elicitation object (primitive + enum properties, required/optional tracking) that round-trips on
+  `ElicitRequest`.
+- [x] **Primitive default values** (SEP-1034). Added `Default` (+ `Title`) to `StringSchema`
+  (also `format`/`pattern`), `NumberSchema` (also an `IsInteger` ⇒ `type:"integer"`), and
+  `BooleanSchema`; `EnumSchema` carries scalar (single) / array (multi) defaults.
+- [x] **Sampling with tools** (SEP-1577). `CreateMessageRequest` gained optional `Tools` (reusing the
+  `Tool` model) + `ToolChoice` (`Protocol/Models/ToolChoice.cs`: `auto`/`required`/`none`), plus a
+  build constructor. New `ToolUseContent` (`type:"tool_use"`) and `ToolResultContent`
+  (`type:"tool_result"`) content types, registered in `Content.Create`. `SamplingCapabilityModel`
+  advertises the `tools` sub-capability; `ISamplingController` gained `SupportsTools`.
+- [x] **Single-or-array content.** `SamplingMessage` / `CreateMessagesResult` now expose `Content[]`
+  (matching `CallToolResult`) and emit a single object for one block, an array for many — both valid
+  per spec. New `Content.CreateMany` reads either shape, backed by a new `IJsonProperty.IsArray`
+  (implemented in both JSON adapters). **Bug:** `CreateMessagesResult` read the model from `"module"`
+  instead of `"model"` — fixed.
 
-**Exit:** elicitation accept/decline/cancel round-trip; a sampling request advertising tools round-trips.
+**Exit:** ✅ elicitation accept/decline/cancel round-trip in both form and URL modes (with mode
+negotiation and undeclared-mode rejection), the restricted `requestedSchema` — all four enum forms
+plus primitive defaults — round-trips, and a tool-enabled `sampling/createMessage` carries
+`tools`/`toolChoice` and returns `tool_use`/`tool_result` content. Verified by
+`Server.Tests/Conformance` (now 167 assertions, run via `dotnet run --project Server.Tests -- conformance`).
 
 ---
 
