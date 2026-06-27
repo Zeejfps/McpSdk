@@ -85,6 +85,18 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("content parses as a single object or an array", ContentSingleOrArrayParsing);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase F Conformance (resources / prompts / completion polish) ===");
+
+            await RunTest("resource title + icons + _meta round-trip (omitted when absent)", ResourceMetadataRoundTrips);
+            await RunTest("prompts/list carries prompts with title + arguments + icons + _meta", PromptListingRoundTrips);
+            await RunTest("prompts/get carries messages + description + message _meta", GetPromptResultRoundTrips);
+            await RunTest("resources/templates/list carries templates with title + icons + _meta", ResourceTemplateListingRoundTrips);
+            await RunTest("prompts/get request round-trips name + arguments", GetPromptRequestReadsArguments);
+            await RunTest("completion request carries context (resolved variables)", CompletionContextRoundTrips);
+            await RunTest("resources subscribe + listChanged parse independently", ResourceCapabilitiesAreIndependent);
+            await RunTest("server advertises subscribe from resource-changed, not listChanged", ServerAdvertisesSubscribeFromResourceChanged);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }

@@ -213,10 +213,36 @@ plus primitive defaults — round-trips, and a tool-enabled `sampling/createMess
 
 ## Phase F — Resources / prompts / completion polish
 
-- [ ] Add `icons` + `title` + `_meta` to `Resource`, `ResourceTemplate`, `Prompt`, `PromptMessage`.
-- [ ] Add completion `context` (previously-resolved variables) to `CompletionRequest` (2025-06-18).
-- [ ] **Bug:** `ResourcesCapabilityModel` wiring at `McpServer.cs:59` copies `listChanged` into the
-  `subscribe`/resource-changed flag; these are independent capabilities.
+The prompt + resource-template models were unimplemented stubs (`ListPromptsResult`/`ListTemplatesResult`
+carried only a cursor, `GetPromptResult` was empty, and no `Prompt`/`PromptMessage`/`ResourceTemplate`
+classes existed), so this phase **builds them out** rather than merely augmenting them.
+
+- [x] **New models** (`Protocol/Models/`): `Prompt` (`name`/`title`/`description`/`arguments`/`icons`/
+  `_meta`), `PromptArgument` (`name`/`title`/`description`/`required`), `PromptMessage`
+  (`role` + a single content block + `_meta`), and `ResourceTemplate` (`uriTemplate`/`name`/`title`/
+  `description`/`mimeType`/`icons`/`_meta`). All follow the modern `Tool` pattern: nullable reads,
+  optional fields emitted only when set, `Icon.ArrayFrom` for icons, `Meta` for `_meta`.
+- [x] **`icons` + `title` + `_meta`** added to `Resource` (also made its optional `description`/
+  `mimeType` null-safe + conditionally written). `PromptMessage` carries only `_meta` by design —
+  `title`/`icons` belong on the content block or parent `Prompt`, not on a message.
+- [x] **Wired into the list/get results:** `ListPromptsResult` now carries `Prompt[]`,
+  `ListTemplatesResult` carries `ResourceTemplate[]`, `GetPromptResult` carries `description` +
+  `PromptMessage[]` + `_meta` (all previously dropped). `GetPromptRequest` (was a no-op stub) now
+  reads/writes `name` + an opaque `arguments` map.
+- [x] **Completion `context`** (2025-06-18). New `Server/CompletionContext.cs` (opaque resolved-
+  variable `arguments` map) added to `CompletionRequest` — emitted only when supplied, read back when
+  present.
+- [x] **Bug:** `ResourcesCapabilityModel` wiring at `McpServer.cs:59` copied `listChanged` into the
+  `subscribe`/resource-changed flag — now fed from `IsResourceChangedNotificationSupported`. Also
+  hardened the model's reader to parse `subscribe` independently of `listChanged` (it previously
+  ignored `subscribe` entirely).
+
+**Exit:** ✅ `title`/`icons`/`_meta` round-trip on `Resource`, `ResourceTemplate`, `Prompt` (with its
+`PromptArgument`s) and `PromptMessage` — and are omitted when absent; `prompts/list`, `prompts/get`
+and `resources/templates/list` carry their item arrays; `prompts/get` requests round-trip
+`name`+`arguments`; a completion request carries `context`; and a server advertises `subscribe` and
+`listChanged` as the independent capabilities they are. Verified by `Server.Tests/Conformance` (now
+218 assertions, run via `dotnet run --project Server.Tests -- conformance`).
 
 ---
 

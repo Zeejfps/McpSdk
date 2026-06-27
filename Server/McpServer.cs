@@ -56,7 +56,7 @@ namespace McpSdk.Server
                 _capabilities.Resources = new ResourcesCapabilityModel
                 {
                     IsListChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
-                    IsResourceChangedNotificationSupported = _resourcesController.IsListChangedNotificationSupported,
+                    IsResourceChangedNotificationSupported = _resourcesController.IsResourceChangedNotificationSupported,
                 };
                 _requestHandlersByPathLookup.Add("resources/list", HandleListResourcesRequest);
                 _requestHandlersByPathLookup.Add("resources/read", HandleReadResourceRequest);
