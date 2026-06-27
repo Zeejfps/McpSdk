@@ -3,10 +3,14 @@
     public sealed class ListToolsResult : IJsonObjectWriter
     {
         public Tool[] Tools { get; }
-        
-        public ListToolsResult(Tool[] tools)
+
+        /// <summary>Opaque cursor for the next page (2025-11-25), or null when this is the last page.</summary>
+        public string NextCursor { get; }
+
+        public ListToolsResult(Tool[] tools, string nextCursor = null)
         {
             Tools = tools;
+            NextCursor = nextCursor;
         }
 
         public ListToolsResult(IJsonObject jsonObject)
@@ -20,11 +24,14 @@
                 tools[i] = new Tool(toolObj);
             }
             Tools = tools;
+            NextCursor = jsonObject["nextCursor"]?.AsString();
         }
 
         public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("tools", Tools);
+            if (NextCursor != null)
+                writer.Write("nextCursor", NextCursor);
         }
     }
 }

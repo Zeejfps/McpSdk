@@ -182,7 +182,7 @@ namespace McpSdk.Server
 
         private async Task HandleListToolsRequest(RequestId requestId, IJsonObject reqPayload)
         {
-            var result = await _toolsController.ListTools();
+            var result = await _toolsController.ListTools(new ListToolsRequest(reqPayload));
             await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
@@ -194,7 +194,7 @@ namespace McpSdk.Server
 
         private async Task HandleListPromptsRequest(RequestId requestId, IJsonObject arguments)
         {
-            var result = await _promptController.ListPrompts();
+            var result = await _promptController.ListPrompts(new ListPromptsRequest(arguments));
             await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 

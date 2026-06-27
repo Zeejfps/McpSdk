@@ -1,19 +1,19 @@
 ﻿namespace McpSdk.Protocol.Models;
 
 /// <summary>
-/// Params for <c>resources/list</c>. Carries the optional opaque pagination <c>cursor</c>
+/// Params for <c>prompts/list</c>. Carries the optional opaque pagination <c>cursor</c>
 /// (2025-11-25); omitted on the first page.
 /// </summary>
-public sealed class ListResourcesRequest : IJsonObjectWriter
+public sealed class ListPromptsRequest : IJsonObjectWriter
 {
     public string Cursor { get; }
 
-    public ListResourcesRequest(string cursor = null)
+    public ListPromptsRequest(string cursor = null)
     {
         Cursor = cursor;
     }
 
-    public ListResourcesRequest(IJsonObject jsonObject)
+    public ListPromptsRequest(IJsonObject jsonObject)
     {
         Cursor = jsonObject?["cursor"]?.AsString();
     }

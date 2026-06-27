@@ -7,7 +7,7 @@ namespace McpSdk.Client
     {
         bool IsConnected { get; }
         Task Connect();
-        Task<ListToolsResult> ListTools();
+        Task<ListToolsResult> ListTools(ListToolsRequest request = null);
         Task<CallToolResult> CallTool(CallToolRequest request);
     }
 }
