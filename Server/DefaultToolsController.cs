@@ -11,10 +11,17 @@ namespace McpSdk.Server
     {
         private readonly IJson _json;
         private readonly Dictionary<string, ITool> _toolByNameLookup = new();
-        
+
         public event Action ListChanged;
         public bool IsListChangedNotificationSupported => false;
-        
+
+        /// <summary>
+        /// Maximum number of tools returned per <c>tools/list</c> page. When null (the default) every
+        /// tool is returned in a single page with no <c>nextCursor</c>. Set a positive value to page;
+        /// any value &lt;= 0 is treated as "no paging".
+        /// </summary>
+        public int? PageSize { get; set; }
+
         public DefaultToolsController(IJson json)
         {
             _json = json;
@@ -25,12 +32,33 @@ namespace McpSdk.Server
             _toolByNameLookup.Add(tool.Info.Name, tool);
             ListChanged?.Invoke();
         }
-        
-        public Task<ListToolsResult> ListTools()
+
+        public Task<ListToolsResult> ListTools(ListToolsRequest request)
         {
-            var tools = _toolByNameLookup.Values.Select(tool => tool.Info).ToArray();
-            var result = new ListToolsResult(tools);
-            return Task.FromResult(result);
+            // Snapshot a stable ordering so an offset cursor refers to the same slice across calls.
+            var allTools = _toolByNameLookup.Values.Select(tool => tool.Info).ToArray();
+
+            // Recover where this page starts. An unrecognized/malformed cursor falls back to the
+            // first page rather than erroring; offsets are clamped into range so a stale cursor
+            // (e.g. tools removed since it was issued) yields an empty final page, never a throw.
+            var offset = 0;
+            if (request?.Cursor != null && PaginationCursor.TryDecodeOffset(request.Cursor, out var decoded))
+                offset = decoded;
+            if (offset < 0)
+                offset = 0;
+            if (offset > allTools.Length)
+                offset = allTools.Length;
+
+            var pageSize = PageSize is > 0 ? PageSize.Value : allTools.Length;
+
+            var page = allTools.Skip(offset).Take(pageSize).ToArray();
+
+            var nextOffset = offset + page.Length;
+            var nextCursor = nextOffset < allTools.Length
+                ? PaginationCursor.EncodeOffset(nextOffset)
+                : null;
+
+            return Task.FromResult(new ListToolsResult(page, nextCursor));
         }
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)

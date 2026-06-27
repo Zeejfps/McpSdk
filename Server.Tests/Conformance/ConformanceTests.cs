@@ -61,6 +61,13 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("schema validation agrees across both JSON adapters", SchemaValidationAdapterParity);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase D Conformance (pagination) ===");
+
+            await RunTest("opaque cursor round-trips an offset and rejects junk", CursorRoundTrips);
+            await RunTest("tools/list walks every page via nextCursor (each tool once)", ToolsListPaginates);
+            await RunTest("non-paginating tools/list returns one page with no cursor", ToolsListSinglePageHasNoCursor);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }

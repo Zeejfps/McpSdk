@@ -130,11 +130,12 @@ namespace McpSdk.Client
             IsConnected = true;
         }
 
-        public async Task<ListToolsResult> ListTools()
+        public async Task<ListToolsResult> ListTools(ListToolsRequest request = null)
         {
-            var response = await _transport.SendRequest("tools/list", payload => { });
+            var listRequest = request ?? new ListToolsRequest();
+            var response = await _transport.SendRequest("tools/list", listRequest.WriteMembers);
             return response.Unwrap(
-                result => new ListToolsResult(result), 
+                result => new ListToolsResult(result),
                 error => throw new TransportErrorException(error)
             );
         }
