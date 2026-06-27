@@ -25,8 +25,7 @@ public sealed class CompletionResult : IJsonObjectWriter
     public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("values", Values);
-        if (TotalMatches.HasValue) 
-            jsonWriter.Write("totalMatches", TotalMatches.Value);
+        TotalMatches?.WriteTo(jsonWriter, "totalMatches");
         jsonWriter.Write("hasMoreMatches", HasMoreMatches);
     }
 }

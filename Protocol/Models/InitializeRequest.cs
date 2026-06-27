@@ -39,8 +39,7 @@ namespace McpSdk.Protocol.Models
             writer.Write("capabilities", ClientCapabilities);
             writer.Write("clientInfo", ClientInfo);
 
-            if (Meta != null)
-                writer.Write("_meta", Meta);
+            Meta?.WriteTo(writer, "_meta");
         }
     }
 }

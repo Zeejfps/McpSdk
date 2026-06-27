@@ -17,8 +17,7 @@ public sealed class TextResourceContents : ResourceContents
     public override void WriteMembers(IJsonWriter writer)
     {
         base.WriteMembers(writer);
-                        
-        if (Text != null)
-            writer.Write("text", Text);
+
+        Text?.WriteTo(writer, "text");
     }
 }

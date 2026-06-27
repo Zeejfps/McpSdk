@@ -38,23 +38,12 @@ public sealed class NumberSchema : JsonSchema
     public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", IsInteger ? TypeInteger : TypeNumber);
-
-        if (Title != null)
-            writer.Write("title", Title);
-
-        if (Minimum.HasValue)
-            writer.Write("minimum", Minimum.Value);
-
-        if (Maximum.HasValue)
-            writer.Write("maximum", Maximum.Value);
-
+        Title?.WriteTo(writer, "title");
+        Minimum?.WriteTo(writer, "minimum");
+        Maximum?.WriteTo(writer, "maximum");
         if (Options != null && Options.Length > 0)
             writer.Write("enum", Options);
-
-        if (Default.HasValue)
-            writer.Write("default", Default.Value);
-
-        if (Description != null)
-            writer.Write("description", Description);
+        Default?.WriteTo(writer, "default");
+        Description?.WriteTo(writer, "description");
     }
 }

@@ -32,7 +32,6 @@ public sealed class ToolUseContent : Content
         writer.Write("type", "tool_use");
         writer.Write("id", Id);
         writer.Write("name", Name);
-        if (Input != null)
-            writer.Write("input", Input);
+        Input?.WriteTo(writer, "input");
     }
 }

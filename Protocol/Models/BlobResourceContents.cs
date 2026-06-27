@@ -17,8 +17,7 @@ public sealed class BlobResourceContents : ResourceContents
     public override void WriteMembers(IJsonWriter writer)
     {
         base.WriteMembers(writer);
-                        
-        if (Blob != null)
-            writer.Write("blob", Blob);
+
+        Blob?.WriteTo(writer, "blob");
     }
 }

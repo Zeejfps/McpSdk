@@ -20,7 +20,6 @@ public sealed class ListPromptsRequest : IJsonObjectWriter
 
     public void WriteMembers(IJsonWriter writer)
     {
-        if (Cursor != null)
-            writer.Write("cursor", Cursor);
+        Cursor?.WriteTo(writer, "cursor");
     }
 }

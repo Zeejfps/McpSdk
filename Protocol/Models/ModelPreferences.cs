@@ -22,11 +22,8 @@ namespace McpSdk.Protocol.Models
         {
             Hints.WriteTo(writer, "hints");
             
-            if (IntelligencePriority.HasValue)
-                writer.Write("intelligencePriority", IntelligencePriority.Value);
-            
-            if (SpeedPriority.HasValue)
-                writer.Write("speedPriority", SpeedPriority.Value);
+            IntelligencePriority?.WriteTo(writer, "intelligencePriority");
+            SpeedPriority?.WriteTo(writer, "speedPriority");
         }
     }
 }

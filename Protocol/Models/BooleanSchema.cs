@@ -27,11 +27,8 @@ public sealed class BooleanSchema : JsonSchema
     public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", Type);
-        if (Title != null)
-            writer.Write("title", Title);
-        if (Default.HasValue)
-            writer.Write("default", Default.Value);
-        if (Description != null)
-            writer.Write("description", Description);
+        Title?.WriteTo(writer, "title");
+        Default?.WriteTo(writer, "default");
+        Description?.WriteTo(writer, "description");
     }
 }
