@@ -28,7 +28,9 @@ namespace McpSdk.Protocol.Models
             if (clientInfoObj != null)
                 ClientInfo = new ClientInfo(clientInfoObj);
 
-            Meta = Meta.From(jsonObject);
+            var metaObj = jsonObject["_meta"]?.AsObject();
+            if (metaObj != null)
+                Meta = new Meta(metaObj);
         }
 
         public void AsJson(IJsonWriter writer)

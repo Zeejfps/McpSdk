@@ -50,7 +50,10 @@ namespace McpSdk.Protocol.Models
                 Annotations = new ToolAnnotations(annotationsObj);
 
             Icons = Icon.ArrayFrom(jsonObj);
-            Meta = Meta.From(jsonObj);
+
+            var metaObj = jsonObj["_meta"]?.AsObject();
+            if (metaObj != null)
+                Meta = new Meta(metaObj);
         }
 
         public void AsJson(IJsonWriter writer)

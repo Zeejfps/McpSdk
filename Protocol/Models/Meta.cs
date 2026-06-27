@@ -20,16 +20,6 @@ namespace McpSdk.Protocol.Models
         /// <summary>Reads a value out of the metadata, or null if absent.</summary>
         public IJsonProperty this[string key] => _data?[key];
 
-        /// <summary>
-        /// Reads the <c>_meta</c> object out of the given parent (a params or result object),
-        /// returning null when it is absent.
-        /// </summary>
-        public static Meta From(IJsonObject parent)
-        {
-            var meta = parent?["_meta"]?.AsObject();
-            return meta == null ? null : new Meta(meta);
-        }
-
         public void AsJson(IJsonWriter writer)
         {
             _data.AsJson(writer);
