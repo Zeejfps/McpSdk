@@ -102,19 +102,19 @@ namespace McpSdk.Server.Tests.Conformance
                 {
                     tools.PageSize = pageSize;
                     for (var i = 0; i < toolCount; i++)
-                        tools.AddTool(new NoOpTool($"tool-{i:D2}"));
+                        tools.AddTool(new NoOpToolHandler($"tool-{i:D2}"));
                 })
                 .Build();
         }
 
         /// <summary>A minimal tool with a unique name, used only to populate a list for paging.</summary>
-        private sealed class NoOpTool : ITool
+        private sealed class NoOpToolHandler : IToolHandler
         {
-            public Tool Info { get; }
+            public Tool Tool { get; }
 
-            public NoOpTool(string name)
+            public NoOpToolHandler(string name)
             {
-                Info = new Tool(name, "no-op", new ObjectSchema());
+                Tool = new Tool(name, "no-op", new ObjectSchema());
             }
 
             public Task<CallToolResult> Call(IJsonObject arguments)

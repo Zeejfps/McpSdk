@@ -9,16 +9,16 @@ namespace McpSdk.Server.Tests;
 /// numbers and reports the sum both as <c>structuredContent</c> and, via
 /// <see cref="CallToolResult.Structured"/>, as a back-compat serialized-JSON text block.
 /// </summary>
-public sealed class StructuredTool : ITool
+public sealed class StructuredToolHandler : IToolHandler
 {
     private readonly IJson _json;
 
-    public Tool Info { get; }
+    public Tool Tool { get; }
 
-    public StructuredTool(IJson json)
+    public StructuredToolHandler(IJson json)
     {
         _json = json;
-        Info = new Tool(
+        Tool = new Tool(
             "add",
             "Adds two numbers and returns their sum.",
             new ObjectSchema
