@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
         <AssemblyName>McpSdk.Server</AssemblyName>
         <RootNamespace>McpSdk.Server</RootNamespace>
-        <LangVersion>default</LangVersion>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
