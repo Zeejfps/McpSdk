@@ -6,9 +6,13 @@ namespace McpSdk.Protocol
     public delegate void Json(IJsonWriter jsonWriter);
 
     /// <summary>
-    /// A model that can serialize itself into an <see cref="IJsonWriter"/>. The nominal-typed
-    /// counterpart to the <see cref="Json"/> delegate: lets callers pass the model object directly
-    /// (<c>writer.Write("tool", tool)</c>) instead of its method group (<c>tool.AsJson</c>).
+    /// A model that writes itself as the members of a JSON object. <see cref="WriteMembers"/> emits
+    /// only named properties; the surrounding <c>{ }</c> (or the array brackets, for the
+    /// <c>IJsonObjectWriter[]</c> overload of <see cref="IJsonWriter.Write(string, IJsonObjectWriter)"/>)
+    /// are supplied by the caller. That is the only possible shape: <see cref="IJsonWriter"/> exposes
+    /// nothing but named-property writes, so an implementation can never emit a bare scalar or array.
+    /// The nominal-typed counterpart to the <see cref="Json"/> delegate — lets callers pass the model
+    /// directly (<c>writer.Write("tool", tool)</c>) instead of a method group.
     /// </summary>
     public interface IJsonObjectWriter
     {
