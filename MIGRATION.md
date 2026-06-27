@@ -82,11 +82,27 @@ run via `dotnet run --project Server.Tests -- conformance`).
 
 Small; mostly verification.
 
-- [ ] Confirm newline-delimited UTF-8 framing with **no embedded newlines** in any emitted message.
-- [ ] Confirm stdout carries *only* MCP messages; logging goes to stderr (now explicitly allowed for all levels).
-- [ ] Guard + test that no JSON-RPC batching is emitted/required (removed in 2025-06-18).
+- [x] **Newline-delimited UTF-8 framing, no embedded newlines.** Centralized the per-message
+  sanitization (previously a duplicated `Regex.Replace` in both transports) into
+  `Shared/JsonRpcFraming.cs`: `ToLine()` strips any embedded CR/LF/TAB (escaped `\n`/`\r`/`\t` inside
+  string values are untouched), `LineDelimiter = '\n'`. Both stdio transports now bind to the raw
+  std handles with **UTF-8 (no BOM)** and **LF** line endings (client sets `ProcessStartInfo`
+  `Standard*Encoding` on net10.0 + `NewLine="\n"`; server writes via
+  `StreamWriter(Console.OpenStandardOutput(), utf8NoBom){ AutoFlush=true, NewLine="\n" }`).
+- [x] **stdout carries only MCP messages.** Logging already goes to stderr; additionally the server
+  stdio transport redirects `Console.Out → stderr` on start so stray `Console.Write` (e.g. from tool
+  code) can never corrupt the protocol stream.
+- [x] **No JSON-RPC batching** (removed in 2025-06-18). `JsonRpcFraming.IsBatch()` detects a
+  top-level array; `JsonRpcTransport.OnMessageReceived` now rejects batch frames explicitly with a
+  logged error instead of letting `JObject.Parse` throw and be swallowed. We never emit batches
+  (each `Send` serializes a single object).
+- [x] **Bug:** server `StdioTransport.OnStop` threw `NotImplementedException` — now cancels the
+  stdin read loop cleanly.
 
-**Exit:** passes a stdio round-trip conformance test against the negotiated version.
+**Exit:** ✅ passes a real stdio round-trip conformance test against the negotiated version — a real
+client spawns the test assembly in `stdio-server` mode as a child process and completes
+`initialize` + `tools/list` + `tools/call`. Verified by `Server.Tests/Conformance` (now 37
+assertions: Phase A + B, run via `dotnet run --project Server.Tests -- conformance`).
 
 ---
 

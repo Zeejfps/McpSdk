@@ -21,7 +21,7 @@ namespace McpSdk.Server.Tests.Conformance
     ///
     /// Run with: <c>dotnet run --project Server.Tests -- conformance</c>
     /// </summary>
-    public static class ConformanceTests
+    public static partial class ConformanceTests
     {
         private static readonly IJson Json = new NewtonsoftJson();
         private static readonly ILoggerFactory Loggers = new NullLoggerFactory();
@@ -40,6 +40,15 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("Modern client -> unsupported server disconnects cleanly", ModernClientUnsupportedServer);
             await RunTest("String request id is echoed back as a string", StringRequestId);
             await RunTest("InitializeResult parses capabilities + serverInfo", InitializeResultParsing);
+
+            Console.WriteLine();
+            Console.WriteLine("=== Phase B Conformance (stdio) ===");
+
+            await RunTest("Framing collapses embedded CR/LF/TAB to a single line", FramingStripsEmbeddedControl);
+            await RunTest("Framing preserves escaped newlines inside string values", FramingPreservesEscapedNewlines);
+            await RunTest("Batch detection flags arrays, not objects", BatchDetection);
+            await RunTest("Server ignores an incoming JSON-RPC batch (no response)", BatchRejectionRoundTrip);
+            await RunTest("Real stdio round-trip: initialize + tools/list + tools/call", StdioRoundTrip);
 
             Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");

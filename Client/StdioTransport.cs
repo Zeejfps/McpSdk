@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
@@ -11,6 +11,9 @@ namespace McpSdk.Client
 {
     public sealed class StdioTransport : JsonRpcTransport
     {
+        // UTF-8 with no BOM: the stdio spec mandates UTF-8, and a BOM would corrupt the first frame.
+        private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
         private readonly string _command;
         private readonly string _arguments;
 
@@ -38,13 +41,23 @@ namespace McpSdk.Client
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
-            
+
+            // UTF-8 (no BOM) for the redirected streams. Not available on netstandard2.0, which falls
+            // back to the platform's console encoding.
+#if !NETSTANDARD2_0
+            processStartInfo.StandardInputEncoding = Utf8NoBom;
+            processStartInfo.StandardOutputEncoding = Utf8NoBom;
+            processStartInfo.StandardErrorEncoding = Utf8NoBom;
+#endif
+
             _process = Process.Start(processStartInfo);
             if (_process == null)
                 throw new ClientException("Failed to connect to the server.");
-            
+
             _cts = new CancellationTokenSource();
             _standardIn = _process.StandardInput;
+            // Delimit frames with LF (never the platform's CRLF) to match the stdio framing contract.
+            _standardIn.NewLine = JsonRpcFraming.LineDelimiter.ToString();
             _readStdOutTask = ReadStdOut(_process.StandardOutput);
             _readStdErrTask = ReadStdErr(_process.StandardError);
             
@@ -67,8 +80,8 @@ namespace McpSdk.Client
 
         protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
         {
-            requestAsJson = Regex.Replace(requestAsJson, @"\t|\n|\r", string.Empty);
-            await _standardIn.WriteLineAsync(requestAsJson).ConfigureAwait(false);
+            var line = JsonRpcFraming.ToSingleLine(requestAsJson);
+            await _standardIn.WriteLineAsync(line).ConfigureAwait(false);
         }
 
         private async Task ReadStdOut(StreamReader standardOut)

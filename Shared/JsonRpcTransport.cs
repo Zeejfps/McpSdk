@@ -107,6 +107,15 @@ namespace McpSdk.Shared
             try
             {
                 Logger.LogDebug($"Received message: {messageAsJson}");
+
+                // JSON-RPC batching was removed in MCP 2025-06-18; a top-level array is no longer a
+                // valid frame. Reject it explicitly rather than letting the parser throw on it.
+                if (JsonRpcFraming.IsBatch(messageAsJson))
+                {
+                    Logger.LogError("Rejected a JSON-RPC batch message; batching was removed in MCP 2025-06-18.");
+                    return;
+                }
+
                 var response = _json.Parse(messageAsJson);
                 var idProp = response["id"];
                 var method = response["method"]?.AsString();

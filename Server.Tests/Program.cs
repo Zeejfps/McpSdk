@@ -12,6 +12,24 @@ if (args.Length > 0 && args[0] == "conformance")
     return;
 }
 
+// Child-process entry point for the stdio round-trip conformance test. Speaks MCP over stdio and
+// blocks forever; the transport reserves stdout for protocol frames and sends all logging to stderr.
+if (args.Length > 0 && args[0] == "stdio-server")
+{
+    var stdioJson = new NewtonsoftJson();
+    var stdioServer = new ServerBuilder()
+        .WithName("Stdio Conf Server")
+        .WithVersion("1.0.0")
+        .WithConsoleLogger()
+        .WithStdioTransport(stdioJson)
+        .WithDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestTool()))
+        .Build();
+
+    await stdioServer.Start();
+    await Task.Delay(Timeout.Infinite);
+    return;
+}
+
 var loggerFactory = new ServerConsoleLoggerFactory();
 var json = new NewtonsoftJson();
 var sseServer = new HttpListenerSseServer(
