@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class Resource
+public sealed class Resource : IJsonSerializable
 {
     public string Uri { get; }
     public string Name { get; }

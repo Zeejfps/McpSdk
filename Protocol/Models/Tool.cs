@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models
 {
-    public sealed class Tool
+    public sealed class Tool : IJsonSerializable
     {
         public string Name { get; set; }
 
@@ -63,15 +63,15 @@ namespace McpSdk.Protocol.Models
                 writer.Write("title", Title);
             writer.Write("description", Description);
             if (InputSchema != null)
-                writer.Write("inputSchema", InputSchema.AsJson);
+                writer.Write("inputSchema", InputSchema);
             if (OutputSchema != null)
-                writer.Write("outputSchema", OutputSchema.AsJson);
+                writer.Write("outputSchema", OutputSchema);
             if (Annotations != null)
-                writer.Write("annotations", Annotations.AsJson);
+                writer.Write("annotations", Annotations);
             if (Icons is { Length: > 0 })
-                writer.Write("icons", Icon.ToJsonArray(Icons));
+                writer.Write("icons", Icons);
             if (Meta != null)
-                writer.Write("_meta", Meta.AsJson);
+                writer.Write("_meta", Meta);
         }
     }
 }

@@ -149,6 +149,27 @@ internal sealed class JsonWriter : IJsonWriter
         return this;
     }
 
+    public IJsonWriter Write(string propertyName, IJsonSerializable value)
+    {
+        _jsonWriter.WriteStartObject(propertyName);
+        value.AsJson(this);
+        _jsonWriter.WriteEndObject();
+        return this;
+    }
+
+    public IJsonWriter Write(string propertyName, IJsonSerializable[] values)
+    {
+        _jsonWriter.WriteStartArray(propertyName);
+        foreach (var value in values)
+        {
+            _jsonWriter.WriteStartObject();
+            value.AsJson(this);
+            _jsonWriter.WriteEndObject();
+        }
+        _jsonWriter.WriteEndArray();
+        return this;
+    }
+
     public IJsonWriter Write(string propertyName, IJsonProperty property)
     {
         _jsonWriter.WritePropertyName(propertyName);

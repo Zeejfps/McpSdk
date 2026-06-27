@@ -2,7 +2,7 @@ using McpSdk.Protocol;
 
 namespace McpSdk.Server;
 
-public sealed class CompletionRequest
+public sealed class CompletionRequest : IJsonSerializable
 {
     public ReferenceModel Reference { get; }
     public IJsonObject Arguments { get; }
@@ -21,7 +21,7 @@ public sealed class CompletionRequest
 
     public void AsJson(IJsonWriter jsonWriter)
     {
-        jsonWriter.Write("ref", Reference.AsJson);
+        jsonWriter.Write("ref", Reference);
         jsonWriter.Write("arguments", Arguments);
     }
 }

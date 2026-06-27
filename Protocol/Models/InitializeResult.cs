@@ -2,7 +2,7 @@ using McpSdk.Protocol.Models.ServerCapabilities;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class InitializeResult
+    public sealed class InitializeResult : IJsonSerializable
     {
         public string ProtocolVersion { get; }
         public ServerCapabilitiesModel Capabilities { get; }
@@ -41,13 +41,13 @@ namespace McpSdk.Protocol.Models
             writer.Write("protocolVersion", ProtocolVersion);
 
             if (Capabilities != null)
-                writer.Write("capabilities", Capabilities.AsJson);
+                writer.Write("capabilities", Capabilities);
 
             if (ServerInfo != null)
-                writer.Write("serverInfo", ServerInfo.AsJson);
+                writer.Write("serverInfo", ServerInfo);
 
             if (Meta != null)
-                writer.Write("_meta", Meta.AsJson);
+                writer.Write("_meta", Meta);
         }
     }
 }

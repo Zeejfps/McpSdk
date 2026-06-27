@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class CallToolResult
+    public sealed class CallToolResult : IJsonSerializable
     {
         public static CallToolResult Ok(params Content[] content)
         {
@@ -66,9 +66,7 @@ namespace McpSdk.Protocol.Models
 
         public void AsJson(IJsonWriter writer)
         {
-            writer.Write("content", Content
-                .Select<Content, Json>(c => c.AsJson)
-                .ToArray());
+            writer.Write("content", Content);
 
             if (StructuredContent != null)
                 writer.Write("structuredContent", StructuredContent);
@@ -77,7 +75,7 @@ namespace McpSdk.Protocol.Models
                 writer.Write("isError", IsError.Value);
 
             if (Meta != null)
-                writer.Write("_meta", Meta.AsJson);
+                writer.Write("_meta", Meta);
         }
 
         public Content[] Content { get; }

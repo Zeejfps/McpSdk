@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class CreateMessageRequest
+    public sealed class CreateMessageRequest : IJsonSerializable
     {
         public CreateMessageRequest(IJsonObject jsonObject)
         {
@@ -18,10 +18,8 @@ namespace McpSdk.Protocol.Models
 
         public void AsJson(IJsonWriter writer)
         {
-            writer.Write("messages", Messages
-                .Select<SamplingMessage, Json>(message => message.AsJson)
-                .ToArray());
-            writer.Write("modelPreferences", Preferences.AsJson);
+            writer.Write("messages", Messages);
+            writer.Write("modelPreferences", Preferences);
             writer.Write("systemPrompt", SystemPrompt);
             if (MaxTokens.HasValue)
                 writer.Write("maxTokens", MaxTokens.Value);

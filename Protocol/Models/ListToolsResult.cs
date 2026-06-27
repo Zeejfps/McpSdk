@@ -1,8 +1,6 @@
-﻿using System.Linq;
-
-namespace McpSdk.Protocol.Models
+﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class ListToolsResult
+    public sealed class ListToolsResult : IJsonSerializable
     {
         public Tool[] Tools { get; }
         
@@ -26,9 +24,7 @@ namespace McpSdk.Protocol.Models
 
         public void AsJson(IJsonWriter writer)
         {
-            writer.Write("tools", Tools
-                .Select<Tool, Json>(tool => tool.AsJson)
-                .ToArray());
+            writer.Write("tools", Tools);
         }
     }
 }

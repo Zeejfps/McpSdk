@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ClientCapabilities
 {
-    public sealed class SamplingCapabilityModel
+    public sealed class SamplingCapabilityModel : IJsonSerializable
     {
         public SamplingCapabilityModel()
         {

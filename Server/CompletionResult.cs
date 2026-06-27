@@ -2,7 +2,7 @@ using McpSdk.Protocol;
 
 namespace McpSdk.Server;
 
-public sealed class CompletionResult
+public sealed class CompletionResult : IJsonSerializable
 {
     public string[] Values { get; }
     public int? TotalMatches { get; }

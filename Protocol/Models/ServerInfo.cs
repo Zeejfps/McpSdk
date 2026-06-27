@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ServerInfo
+    public sealed class ServerInfo : IJsonSerializable
     {
         public string Name { get; }
         public string Version { get; }

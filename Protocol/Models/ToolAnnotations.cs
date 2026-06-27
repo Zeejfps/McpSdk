@@ -5,7 +5,7 @@ namespace McpSdk.Protocol.Models
     /// hints, not guarantees — a client must not make security decisions based on them. Every field is
     /// optional; spec defaults are noted but only emitted when explicitly set.
     /// </summary>
-    public sealed class ToolAnnotations
+    public sealed class ToolAnnotations : IJsonSerializable
     {
         /// <summary>Human-friendly display title for the tool.</summary>
         public string Title { get; set; }

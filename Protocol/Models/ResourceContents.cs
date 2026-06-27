@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public abstract class ResourceContents
+    public abstract class ResourceContents : IJsonSerializable
     {
         public string Uri { get; }
         public string MimeType { get; }

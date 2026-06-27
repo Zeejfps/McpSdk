@@ -58,7 +58,7 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
             {
                 var name = kvp.Key;
                 var input = kvp.Value;
-                propertyWriter.Write(name, input.AsJson);
+                propertyWriter.Write(name, input);
             }
         });
         writer.Write("required", _requiredInputsByNameLookup.Keys.ToArray());

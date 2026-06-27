@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class ResourcesCapabilityModel
+public sealed class ResourcesCapabilityModel : IJsonSerializable
 {
     public bool? IsResourceChangedNotificationSupported { get; set; }
     public bool? IsListChangedNotificationSupported { get; set; }

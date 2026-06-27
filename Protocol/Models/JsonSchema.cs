@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models;
 
-public abstract class JsonSchema
+public abstract class JsonSchema : IJsonSerializable
 {
     /// <summary>
     /// The default JSON Schema dialect for MCP as of 2025-06-18. Emitted as <c>$schema</c> on the

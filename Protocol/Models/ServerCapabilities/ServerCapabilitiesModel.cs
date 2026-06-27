@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities
 {
-    public sealed class ServerCapabilitiesModel
+    public sealed class ServerCapabilitiesModel : IJsonSerializable
     {
         public ToolsCapabilityModel Tools { get; set; }
         public PromptsCapabilityModel Prompts { get; set; }
@@ -36,19 +36,19 @@
         public void AsJson(IJsonWriter writer)
         {
             if (Tools != null)
-                writer.Write("tools", Tools.AsJson);
+                writer.Write("tools", Tools);
             
             if (Prompts != null)
-                writer.Write("prompts", Prompts.AsJson);
+                writer.Write("prompts", Prompts);
             
             if (Resources != null)
-                writer.Write("resources", Resources.AsJson);
+                writer.Write("resources", Resources);
             
             if (Logging != null)
-                writer.Write("logging", Logging.AsJson);
+                writer.Write("logging", Logging);
             
             if (Completion != null)
-                writer.Write("completion", Completion.AsJson);
+                writer.Write("completion", Completion);
         }
     }
 }

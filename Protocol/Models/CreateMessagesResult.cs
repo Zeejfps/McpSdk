@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class CreateMessagesResult
+    public sealed class CreateMessagesResult : IJsonSerializable
     {
         public string Role { get; }
         public string Model { get; }
@@ -29,7 +29,7 @@
         {
             writer.Write("role", Role);
             writer.Write("model", Model);
-            writer.Write("content", Content.AsJson);
+            writer.Write("content", Content);
             writer.Write("stopReason", StopReason);
         }
     }

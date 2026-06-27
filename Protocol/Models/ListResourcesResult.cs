@@ -1,8 +1,6 @@
-﻿using System.Linq;
+﻿namespace McpSdk.Protocol.Models;
 
-namespace McpSdk.Protocol.Models;
-
-public sealed class ListResourcesResult
+public sealed class ListResourcesResult : IJsonSerializable
 {
     public Resource[] Resources { get; }
 
@@ -23,8 +21,6 @@ public sealed class ListResourcesResult
     
     public void AsJson(IJsonWriter jsonWriter)
     {
-        jsonWriter.Write("resources", Resources
-            .Select<Resource, Json>(resource => resource.AsJson)
-            .ToArray());
+        jsonWriter.Write("resources", Resources);
     }
 }

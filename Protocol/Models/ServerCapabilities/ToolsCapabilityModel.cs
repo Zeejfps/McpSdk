@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities
 {
-    public sealed class ToolsCapabilityModel
+    public sealed class ToolsCapabilityModel : IJsonSerializable
     {
         public bool IsListChangedNotificationSupported { get; }
 

@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class ModelHint
+    public sealed class ModelHint : IJsonSerializable
     {
         public string Name { get; }
 

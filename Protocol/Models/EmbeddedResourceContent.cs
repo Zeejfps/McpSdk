@@ -13,6 +13,6 @@ public sealed class EmbeddedResourceContent : Content
     public override void AsJson(IJsonWriter writer)
     {
         writer.Write("type", "resource");
-        writer.Write("resource", Resource.AsJson);
+        writer.Write("resource", Resource);
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class CallToolRequest
+    public sealed class CallToolRequest : IJsonSerializable
     {
         public string ToolName { get; }
         public IJsonObject ToolArguments { get; }

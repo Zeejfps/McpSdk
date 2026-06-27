@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ModelPreferences
+    public sealed class ModelPreferences : IJsonSerializable
     {
         public ModelHint[] Hints { get; }
         public float? IntelligencePriority { get; }
@@ -20,9 +20,7 @@ namespace McpSdk.Protocol.Models
 
         public void AsJson(IJsonWriter writer)
         {
-            writer.Write("hints", Hints
-                .Select<ModelHint, Json>(hint => hint.AsJson)
-                .ToArray());
+            writer.Write("hints", Hints);
             
             if (IntelligencePriority.HasValue)
                 writer.Write("intelligencePriority", IntelligencePriority.Value);

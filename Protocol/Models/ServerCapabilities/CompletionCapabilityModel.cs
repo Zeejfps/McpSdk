@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class CompletionCapabilityModel
+public sealed class CompletionCapabilityModel : IJsonSerializable
 {
     public CompletionCapabilityModel()
     {

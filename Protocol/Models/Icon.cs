@@ -7,7 +7,7 @@ namespace McpSdk.Protocol.Models
     /// URI — an <c>https://</c> URL or an inline <c>data:</c> URI; <c>MimeType</c> and <c>Sizes</c>
     /// (e.g. <c>"48x48"</c>) are optional hints.
     /// </summary>
-    public sealed class Icon
+    public sealed class Icon : IJsonSerializable
     {
         public string Src { get; set; }
         public string MimeType { get; set; }
@@ -46,15 +46,6 @@ namespace McpSdk.Protocol.Models
         public static Icon[] ArrayFrom(IJsonObject[] array)
         {
             return array?.Select(icon => new Icon(icon)).ToArray();
-        }
-
-        /// <summary>
-        /// Maps icons to writable JSON for <see cref="IJsonWriter.Write(string, Json[])"/>, or null
-        /// when the input is null. The caller owns the property key.
-        /// </summary>
-        public static Json[] ToJsonArray(Icon[] icons)
-        {
-            return icons?.Select<Icon, Json>(icon => icon.AsJson).ToArray();
         }
     }
 }

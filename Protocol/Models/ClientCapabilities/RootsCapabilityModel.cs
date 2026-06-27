@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ClientCapabilities
 {
-    public sealed class RootsCapabilityModel
+    public sealed class RootsCapabilityModel : IJsonSerializable
     {
         private bool IsListChangedNotificationSupported { get; }
 

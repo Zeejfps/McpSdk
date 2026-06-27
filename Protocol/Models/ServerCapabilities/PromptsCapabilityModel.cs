@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class PromptsCapabilityModel
+public sealed class PromptsCapabilityModel : IJsonSerializable
 {
     public bool IsListChangedNotificationSupported { get; }
 

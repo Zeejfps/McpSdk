@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models;
 
-public sealed class Error
+public sealed class Error : IJsonSerializable
 {
     public ErrorCode Code { get;}
     public string Message { get;}
