@@ -4,9 +4,13 @@ public sealed class ListResourcesResult : IJsonObjectWriter
 {
     public Resource[] Resources { get; }
 
-    public ListResourcesResult(Resource[] resources)
+    /// <summary>Opaque cursor for the next page (2025-11-25), or null when this is the last page.</summary>
+    public string NextCursor { get; }
+
+    public ListResourcesResult(Resource[] resources, string nextCursor = null)
     {
         Resources = resources;
+        NextCursor = nextCursor;
     }
 
     public ListResourcesResult(IJsonObject jsonObject)
@@ -17,10 +21,13 @@ public sealed class ListResourcesResult : IJsonObjectWriter
         {
             Resources[i] = new Resource(resources[i]);
         }
+        NextCursor = jsonObject["nextCursor"]?.AsString();
     }
-    
+
     public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("resources", Resources);
+        if (NextCursor != null)
+            jsonWriter.Write("nextCursor", NextCursor);
     }
 }

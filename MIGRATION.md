@@ -145,12 +145,28 @@ return `isError` tool results, and audio/resource_link content round-trips. Veri
 
 ## Phase D — Pagination
 
-- [ ] Add opaque `cursor` param to list requests and `nextCursor` to list results across
-  `tools/list`, `resources/list`, `resources/templates/list`, `prompts/list`. Today `tools/list`
-  sends an empty params block (`McpClient.cs:130`) and `ListToolsResult` has no cursor field. Update
-  `IToolsController`, `IResourcesController`, `IPromptController` to accept/return cursors.
+- [x] **Opaque `cursor` param + `nextCursor` result** across all four list ops. New request models
+  carry an optional `cursor` (`ListToolsRequest`, `ListPromptsRequest`, and `cursor` added to the
+  existing `ListResourcesRequest` / `ListTemplatesRequest`); every list result now exposes an
+  optional `NextCursor` (`ListToolsResult`, `ListResourcesResult`, `ListTemplatesResult`,
+  `ListPromptsResult`) — emitted only on a non-final page, read back when present.
+- [x] **Cursors are opaque.** New `Protocol/PaginationCursor.cs` Base64-encodes the page offset
+  behind an `offset:` token so clients echo a blob they can't parse; `TryDecodeOffset` rejects
+  null/empty/malformed cursors rather than throwing, so a token a controller didn't mint degrades to
+  the first page.
+- [x] **Controllers accept/return cursors.** `IToolsController.ListTools` and
+  `IPromptController.ListPrompts` now take their request models (resources already did); `McpServer`
+  parses the incoming params into those models. `McpClient.ListTools` / `IClient.ListTools` take an
+  optional `ListToolsRequest` (default null → first page, back-compatible with existing callers).
+- [x] **Real paging in `DefaultToolsController`.** New settable `PageSize` (null = single page, no
+  cursor). When set, `ListTools` snapshots a stable order, slices `[offset, offset+PageSize)`,
+  clamps stale/out-of-range offsets to an empty final page, and returns a `nextCursor` only while
+  more tools remain.
 
-**Exit:** multi-page list round-trips.
+**Exit:** ✅ multi-page `tools/list` walks every page via `nextCursor`, returning each tool exactly
+once and a null cursor on the final page; a non-paginating controller returns one page with no
+cursor; the opaque cursor round-trips offsets and rejects junk. Verified by
+`Server.Tests/Conformance` (now 91 assertions, run via `dotnet run --project Server.Tests -- conformance`).
 
 ---
 
