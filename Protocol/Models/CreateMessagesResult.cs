@@ -44,7 +44,7 @@ namespace McpSdk.Protocol.Models
             if (Content != null && Content.Length == 1)
                 writer.Write("content", Content[0]);
             else
-                writer.Write("content", Content);
+                Content.WriteTo(writer, "content");
 
             writer.Write("stopReason", StopReason);
         }

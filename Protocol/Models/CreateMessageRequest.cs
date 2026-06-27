@@ -43,7 +43,7 @@ namespace McpSdk.Protocol.Models
 
         public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("messages", Messages);
+            Messages.WriteTo(writer, "messages");
             if (Preferences != null)
                 writer.Write("modelPreferences", Preferences);
             writer.Write("systemPrompt", SystemPrompt);
@@ -52,7 +52,7 @@ namespace McpSdk.Protocol.Models
 
             // Sampling-with-tools (2025-11-25, SEP-1577): advertised only when the server supplies them.
             if (Tools is { Length: > 0 })
-                writer.Write("tools", Tools);
+                Tools.WriteTo(writer, "tools");
             if (ToolChoice != null)
                 writer.Write("toolChoice", ToolChoice);
         }

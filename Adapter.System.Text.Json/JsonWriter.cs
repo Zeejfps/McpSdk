@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using McpSdk.Protocol;
 
@@ -157,7 +158,7 @@ internal sealed class JsonWriter : IJsonWriter
         return this;
     }
 
-    public IJsonWriter Write(string propertyName, IJsonObjectWriter[] values)
+    public IJsonWriter Write(string propertyName, IEnumerable<IJsonObjectWriter> values)
     {
         _jsonWriter.WriteStartArray(propertyName);
         foreach (var value in values)

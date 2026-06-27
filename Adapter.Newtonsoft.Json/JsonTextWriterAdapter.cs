@@ -1,4 +1,5 @@
-﻿using McpSdk.Protocol;
+﻿using System.Collections.Generic;
+using McpSdk.Protocol;
 using Newtonsoft.Json;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
@@ -163,7 +164,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return this;
         }
 
-        public IJsonWriter Write(string propertyName, IJsonObjectWriter[] values)
+        public IJsonWriter Write(string propertyName, IEnumerable<IJsonObjectWriter> values)
         {
             _writer.WritePropertyName(propertyName);
             _writer.WriteStartArray();

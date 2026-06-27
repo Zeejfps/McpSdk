@@ -44,7 +44,7 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, Json json);
         IJsonWriter Write(string propertyName, Json[] jsonArray);
         IJsonWriter Write(string propertyName, IJsonObjectWriter value);
-        IJsonWriter Write(string propertyName, IJsonObjectWriter[] values);
+        IJsonWriter Write(string propertyName, IEnumerable<IJsonObjectWriter> values);
         IJsonWriter Write(string propertyName, IJsonProperty property);
     }
 

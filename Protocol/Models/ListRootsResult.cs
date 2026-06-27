@@ -20,7 +20,7 @@ namespace McpSdk.Protocol.Models
 
         public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("roots", Roots);
+            Roots.WriteTo(writer, "roots");
         }
         
         public Root[] Roots { get; }

@@ -69,7 +69,7 @@ namespace McpSdk.Protocol.Models
             if (Annotations != null)
                 writer.Write("annotations", Annotations);
             if (Icons is { Length: > 0 })
-                writer.Write("icons", Icons);
+                Icons.WriteTo(writer, "icons");
             if (Meta != null)
                 writer.Write("_meta", Meta);
         }
