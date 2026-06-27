@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -68,11 +67,10 @@ namespace McpSdk.Server
 
             var pageSize = PageSize is > 0 ? PageSize.Value : toolCount;
             var take = Math.Min(pageSize, toolCount - offset);
-            var slice = _toolsInOrder.GetRange(offset, take);
 
-            var page = new Tool[slice.Count];
-            for (var i = 0; i < slice.Count; i++)
-                page[i] = slice[i].Info;
+            var page = new Tool[take];
+            for (var i = 0; i < take; i++)
+                page[i] = _toolsInOrder[offset + i].Info;
 
             var nextOffset = offset + page.Length;
             var nextCursor = nextOffset < toolCount
