@@ -1,9 +1,11 @@
+using System;
+
 namespace McpSdk.Protocol.Models
 {
     public abstract class Content : IJsonObjectWriter
     {
         public abstract void WriteMembers(IJsonWriter writer);
-        
+
         public static Content Create(IJsonObject jsonObject)
         {
             var type = jsonObject["type"].AsString();
@@ -11,7 +13,7 @@ namespace McpSdk.Protocol.Models
             {
                 return new TextContent(jsonObject);
             }
-            
+
             if (type == "image")
             {
                 return new ImageContent(jsonObject);
@@ -32,7 +34,39 @@ namespace McpSdk.Protocol.Models
                 return new ResourceLinkContent(jsonObject);
             }
 
+            if (type == "tool_use")
+            {
+                return new ToolUseContent(jsonObject);
+            }
+
+            if (type == "tool_result")
+            {
+                return new ToolResultContent(jsonObject);
+            }
+
             return new UnknownContent(jsonObject);
+        }
+
+        /// <summary>
+        /// Reads a <c>content</c> field that the spec allows to be either a single content object or an
+        /// array of them (sampling messages and results carry one shape for plain text and the other
+        /// for tool-call / tool-result blocks). Returns an empty array when the property is absent.
+        /// </summary>
+        public static Content[] CreateMany(IJsonProperty contentProperty)
+        {
+            if (contentProperty == null)
+                return Array.Empty<Content>();
+
+            if (contentProperty.IsArray)
+            {
+                var objects = contentProperty.AsObjectArray();
+                var contents = new Content[objects.Length];
+                for (var i = 0; i < objects.Length; i++)
+                    contents[i] = Create(objects[i]);
+                return contents;
+            }
+
+            return new[] { Create(contentProperty.AsObject()) };
         }
     }
 }

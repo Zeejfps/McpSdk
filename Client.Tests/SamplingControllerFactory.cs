@@ -12,6 +12,8 @@ public sealed class SamplingControllerFactory : ISamplingCapabilityFactory
 
 internal sealed class SamplingController : ISamplingController
 {
+    public bool SupportsTools => false;
+
     public async Task<CreateMessagesResult> CreateMessages(CreateMessageRequest request)
     {
         var content = new TextContent("Hello world");

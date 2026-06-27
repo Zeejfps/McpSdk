@@ -68,6 +68,23 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("non-paginating tools/list returns one page with no cursor", ToolsListSinglePageHasNoCursor);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase E Conformance (elicitation + richer sampling) ===");
+
+            await RunTest("client advertises elicitation (form + url) capability", ElicitationCapabilityDeclared);
+            await RunTest("a form-only client omits the url mode from its capability", ElicitationFormOnlyOmitsUrl);
+            await RunTest("form-mode elicitation accept round-trips content + schema", ElicitationFormAccept);
+            await RunTest("elicitation decline and cancel round-trip", ElicitationDeclineAndCancel);
+            await RunTest("url-mode elicitation consent round-trips (no content)", ElicitationUrlMode);
+            await RunTest("an undeclared elicitation mode is rejected (InvalidParams)", ElicitationUnsupportedModeRejected);
+            await RunTest("elicitation without a controller errors (MethodNotFound)", ElicitationWithoutControllerErrors);
+            await RunTest("requestedSchema enum forms + primitive defaults round-trip", EnumSchemaAllFormsRoundTrip);
+            await RunTest("tool-capable client declares sampling.tools", SamplingToolsCapabilityDeclared);
+            await RunTest("sampling request carries tools + toolChoice", SamplingRequestWithToolsRoundTrip);
+            await RunTest("sampling result returns tool_use content", SamplingResultToolUseRoundTrip);
+            await RunTest("sampling tool_result content round-trips", SamplingToolResultContentRoundTrip);
+            await RunTest("content parses as a single object or an array", ContentSingleOrArrayParsing);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }

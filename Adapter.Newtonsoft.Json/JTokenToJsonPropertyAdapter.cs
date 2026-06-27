@@ -16,6 +16,8 @@ namespace McpSdk.Adapter.Newtonsoft.Json
 
         public bool IsString => _jToken.Type == JTokenType.String;
 
+        public bool IsArray => _jToken.Type == JTokenType.Array;
+
         public string AsString()
         {
             return _jToken.Value<string>();

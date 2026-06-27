@@ -13,17 +13,19 @@ namespace McpSdk.Client
         private readonly ClientInfo _clientInfo;
         private readonly IRootsController _roots;
         private readonly ISamplingController _sampling;
+        private readonly IElicitationController _elicitation;
         private readonly ILogger _logger;
-        
+
         public bool IsConnected { get; private set; }
-        
-        public McpClient(ITransport transport, ILoggerFactory loggerFactory, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling)
+
+        public McpClient(ITransport transport, ILoggerFactory loggerFactory, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling, IElicitationController elicitation)
         {
             _transport = transport;
             _logger = loggerFactory.Create<McpClient>();
             _roots = roots;
             _clientInfo = clientInfo;
             _sampling = sampling;
+            _elicitation = elicitation;
         }
 
         private void OnRootsListChanged()
@@ -40,6 +42,52 @@ namespace McpSdk.Client
             else if (method == "sampling/createMessage")
             {
                 OnCreateMessageRequestReceived(requestId, args);
+            }
+            else if (method == "elicitation/create")
+            {
+                OnElicitationRequestReceived(requestId, args);
+            }
+        }
+
+        private async void OnElicitationRequestReceived(RequestId requestId, IJsonObject methodParams)
+        {
+            try
+            {
+                var elicitation = _elicitation;
+                if (elicitation == null)
+                {
+                    await _transport.SendErrorResponse(
+                        requestId,
+                        new Error(ErrorCode.MethodNotFound, "Elicitation is not supported by this client")
+                    );
+                    return;
+                }
+
+                var request = new ElicitRequest(methodParams);
+
+                // Reject a mode the client never advertised (spec: -32602 for an undeclared mode).
+                var unsupportedMode =
+                    (request.IsUrlMode && !elicitation.SupportsUrlMode) ||
+                    (!request.IsUrlMode && !elicitation.SupportsFormMode);
+                if (unsupportedMode)
+                {
+                    await _transport.SendErrorResponse(
+                        requestId,
+                        new Error(ErrorCode.InvalidParams, $"Elicitation mode '{request.Mode ?? ElicitRequest.ModeForm}' is not supported")
+                    );
+                    return;
+                }
+
+                var result = await elicitation.Elicit(request);
+                await _transport.SendOkResponse(requestId, result.WriteMembers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+                await _transport.SendErrorResponse(
+                    requestId,
+                    new Error(ErrorCode.InternalError, "Internal client error")
+                );
             }
         }
 
@@ -105,8 +153,12 @@ namespace McpSdk.Client
                 capabilities.RootsCapability = new RootsCapabilityModel(_roots.IsListChangedNotificationSupported);
 
             if (_sampling != null)
-                capabilities.SamplingCapability = new SamplingCapabilityModel();
-            
+                capabilities.SamplingCapability = new SamplingCapabilityModel(_sampling.SupportsTools);
+
+            if (_elicitation != null)
+                capabilities.ElicitationCapability =
+                    new ElicitationCapabilityModel(_elicitation.SupportsFormMode, _elicitation.SupportsUrlMode);
+
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
             var initializeResponse = await _transport.SendRequest("initialize", initializeRequest);
             var initializeResult = initializeResponse.Unwrap(
