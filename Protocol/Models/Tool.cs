@@ -49,7 +49,7 @@ namespace McpSdk.Protocol.Models
             if (annotationsObj != null)
                 Annotations = new ToolAnnotations(annotationsObj);
 
-            Icons = Icon.ArrayFrom(jsonObj);
+            Icons = Icon.ArrayFrom(jsonObj["icons"]?.AsObjectArray());
 
             var metaObj = jsonObj["_meta"]?.AsObject();
             if (metaObj != null)
@@ -68,7 +68,8 @@ namespace McpSdk.Protocol.Models
                 writer.Write("outputSchema", OutputSchema.AsJson);
             if (Annotations != null)
                 writer.Write("annotations", Annotations.AsJson);
-            Icon.WriteArray(writer, Icons);
+            if (Icons is { Length: > 0 })
+                writer.Write("icons", Icon.ToJsonArray(Icons));
             if (Meta != null)
                 writer.Write("_meta", Meta.AsJson);
         }

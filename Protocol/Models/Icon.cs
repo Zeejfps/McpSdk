@@ -38,21 +38,23 @@ namespace McpSdk.Protocol.Models
                 writer.Write("sizes", Sizes);
         }
 
-        /// <summary>Reads an <c>icons</c> array off a parent object, or null when absent.</summary>
-        public static Icon[] ArrayFrom(IJsonObject parent)
+        /// <summary>
+        /// Maps a raw array of icon objects (e.g. <c>obj["icons"]?.AsObjectArray()</c>) to icons, or
+        /// null when the input is null. The caller owns the property key, so the same mapper serves any
+        /// parent (tool, resource, prompt).
+        /// </summary>
+        public static Icon[] ArrayFrom(IJsonObject[] array)
         {
-            var icons = parent?["icons"]?.AsObjectArray();
-            if (icons == null)
-                return null;
-            return icons.Select(icon => new Icon(icon)).ToArray();
+            return array?.Select(icon => new Icon(icon)).ToArray();
         }
 
-        /// <summary>Writes an <c>icons</c> array onto the given writer when non-empty.</summary>
-        public static void WriteArray(IJsonWriter writer, Icon[] icons)
+        /// <summary>
+        /// Maps icons to writable JSON for <see cref="IJsonWriter.Write(string, Json[])"/>, or null
+        /// when the input is null. The caller owns the property key.
+        /// </summary>
+        public static Json[] ToJsonArray(Icon[] icons)
         {
-            if (icons == null || icons.Length == 0)
-                return;
-            writer.Write("icons", icons.Select<Icon, Json>(icon => icon.AsJson).ToArray());
+            return icons?.Select<Icon, Json>(icon => icon.AsJson).ToArray();
         }
     }
 }
