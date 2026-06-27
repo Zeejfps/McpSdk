@@ -27,4 +27,7 @@ public sealed class Error
         if (Data != null)
             jsonWriter.Write("data", Data);
     }
+
+    /// <summary>Writes this error as the named property on the supplied writer.</summary>
+    public void WriteTo(IJsonWriter writer, string propertyName) => writer.Write(propertyName, AsJson);
 }

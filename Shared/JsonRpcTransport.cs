@@ -42,11 +42,11 @@ namespace McpSdk.Shared
         {
             var requestAsJson = _json.Stringify(request =>
             {
-                request.Write("jsonrpc", JsonRpcVersion);
-                request.Write("method", notification);
+                JsonRpcVersion.WriteTo(request, "jsonrpc");
+                notification.WriteTo(request, "method");
                 if (arguments != null)
                 {
-                    request.Write("params", arguments);
+                    arguments.WriteTo(request, "params");
                 }
             });
             Logger.LogDebug($"Sending notification: {requestAsJson}");
@@ -66,10 +66,10 @@ namespace McpSdk.Shared
             var id = NextRequestId();
             var request = _json.Stringify(req =>
             {
-                req.Write("jsonrpc", JsonRpcVersion);
+                JsonRpcVersion.WriteTo(req, "jsonrpc");
                 id.WriteTo(req, "id");
-                req.Write("method", method);
-                req.Write("params", payload);
+                method.WriteTo(req, "method");
+                payload.WriteTo(req, "params");
             });
             
             Logger.LogDebug($"Sending request: {request}");
@@ -82,9 +82,9 @@ namespace McpSdk.Shared
         {
             var response = _json.Stringify(req =>
             {
-                req.Write("jsonrpc", JsonRpcVersion);
+                JsonRpcVersion.WriteTo(req, "jsonrpc");
                 requestId.WriteTo(req, "id");
-                req.Write("result", writeResult);
+                writeResult.WriteTo(req, "result");
             });
             Logger.LogDebug($"Sending OK response: {response}");
             await Send(response, cancellationToken);
@@ -94,9 +94,9 @@ namespace McpSdk.Shared
         {
             var response = _json.Stringify(req =>
             {
-                req.Write("jsonrpc", JsonRpcVersion);
+                JsonRpcVersion.WriteTo(req, "jsonrpc");
                 requestId.WriteTo(req, "id");
-                req.Write("error", error.AsJson);
+                error.WriteTo(req, "error");
             });
             Logger.LogDebug($"Sending Error response: {response}");
             await Send(response, cancellationToken);
