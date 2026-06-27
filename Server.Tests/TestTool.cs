@@ -40,8 +40,20 @@ public sealed class TestTool : ITool
                         MaxItems = 10,
                     }
                 }
-            }
-        );
+            })
+        {
+            Title = "Weather Forecast",
+            Annotations = new ToolAnnotations
+            {
+                Title = "Get Forecast",
+                ReadOnlyHint = true,
+                OpenWorldHint = true,
+            },
+            Icons =
+            [
+                new Icon("https://example.com/forecast.png", "image/png", "48x48"),
+            ],
+        };
     }
     
     public Task<CallToolResult> Call(IJsonObject args)

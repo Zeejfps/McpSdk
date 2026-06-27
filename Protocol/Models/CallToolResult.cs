@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
@@ -13,21 +13,38 @@ namespace McpSdk.Protocol.Models
         {
             return new CallToolResult([content]);
         }
-        
+
         public static CallToolResult Error(params Content[] content)
         {
             return new CallToolResult(content, true);
         }
-        
+
         public static CallToolResult Error(TextContent content)
         {
             return new CallToolResult([content], true);
         }
-        
-        public CallToolResult(Content[] content, bool? isError = null)
+
+        /// <summary>
+        /// Builds a result for a tool that declares an <c>outputSchema</c>. The structured object is
+        /// emitted as <c>structuredContent</c> and — for back-compat with clients that only read the
+        /// unstructured <c>content</c> array — also serialized into a leading text block (SEP). Any
+        /// <paramref name="extraContent"/> is appended after that text block.
+        /// </summary>
+        public static CallToolResult Structured(IJsonObject structuredContent, params Content[] extraContent)
+        {
+            var backCompat = new TextContent(structuredContent.ToString());
+            var content = extraContent is { Length: > 0 }
+                ? new Content[] { backCompat }.Concat(extraContent).ToArray()
+                : [backCompat];
+            return new CallToolResult(content, isError: null, structuredContent: structuredContent);
+        }
+
+        public CallToolResult(Content[] content, bool? isError = null, IJsonObject structuredContent = null, Meta meta = null)
         {
             Content = content;
             IsError = isError;
+            StructuredContent = structuredContent;
+            Meta = meta;
         }
 
         public CallToolResult(IJsonObject jsonObject)
@@ -41,6 +58,8 @@ namespace McpSdk.Protocol.Models
             }
             Content = content;
             IsError = jsonObject["isError"]?.AsBool();
+            StructuredContent = jsonObject["structuredContent"]?.AsObject();
+            Meta = Meta.From(jsonObject);
         }
 
         public void AsJson(IJsonWriter writer)
@@ -48,12 +67,23 @@ namespace McpSdk.Protocol.Models
             writer.Write("content", Content
                 .Select<Content, Json>(c => c.AsJson)
                 .ToArray());
-            
+
+            if (StructuredContent != null)
+                writer.Write("structuredContent", StructuredContent);
+
             if (IsError.HasValue)
                 writer.Write("isError", IsError.Value);
+
+            if (Meta != null)
+                writer.Write("_meta", Meta.AsJson);
         }
 
         public Content[] Content { get; }
         public bool? IsError { get; }
+
+        /// <summary>Arbitrary JSON object matching the tool's declared <c>outputSchema</c>, when present.</summary>
+        public IJsonObject StructuredContent { get; }
+
+        public Meta Meta { get; }
     }
 }

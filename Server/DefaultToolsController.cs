@@ -42,8 +42,14 @@ namespace McpSdk.Server
                 return new CallToolResult([content], true);
             }
 
+            // Treat omitted arguments as an empty object so validation (rather than a null-ref) decides
+            // whether required inputs are missing.
+            var toolArguments = request.ToolArguments ?? _json.Object(_ => { });
+
+            // SEP-1303: schema-validation failures are returned to the model as a tool error
+            // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error.
             var inputSchema = tool.Info.InputSchema.AsJsonObject(_json);
-            if (!request.ToolArguments.IsValid(inputSchema, out var errors))
+            if (!toolArguments.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)
@@ -53,7 +59,6 @@ namespace McpSdk.Server
                 return new CallToolResult(content, true);
             }
 
-            var toolArguments = request.ToolArguments;
             return await tool.Call(toolArguments);
         }
     }

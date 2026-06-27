@@ -110,21 +110,36 @@ assertions: Phase A + B, run via `dotnet run --project Server.Tests -- conforman
 
 The highest-value feature jump.
 
-- [ ] **`Tool` model** (`Protocol/Models/Tool.cs`): add `Title`, `OutputSchema` (`ObjectSchema`),
-  `Annotations` (new `ToolAnnotations`: `title`, `readOnlyHint`, `destructiveHint`, `idempotentHint`,
-  `openWorldHint`), `Icons`, `_meta`.
-- [ ] **Structured output** (`CallToolResult.cs`): add `StructuredContent` (arbitrary JSON object).
-  When a tool declares `outputSchema`, the result includes `structuredContent` **and** a
-  serialized-JSON text block for back-compat.
-- [ ] **New content types** in `Content.Create` (`Protocol/Models/Content.cs`): `AudioContent`
-  (`type:"audio"`) and **resource links** (`type:"resource_link"`).
-- [ ] **Validation errors → tool errors.** When tool args fail schema validation, return
-  `CallToolResult { isError: true }` instead of JSON-RPC `InvalidParams`
-  (`HandleCallToolRequest` / `DefaultToolsController`) so the model can self-correct (SEP-1303).
-- [ ] **Icons** shared model (`src` / `sizes` / `mimeType`), reused by resources/prompts later.
-- [ ] **JSON Schema 2020-12** as default dialect across the `*Schema.cs` models — emit `$schema` where appropriate.
+- [x] **`Tool` model** (`Protocol/Models/Tool.cs`): added `Title`, `OutputSchema` (`ObjectSchema`),
+  `Annotations` (new `Protocol/Models/ToolAnnotations.cs`: `title`, `readOnlyHint`, `destructiveHint`,
+  `idempotentHint`, `openWorldHint` — all optional nullable bools, emitted only when set), `Icons`,
+  and `_meta`. The `Tool(IJsonObject)` reader parses all of them; `AsJson` emits each when present.
+- [x] **Structured output** (`CallToolResult.cs`): added `StructuredContent` (opaque `IJsonObject`)
+  and `_meta`. New `CallToolResult.Structured(structuredContent, …extra)` factory emits
+  `structuredContent` **and** mirrors it into a leading serialized-JSON text block so clients that only
+  read the unstructured `content` array still work (SEP).
+- [x] **New content types** in `Content.Create` (`Protocol/Models/Content.cs`): `AudioContent`
+  (`type:"audio"`, `Protocol/Models/AudioContent.cs`) and **resource links**
+  (`type:"resource_link"`, `Protocol/Models/ResourceLinkContent.cs`: `uri`/`name`/`title`/
+  `description`/`mimeType`).
+- [x] **Validation errors → tool errors.** `DefaultToolsController.CallTool` already returned
+  `CallToolResult { isError: true }` for schema-validation failures (never JSON-RPC `InvalidParams`);
+  hardened it to treat omitted `arguments` as an empty object (so a missing-required-field call
+  validates instead of null-reffing into `InternalError`) and documented the SEP-1303 intent.
+- [x] **Bug:** the System.Text.Json adapter's `IJsonObject.IsValid` keyed off `result.HasErrors`,
+  which is always false under JsonSchema.Net's default `Flag` output — so *every* object passed
+  validation, voiding the tool-error guarantee on that adapter. Now evaluates with `List` output and
+  keys off `IsValid`, collecting per-node error messages. Guarded by a cross-adapter parity test.
+- [x] **Icons** shared model (`Protocol/Models/Icon.cs`: `src` / `mimeType` / `sizes`) with
+  `ArrayFrom`/`WriteArray` helpers, ready to be reused by resources/prompts in Phase F.
+- [x] **JSON Schema 2020-12** as default dialect: `JsonSchema.Dialect2020_12` constant, emitted as
+  `$schema` on the root `ObjectSchema` (tool input/output). Both validators
+  (`Newtonsoft.Json.Schema` 4.0.1, `JsonSchema.Net` 7.3.3) accept it.
 
-**Exit:** structured-output round-trip test; annotations + icons appear in `tools/list`.
+**Exit:** ✅ structured-output round-trip (`structuredContent` + back-compat text), `title` +
+annotations + icons + `$schema`/`outputSchema` appear in `tools/list`, schema-validation failures
+return `isError` tool results, and audio/resource_link content round-trips. Verified by
+`Server.Tests/Conformance` (now 70 assertions, run via `dotnet run --project Server.Tests -- conformance`).
 
 ---
 

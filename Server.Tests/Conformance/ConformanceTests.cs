@@ -51,6 +51,16 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("Real stdio round-trip: initialize + tools/list + tools/call", StdioRoundTrip);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase C Conformance (modern tools) ===");
+
+            await RunTest("tools/list carries title + annotations + icons", ToolMetadataInListing);
+            await RunTest("inputSchema/outputSchema declare the 2020-12 dialect", SchemaDialectAndOutputSchemaEmitted);
+            await RunTest("structured output: structuredContent + back-compat text", StructuredOutputRoundTrip);
+            await RunTest("schema-validation failure returns a tool error, not a protocol error", ValidationErrorIsToolError);
+            await RunTest("audio + resource_link content types round-trip", ContentTypesRoundTrip);
+            await RunTest("schema validation agrees across both JSON adapters", SchemaValidationAdapterParity);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }
@@ -211,7 +221,11 @@ namespace McpSdk.Server.Tests.Conformance
                 .WithName("Conf Server")
                 .WithVersion("1.0.0")
                 .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestTool()))
+                .WithDefaultToolsCapability(Json, tools =>
+                {
+                    tools.AddTool(new TestTool());
+                    tools.AddTool(new StructuredTool(Json));
+                })
                 .Build();
         }
 

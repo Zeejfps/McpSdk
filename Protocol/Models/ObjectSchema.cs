@@ -50,6 +50,7 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
     
     public override void AsJson(IJsonWriter writer)
     {
+        writer.Write("$schema", Dialect2020_12);
         writer.Write("type", "object");
         writer.Write("properties", propertyWriter =>
         {

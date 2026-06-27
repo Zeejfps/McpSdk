@@ -16,12 +16,22 @@ namespace McpSdk.Protocol.Models
             {
                 return new ImageContent(jsonObject);
             }
-             
+
+            if (type == "audio")
+            {
+                return new AudioContent(jsonObject);
+            }
+
             if (type == "resource")
             {
                 return new EmbeddedResourceContent(jsonObject);
             }
-            
+
+            if (type == "resource_link")
+            {
+                return new ResourceLinkContent(jsonObject);
+            }
+
             return new UnknownContent(jsonObject);
         }
     }
