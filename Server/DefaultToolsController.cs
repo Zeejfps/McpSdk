@@ -85,8 +85,7 @@ namespace McpSdk.Server
             var toolName = request.ToolName;
             if (!_toolByNameLookup.TryGetValue(toolName, out var toolHandler))
             {
-                var content = new TextContent($"No tool found with name: {toolName}");
-                return new CallToolResult([content], true);
+                return CallToolResult.Error($"No tool found with name: {toolName}");
             }
 
             // Treat omitted arguments as an empty object so validation (rather than a null-ref) decides
@@ -103,7 +102,7 @@ namespace McpSdk.Server
                 {
                     content[i] = new TextContent(errors[i]);
                 }
-                return new CallToolResult(content, true);
+                return CallToolResult.Error(content);
             }
 
             return await toolHandler.Call(toolArguments);
