@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ListRootsResult : IJsonSerializable
+    public sealed class ListRootsResult : IJsonObjectWriter
     {
         public ListRootsResult(Root[] roots)
         {
@@ -18,7 +18,7 @@ namespace McpSdk.Protocol.Models
                 .ToArray();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("roots", Roots);
         }

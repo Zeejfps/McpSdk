@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ClientCapabilities
 {
-    public sealed class SamplingCapabilityModel : IJsonSerializable
+    public sealed class SamplingCapabilityModel : IJsonObjectWriter
     {
         public SamplingCapabilityModel()
         {
@@ -11,7 +11,7 @@
         {
         }
 
-        public void AsJson(IJsonWriter obj)
+        public void WriteMembers(IJsonWriter obj)
         {
             
         }

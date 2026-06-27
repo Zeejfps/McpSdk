@@ -154,23 +154,23 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return this;
         }
 
-        public IJsonWriter Write(string propertyName, IJsonSerializable value)
+        public IJsonWriter Write(string propertyName, IJsonObjectWriter value)
         {
             _writer.WritePropertyName(propertyName);
             _writer.WriteStartObject();
-            value.AsJson(this);
+            value.WriteMembers(this);
             _writer.WriteEndObject();
             return this;
         }
 
-        public IJsonWriter Write(string propertyName, IJsonSerializable[] values)
+        public IJsonWriter Write(string propertyName, IJsonObjectWriter[] values)
         {
             _writer.WritePropertyName(propertyName);
             _writer.WriteStartArray();
             foreach (var value in values)
             {
                 _writer.WriteStartObject();
-                value.AsJson(this);
+                value.WriteMembers(this);
                 _writer.WriteEndObject();
             }
             _writer.WriteEndArray();

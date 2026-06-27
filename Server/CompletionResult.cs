@@ -2,7 +2,7 @@ using McpSdk.Protocol;
 
 namespace McpSdk.Server;
 
-public sealed class CompletionResult : IJsonSerializable
+public sealed class CompletionResult : IJsonObjectWriter
 {
     public string[] Values { get; }
     public int? TotalMatches { get; }
@@ -22,7 +22,7 @@ public sealed class CompletionResult : IJsonSerializable
         HasMoreMatches = jsonObject["hasMoreMatches"].AsBool();
     }
 
-    public void AsJson(IJsonWriter jsonWriter)
+    public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("values", Values);
         if (TotalMatches.HasValue) 

@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class Root : IJsonSerializable
+    public sealed class Root : IJsonObjectWriter
     {
         public string Uri { get; }
         public string Name { get; }
@@ -17,7 +17,7 @@
             Name = jsonObject["name"]?.AsString();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("uri", Uri);
             writer.Write("name", Name);

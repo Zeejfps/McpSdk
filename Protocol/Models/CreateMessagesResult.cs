@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class CreateMessagesResult : IJsonSerializable
+    public sealed class CreateMessagesResult : IJsonObjectWriter
     {
         public string Role { get; }
         public string Model { get; }
@@ -25,7 +25,7 @@
             StopReason = stopReason;
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("role", Role);
             writer.Write("model", Model);

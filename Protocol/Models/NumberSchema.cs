@@ -22,7 +22,7 @@ public sealed class NumberSchema : JsonSchema
         Options = jsonObject["enum"]?.AsDoubleArray();
     }
     
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", Type);
         

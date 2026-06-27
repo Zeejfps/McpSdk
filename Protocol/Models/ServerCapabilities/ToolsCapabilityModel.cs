@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities
 {
-    public sealed class ToolsCapabilityModel : IJsonSerializable
+    public sealed class ToolsCapabilityModel : IJsonObjectWriter
     {
         public bool IsListChangedNotificationSupported { get; }
 
@@ -14,7 +14,7 @@
             IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;   
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("listChanged", IsListChangedNotificationSupported);
         }

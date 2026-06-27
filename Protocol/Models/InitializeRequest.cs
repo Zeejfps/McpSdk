@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class InitializeRequest : IJsonSerializable
+    public sealed class InitializeRequest : IJsonObjectWriter
     {
         public string ProtocolVersion { get; }
         public ClientInfo ClientInfo { get; }
@@ -33,7 +33,7 @@ namespace McpSdk.Protocol.Models
                 Meta = new Meta(metaObj);
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("protocolVersion", ProtocolVersion);
             writer.Write("capabilities", ClientCapabilities);

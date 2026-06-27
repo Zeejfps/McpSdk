@@ -1,8 +1,8 @@
 namespace McpSdk.Protocol.Models
 {
-    public abstract class Content : IJsonSerializable
+    public abstract class Content : IJsonObjectWriter
     {
-        public abstract void AsJson(IJsonWriter writer);
+        public abstract void WriteMembers(IJsonWriter writer);
         
         public static Content Create(IJsonObject jsonObject)
         {

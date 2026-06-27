@@ -12,7 +12,7 @@ public sealed class TextContent : Content
         Text = text;
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "text");
         writer.Write("text", Text);

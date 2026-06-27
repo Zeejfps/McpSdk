@@ -55,7 +55,7 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return _jToken.IsValid(jSchema, out errors);
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             foreach (var kvp in this)
             {

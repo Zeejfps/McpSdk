@@ -3,9 +3,9 @@ using McpSdk.Protocol;
 
 namespace McpSdk.Server;
 
-public abstract class ReferenceModel : IJsonSerializable
+public abstract class ReferenceModel : IJsonObjectWriter
 {
-    public abstract void AsJson(IJsonWriter jsonWriter);
+    public abstract void WriteMembers(IJsonWriter jsonWriter);
 
     public static ReferenceModel FromJsonObject(IJsonObject jsonObject)
     {

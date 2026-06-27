@@ -7,7 +7,7 @@ namespace McpSdk.Protocol.Models
     /// URI — an <c>https://</c> URL or an inline <c>data:</c> URI; <c>MimeType</c> and <c>Sizes</c>
     /// (e.g. <c>"48x48"</c>) are optional hints.
     /// </summary>
-    public sealed class Icon : IJsonSerializable
+    public sealed class Icon : IJsonObjectWriter
     {
         public string Src { get; set; }
         public string MimeType { get; set; }
@@ -29,7 +29,7 @@ namespace McpSdk.Protocol.Models
             Sizes = jsonObject["sizes"]?.AsString();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("src", Src);
             if (MimeType != null)

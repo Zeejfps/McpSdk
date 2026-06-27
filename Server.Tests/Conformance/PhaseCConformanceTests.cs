@@ -47,7 +47,7 @@ namespace McpSdk.Server.Tests.Conformance
         private static Task SchemaDialectAndOutputSchemaEmitted()
         {
             var tool = new StructuredTool(Json).Info;
-            var raw = Json.Object(tool.AsJson);
+            var raw = Json.Object(tool.WriteMembers);
 
             var inputSchema = raw["inputSchema"]?.AsObject();
             Assert(inputSchema != null, "inputSchema is emitted");
@@ -114,14 +114,14 @@ namespace McpSdk.Server.Tests.Conformance
 
         private static Task ContentTypesRoundTrip()
         {
-            var audioJson = Json.Object(new AudioContent("audio/wav", "QUJD").AsJson);
+            var audioJson = Json.Object(new AudioContent("audio/wav", "QUJD").WriteMembers);
             var audio = Content.Create(audioJson) as AudioContent;
             Assert(audio != null, "audio content type is recognized by Content.Create");
             AssertEqual("audio/wav", audio?.MimeType, "audio mimeType round-trips");
             AssertEqual("QUJD", audio?.Base64EncodedData, "audio data round-trips");
 
             var linkJson = Json.Object(
-                new ResourceLinkContent("file:///x.txt", "x.txt", "X File", "a file", "text/plain").AsJson);
+                new ResourceLinkContent("file:///x.txt", "x.txt", "X File", "a file", "text/plain").WriteMembers);
             var link = Content.Create(linkJson) as ResourceLinkContent;
             Assert(link != null, "resource_link content type is recognized by Content.Create");
             AssertEqual("file:///x.txt", link?.Uri, "resource_link uri round-trips");

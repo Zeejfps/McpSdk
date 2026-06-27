@@ -31,7 +31,7 @@ public sealed class ResourceLinkContent : Content
         MimeType = jsonObject["mimeType"]?.AsString();
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "resource_link");
         writer.Write("uri", Uri);

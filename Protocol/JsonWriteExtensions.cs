@@ -24,8 +24,8 @@ namespace McpSdk.Protocol
         public static void WriteTo(this IJsonObject[] value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
         public static void WriteTo(this Json value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
         public static void WriteTo(this Json[] value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
-        public static void WriteTo(this IJsonSerializable value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
-        public static void WriteTo(this IJsonSerializable[] value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
+        public static void WriteTo(this IJsonObjectWriter value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
+        public static void WriteTo(this IJsonObjectWriter[] value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
         public static void WriteTo(this IJsonProperty value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
     }
 }

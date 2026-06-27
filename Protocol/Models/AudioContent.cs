@@ -23,7 +23,7 @@ public sealed class AudioContent : Content
         Base64EncodedData = base64EncodedData;
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "audio");
         writer.Write("mimeType", MimeType);

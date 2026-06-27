@@ -30,7 +30,7 @@ var listToolsResult = await client.ListTools();
 Console.WriteLine("Available tools:");
 foreach (var tool in listToolsResult.Tools)
 {
-    Console.WriteLine(json.Stringify(tool.AsJson));
+    Console.WriteLine(json.Stringify(tool.WriteMembers));
 }
 
 var request = new CallToolRequest("get-forecast", json.Object(props =>
@@ -40,7 +40,7 @@ var request = new CallToolRequest("get-forecast", json.Object(props =>
 }));
 var result = await client.CallTool(request);
 
-Console.WriteLine(json.Stringify(request.AsJson));
+Console.WriteLine(json.Stringify(request.WriteMembers));
 var contents = result.Content;
 Console.WriteLine(contents.Length);
 

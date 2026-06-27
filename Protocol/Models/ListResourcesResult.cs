@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class ListResourcesResult : IJsonSerializable
+public sealed class ListResourcesResult : IJsonObjectWriter
 {
     public Resource[] Resources { get; }
 
@@ -19,7 +19,7 @@ public sealed class ListResourcesResult : IJsonSerializable
         }
     }
     
-    public void AsJson(IJsonWriter jsonWriter)
+    public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("resources", Resources);
     }

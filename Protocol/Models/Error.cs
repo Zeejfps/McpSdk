@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models;
 
-public sealed class Error : IJsonSerializable
+public sealed class Error : IJsonObjectWriter
 {
     public ErrorCode Code { get;}
     public string Message { get;}
@@ -20,7 +20,7 @@ public sealed class Error : IJsonSerializable
         Data = data;
     }
 
-    public void AsJson(IJsonWriter jsonWriter)
+    public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("code", (int)Code);
         jsonWriter.Write("message", Message);
@@ -29,5 +29,5 @@ public sealed class Error : IJsonSerializable
     }
 
     /// <summary>Writes this error as the named property on the supplied writer.</summary>
-    public void WriteTo(IJsonWriter writer, string propertyName) => writer.Write(propertyName, AsJson);
+    public void WriteTo(IJsonWriter writer, string propertyName) => writer.Write(propertyName, WriteMembers);
 }

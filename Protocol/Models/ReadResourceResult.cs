@@ -1,8 +1,8 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class ReadResourceResult : IJsonSerializable
+public sealed class ReadResourceResult : IJsonObjectWriter
 {
-    public void AsJson(IJsonWriter jsonwriter)
+    public void WriteMembers(IJsonWriter jsonwriter)
     {
         
     }

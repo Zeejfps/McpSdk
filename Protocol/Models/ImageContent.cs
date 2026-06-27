@@ -16,7 +16,7 @@ public sealed class ImageContent : Content
         Base64EncodedData = Convert.ToBase64String(data);
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "image");
         writer.Write("mimeType", MimeType);

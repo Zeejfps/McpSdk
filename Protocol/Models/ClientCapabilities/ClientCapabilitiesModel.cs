@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ClientCapabilities
 {
-    public sealed class ClientCapabilitiesModel : IJsonSerializable
+    public sealed class ClientCapabilitiesModel : IJsonObjectWriter
     {
         public RootsCapabilityModel RootsCapability { get; set; }
         public SamplingCapabilityModel SamplingCapability { get; set; }
@@ -18,7 +18,7 @@
                 SamplingCapability = new SamplingCapabilityModel(samplingCapability);
         }
         
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             if (RootsCapability != null)
                 writer.Write("roots", RootsCapability);

@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models
 {
-    public sealed class Tool : IJsonSerializable
+    public sealed class Tool : IJsonObjectWriter
     {
         public string Name { get; set; }
 
@@ -56,7 +56,7 @@ namespace McpSdk.Protocol.Models
                 Meta = new Meta(metaObj);
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("name", Name);
             if (Title != null)

@@ -6,7 +6,7 @@ public sealed class UnknownContent : Content
     {
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "unknown");
     }

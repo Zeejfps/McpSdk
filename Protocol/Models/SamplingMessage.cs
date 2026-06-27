@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class SamplingMessage : IJsonSerializable
+    public sealed class SamplingMessage : IJsonObjectWriter
     {
         public string Role { get; }
         public Content Content { get; }
@@ -13,7 +13,7 @@
             Content = Content.Create(contentObj);
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("role", Role);
             writer.Write("content", Content);

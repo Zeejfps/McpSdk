@@ -5,7 +5,7 @@ namespace McpSdk.Protocol.Models
     /// notification's params. Its contents are implementation-defined, so it is carried as an opaque
     /// JSON object so peers can pass metadata through without this SDK needing to model every key.
     /// </summary>
-    public sealed class Meta : IJsonSerializable
+    public sealed class Meta : IJsonObjectWriter
     {
         private readonly IJsonObject _data;
 
@@ -20,9 +20,9 @@ namespace McpSdk.Protocol.Models
         /// <summary>Reads a value out of the metadata, or null if absent.</summary>
         public IJsonProperty this[string key] => _data?[key];
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
-            _data.AsJson(writer);
+            _data.WriteMembers(writer);
         }
     }
 }

@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class LoggingCapabilityModel : IJsonSerializable
+public sealed class LoggingCapabilityModel : IJsonObjectWriter
 {
     public LoggingCapabilityModel()
     {
@@ -13,7 +13,7 @@ public sealed class LoggingCapabilityModel : IJsonSerializable
         
     }
     
-    public void AsJson(IJsonWriter writer)
+    public void WriteMembers(IJsonWriter writer)
     {
     }
 }

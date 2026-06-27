@@ -1,9 +1,9 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class ListTemplatesResult : IJsonSerializable
+public sealed class ListTemplatesResult : IJsonObjectWriter
 {
 
-    public void AsJson(IJsonWriter writer)
+    public void WriteMembers(IJsonWriter writer)
     {
         
     }

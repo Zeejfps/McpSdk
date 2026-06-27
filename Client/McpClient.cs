@@ -53,7 +53,7 @@ namespace McpSdk.Client
                 
                 var request = new CreateMessageRequest(methodParams);
                 var result = await sampling.CreateMessages(request);
-                await _transport.SendOkResponse(requestId, result.AsJson);
+                await _transport.SendOkResponse(requestId, result.WriteMembers);
             }
             catch (Exception ex)
             {
@@ -73,7 +73,7 @@ namespace McpSdk.Client
                     return;
 
                 var result = await _roots.ListRoots().ConfigureAwait(false);
-                await _transport.SendOkResponse(requestId, result.AsJson).ConfigureAwait(false);
+                await _transport.SendOkResponse(requestId, result.WriteMembers).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -108,7 +108,7 @@ namespace McpSdk.Client
                 capabilities.SamplingCapability = new SamplingCapabilityModel();
             
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
-            var initializeResponse = await _transport.SendRequest("initialize", initializeRequest.AsJson);
+            var initializeResponse = await _transport.SendRequest("initialize", initializeRequest.WriteMembers);
             var initializeResult = initializeResponse.Unwrap(
                 result => new InitializeResult(result),
                 error => throw new TransportErrorException(error));
@@ -141,7 +141,7 @@ namespace McpSdk.Client
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var response = await _transport.SendRequest("tools/call", request.AsJson);
+            var response = await _transport.SendRequest("tools/call", request.WriteMembers);
             return response.Unwrap(
                 result => new CallToolResult(result),
                 error => throw new TransportErrorException(error)

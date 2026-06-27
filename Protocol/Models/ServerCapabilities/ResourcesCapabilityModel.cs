@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class ResourcesCapabilityModel : IJsonSerializable
+public sealed class ResourcesCapabilityModel : IJsonObjectWriter
 {
     public bool? IsResourceChangedNotificationSupported { get; set; }
     public bool? IsListChangedNotificationSupported { get; set; }
@@ -14,7 +14,7 @@ public sealed class ResourcesCapabilityModel : IJsonSerializable
         IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;   
     }
 
-    public void AsJson(IJsonWriter writer)
+    public void WriteMembers(IJsonWriter writer)
     {
         if (IsResourceChangedNotificationSupported.HasValue)
             writer.Write("subscribe", IsResourceChangedNotificationSupported.Value);

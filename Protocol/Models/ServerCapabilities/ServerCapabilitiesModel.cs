@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities
 {
-    public sealed class ServerCapabilitiesModel : IJsonSerializable
+    public sealed class ServerCapabilitiesModel : IJsonObjectWriter
     {
         public ToolsCapabilityModel Tools { get; set; }
         public PromptsCapabilityModel Prompts { get; set; }
@@ -33,7 +33,7 @@
                 Completion = new CompletionCapabilityModel(completionObj);
         }
         
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             if (Tools != null)
                 writer.Write("tools", Tools);

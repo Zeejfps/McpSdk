@@ -20,7 +20,7 @@ public sealed class ArraySchema : JsonSchema
         Description = jsonObject["description"]?.AsString();
     }
     
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "array");
         if (MinItems.HasValue)

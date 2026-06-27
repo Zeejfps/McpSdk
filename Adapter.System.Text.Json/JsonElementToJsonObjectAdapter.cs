@@ -75,7 +75,7 @@ internal sealed class JsonElementToJsonObjectAdapter : IJsonObject
             CollectErrors(detail, into);
     }
 
-    public void AsJson(IJsonWriter writer)
+    public void WriteMembers(IJsonWriter writer)
     {
         foreach (var kvp in this)
         {

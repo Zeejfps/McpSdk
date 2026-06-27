@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ModelPreferences : IJsonSerializable
+    public sealed class ModelPreferences : IJsonObjectWriter
     {
         public ModelHint[] Hints { get; }
         public float? IntelligencePriority { get; }
@@ -18,7 +18,7 @@ namespace McpSdk.Protocol.Models
             SpeedPriority = jsonObject["speedPriority"]?.AsFloat();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("hints", Hints);
             

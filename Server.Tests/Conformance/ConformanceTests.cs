@@ -98,7 +98,7 @@ namespace McpSdk.Server.Tests.Conformance
             await clientEnd.Start();
 
             var request = new InitializeRequest("2024-11-05", new ClientCapabilitiesModel(), new ClientInfo("Legacy", "1.0.0"));
-            var response = await clientEnd.SendRequest("initialize", request.AsJson);
+            var response = await clientEnd.SendRequest("initialize", request.WriteMembers);
 
             Assert(response.IsOk, "server responded OK to legacy initialize");
             AssertEqual("2024-11-05", response.Result?["protocolVersion"]?.AsString(), "server echoes the legacy version");
@@ -112,7 +112,7 @@ namespace McpSdk.Server.Tests.Conformance
             await clientEnd.Start();
 
             var request = new InitializeRequest("1999-01-01", new ClientCapabilitiesModel(), new ClientInfo("Weird", "1.0.0"));
-            var response = await clientEnd.SendRequest("initialize", request.AsJson);
+            var response = await clientEnd.SendRequest("initialize", request.WriteMembers);
 
             Assert(response.IsOk, "server did not error on an unsupported version");
             AssertEqual(ProtocolVersion.Latest, response.Result?["protocolVersion"]?.AsString(), "server offers Latest to an unsupported client");
@@ -178,7 +178,7 @@ namespace McpSdk.Server.Tests.Conformance
                 w.Write("jsonrpc", "2.0");
                 w.Write("id", id);
                 w.Write("method", "initialize");
-                w.Write("params", request.AsJson);
+                w.Write("params", request.WriteMembers);
             });
             await clientEnd.SendRaw(raw);
 
@@ -204,7 +204,7 @@ namespace McpSdk.Server.Tests.Conformance
             await clientEnd.Start();
 
             var request = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("Parse", "1.0.0"));
-            var response = await clientEnd.SendRequest("initialize", request.AsJson);
+            var response = await clientEnd.SendRequest("initialize", request.WriteMembers);
             var parsed = new InitializeResult(response.Result);
 
             Assert(parsed.Capabilities != null, "capabilities are parsed (not dropped)");
@@ -238,7 +238,7 @@ namespace McpSdk.Server.Tests.Conformance
                     return;
 
                 var result = new InitializeResult(versionToReturn, new ServerCapabilitiesModel(), new ServerInfo("Raw Server", "1.0.0"));
-                _ = serverEnd.SendOkResponse(id, result.AsJson);
+                _ = serverEnd.SendOkResponse(id, result.WriteMembers);
             };
         }
 

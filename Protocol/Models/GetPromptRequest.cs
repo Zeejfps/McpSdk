@@ -1,13 +1,13 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class GetPromptRequest : IJsonSerializable
+public sealed class GetPromptRequest : IJsonObjectWriter
 {
     public GetPromptRequest(IJsonObject jsonObject)
     {
         
     }
     
-    public void AsJson(IJsonWriter jsonWriter)
+    public void WriteMembers(IJsonWriter jsonWriter)
     {
         
     }

@@ -25,11 +25,11 @@ namespace McpSdk.TransportBridge
             try
             {
                 _logger.LogDebug("SrcTransport_OnRequestReceived");
-                var response = await _dstTransport.SendRequest(method, arguments.AsJson);
+                var response = await _dstTransport.SendRequest(method, arguments.WriteMembers);
                 if (response.IsOk)
                 {
                     var result = response.Result;
-                    await _srcTransport.SendOkResponse(requestId, result.AsJson);
+                    await _srcTransport.SendOkResponse(requestId, result.WriteMembers);
                 }
                 else
                 {
@@ -51,7 +51,7 @@ namespace McpSdk.TransportBridge
                 if (arguments == null)
                     await _dstTransport.SendNotification(notification);
                 else
-                    await _dstTransport.SendNotification(notification, arguments.AsJson);
+                    await _dstTransport.SendNotification(notification, arguments.WriteMembers);
             }
             catch (Exception ex)
             {
@@ -64,11 +64,11 @@ namespace McpSdk.TransportBridge
             try
             {
                 _logger.LogDebug("DstTransport_OnRequestReceived");
-                var response = await _srcTransport.SendRequest(method, arguments.AsJson);
+                var response = await _srcTransport.SendRequest(method, arguments.WriteMembers);
                 if (response.IsOk)
                 {
                     var result = response.Result;
-                    await _dstTransport.SendOkResponse(requestId, result.AsJson);
+                    await _dstTransport.SendOkResponse(requestId, result.WriteMembers);
                 }
                 else
                 {
@@ -90,7 +90,7 @@ namespace McpSdk.TransportBridge
                 if (arguments == null)
                     await _srcTransport.SendNotification(notification);
                 else
-                    await _srcTransport.SendNotification(notification, arguments.AsJson);
+                    await _srcTransport.SendNotification(notification, arguments.WriteMembers);
             }
             catch (Exception ex)
             {

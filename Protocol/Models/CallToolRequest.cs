@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class CallToolRequest : IJsonSerializable
+    public sealed class CallToolRequest : IJsonObjectWriter
     {
         public string ToolName { get; }
         public IJsonObject ToolArguments { get; }
@@ -20,7 +20,7 @@
             ToolArguments = jsonObject[ArgumentsProp]?.AsObject();
         }
         
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write(ToolNameProp, ToolName);
             writer.Write(ArgumentsProp, ToolArguments);

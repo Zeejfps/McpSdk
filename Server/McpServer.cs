@@ -177,49 +177,49 @@ namespace McpSdk.Server
                 : ProtocolVersion.Latest;
 
             var result = new InitializeResult(negotiatedVersion, _capabilities, _serverInfo);
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
         private async Task HandleListToolsRequest(RequestId requestId, IJsonObject reqPayload)
         {
             var result = await _toolsController.ListTools();
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
         private async Task HandleCallToolRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _toolsController.CallTool(new CallToolRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
         private async Task HandleListPromptsRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _promptController.ListPrompts();
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
         private async Task HandleGetPromptRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _promptController.GetPrompt(new GetPromptRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
         
         private async Task HandleListResourceTemplatesRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ListTemplates(new ListTemplatesRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
         private async Task HandleReadResourceRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
 
         private async Task HandleListResourcesRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.AsJson);
+            await _transport.SendOkResponse(requestId, result.WriteMembers);
         }
         
         private void OnNotificationReceived(string notification, IJsonObject arguments)

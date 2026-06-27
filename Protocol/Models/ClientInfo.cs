@@ -1,6 +1,6 @@
-namespace McpSdk.Protocol.Models
+﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class ClientInfo : IJsonSerializable
+    public sealed class ClientInfo : IJsonObjectWriter
     {
         public string Name { get; }
         public string Version { get; }
@@ -27,7 +27,7 @@ namespace McpSdk.Protocol.Models
             Description = jsonObject["description"]?.AsString();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("version", Version);

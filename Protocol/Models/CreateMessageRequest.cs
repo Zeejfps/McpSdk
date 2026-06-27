@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class CreateMessageRequest : IJsonSerializable
+    public sealed class CreateMessageRequest : IJsonObjectWriter
     {
         public CreateMessageRequest(IJsonObject jsonObject)
         {
@@ -16,7 +16,7 @@ namespace McpSdk.Protocol.Models
             MaxTokens = jsonObject["maxTokens"]?.AsInt();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("messages", Messages);
             writer.Write("modelPreferences", Preferences);

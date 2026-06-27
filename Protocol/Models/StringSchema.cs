@@ -18,7 +18,7 @@ public sealed class StringSchema : JsonSchema
         Options = jsonObject["enum"]?.AsStringArray();
     }
     
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", Type);
         if (MinLength.HasValue)

@@ -1,8 +1,8 @@
-using McpSdk.Protocol.Models.ServerCapabilities;
+﻿using McpSdk.Protocol.Models.ServerCapabilities;
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class InitializeResult : IJsonSerializable
+    public sealed class InitializeResult : IJsonObjectWriter
     {
         public string ProtocolVersion { get; }
         public ServerCapabilitiesModel Capabilities { get; }
@@ -36,7 +36,7 @@ namespace McpSdk.Protocol.Models
                 Meta = new Meta(metaObj);
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("protocolVersion", ProtocolVersion);
 

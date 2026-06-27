@@ -10,9 +10,9 @@ namespace McpSdk.Protocol
     /// counterpart to the <see cref="Json"/> delegate: lets callers pass the model object directly
     /// (<c>writer.Write("tool", tool)</c>) instead of its method group (<c>tool.AsJson</c>).
     /// </summary>
-    public interface IJsonSerializable
+    public interface IJsonObjectWriter
     {
-        void AsJson(IJsonWriter writer);
+        void WriteMembers(IJsonWriter writer);
     }
 
     public interface IJson
@@ -39,12 +39,12 @@ namespace McpSdk.Protocol
         IJsonWriter Write(string propertyName, IJsonObject[] objs);
         IJsonWriter Write(string propertyName, Json json);
         IJsonWriter Write(string propertyName, Json[] jsonArray);
-        IJsonWriter Write(string propertyName, IJsonSerializable value);
-        IJsonWriter Write(string propertyName, IJsonSerializable[] values);
+        IJsonWriter Write(string propertyName, IJsonObjectWriter value);
+        IJsonWriter Write(string propertyName, IJsonObjectWriter[] values);
         IJsonWriter Write(string propertyName, IJsonProperty property);
     }
 
-    public interface IJsonObject : IJsonSerializable, IEnumerable<KeyValuePair<string, IJsonProperty>>
+    public interface IJsonObject : IJsonObjectWriter, IEnumerable<KeyValuePair<string, IJsonProperty>>
     {
         IJsonProperty this[string propertyName] { get; }
         bool IsValid(IJsonObject schema, out IList<string> errors);

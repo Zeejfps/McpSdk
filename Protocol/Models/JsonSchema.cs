@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models;
 
-public abstract class JsonSchema : IJsonSerializable
+public abstract class JsonSchema : IJsonObjectWriter
 {
     /// <summary>
     /// The default JSON Schema dialect for MCP as of 2025-06-18. Emitted as <c>$schema</c> on the
@@ -8,5 +8,5 @@ public abstract class JsonSchema : IJsonSerializable
     /// </summary>
     public const string Dialect2020_12 = "https://json-schema.org/draft/2020-12/schema";
 
-    public abstract void AsJson(IJsonWriter writer);
+    public abstract void WriteMembers(IJsonWriter writer);
 }

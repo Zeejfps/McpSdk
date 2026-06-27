@@ -1,8 +1,8 @@
 ﻿namespace McpSdk.Protocol.Models;
 
-public sealed class ListPromptsResult : IJsonSerializable
+public sealed class ListPromptsResult : IJsonObjectWriter
 {
-    public void AsJson(IJsonWriter jsonWriter)
+    public void WriteMembers(IJsonWriter jsonWriter)
     {
         
     }

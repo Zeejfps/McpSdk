@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public abstract class ResourceContents : IJsonSerializable
+    public abstract class ResourceContents : IJsonObjectWriter
     {
         public string Uri { get; }
         public string MimeType { get; }
@@ -19,7 +19,7 @@ namespace McpSdk.Protocol.Models
             MimeType = jsonObject["mimeType"].AsString();
         }
 
-        public virtual void AsJson(IJsonWriter writer)
+        public virtual void WriteMembers(IJsonWriter writer)
         {
             writer.Write("uri", Uri);
             writer.Write("mimeType", MimeType);

@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class ListToolsResult : IJsonSerializable
+    public sealed class ListToolsResult : IJsonObjectWriter
     {
         public Tool[] Tools { get; }
         
@@ -22,7 +22,7 @@
             Tools = tools;
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("tools", Tools);
         }
