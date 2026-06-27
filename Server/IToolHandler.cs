@@ -4,8 +4,8 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server;
 
-public interface ITool
+public interface IToolHandler
 {
-    Tool Info { get; }
+    Tool Tool { get; }
     Task<CallToolResult> Call(IJsonObject arguments);
 }

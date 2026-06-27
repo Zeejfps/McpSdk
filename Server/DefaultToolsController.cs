@@ -9,12 +9,12 @@ namespace McpSdk.Server
     public sealed class DefaultToolsController : IToolsController
     {
         private readonly IJson _json;
-        private readonly Dictionary<string, ITool> _toolByNameLookup = new();
+        private readonly Dictionary<string, IToolHandler> _toolByNameLookup = new();
 
         // Parallel to the name lookup: preserves registration order so an offset-based pagination
         // cursor refers to the same slice across calls. Dictionary enumeration order is not a
         // documented guarantee, so we track order explicitly here. Both are mutated together.
-        private readonly List<ITool> _toolsInOrder = new();
+        private readonly List<IToolHandler> _toolsInOrder = new();
 
         public event Action ListChanged;
         public bool IsListChangedNotificationSupported => false;
@@ -31,11 +31,11 @@ namespace McpSdk.Server
             _json = json;
         }
 
-        public void AddTool(ITool tool)
+        public void AddTool(IToolHandler toolHandler)
         {
             // Add to the lookup first: it throws on a duplicate name, keeping the ordered list in sync.
-            _toolByNameLookup.Add(tool.Info.Name, tool);
-            _toolsInOrder.Add(tool);
+            _toolByNameLookup.Add(toolHandler.Tool.Name, toolHandler);
+            _toolsInOrder.Add(toolHandler);
             ListChanged?.Invoke();
         }
 
@@ -70,7 +70,7 @@ namespace McpSdk.Server
 
             var page = new Tool[take];
             for (var i = 0; i < take; i++)
-                page[i] = _toolsInOrder[offset + i].Info;
+                page[i] = _toolsInOrder[offset + i].Tool;
 
             var nextOffset = offset + page.Length;
             var nextCursor = nextOffset < toolCount
@@ -83,7 +83,7 @@ namespace McpSdk.Server
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
             var toolName = request.ToolName;
-            if (!_toolByNameLookup.TryGetValue(toolName, out var tool))
+            if (!_toolByNameLookup.TryGetValue(toolName, out var toolHandler))
             {
                 var content = new TextContent($"No tool found with name: {toolName}");
                 return new CallToolResult([content], true);
@@ -95,7 +95,7 @@ namespace McpSdk.Server
 
             // SEP-1303: schema-validation failures are returned to the model as a tool error
             // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error.
-            var inputSchema = tool.Info.InputSchema.AsJsonObject(_json);
+            var inputSchema = toolHandler.Tool.InputSchema.AsJsonObject(_json);
             if (!toolArguments.IsValid(inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];
@@ -106,7 +106,7 @@ namespace McpSdk.Server
                 return new CallToolResult(content, true);
             }
 
-            return await tool.Call(toolArguments);
+            return await toolHandler.Call(toolArguments);
         }
     }
 

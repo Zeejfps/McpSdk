@@ -46,7 +46,7 @@ namespace McpSdk.Server.Tests.Conformance
 
         private static Task SchemaDialectAndOutputSchemaEmitted()
         {
-            var tool = new StructuredTool(Json).Info;
+            var tool = new StructuredToolHandler(Json).Tool;
             var raw = Json.Object(tool.WriteMembers);
 
             var inputSchema = raw["inputSchema"]?.AsObject();

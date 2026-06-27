@@ -22,7 +22,7 @@ if (args.Length > 0 && args[0] == "stdio-server")
         .WithVersion("1.0.0")
         .WithConsoleLogger()
         .WithStdioTransport(stdioJson)
-        .WithDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestTool()))
+        .WithDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestToolHandler()))
         .Build();
 
     await stdioServer.Start();
@@ -47,7 +47,7 @@ sseServer.SessionStarted += async sseSession =>
         .WithSseTransport(json, sseSession)
         .WithDefaultToolsCapability(json, tools =>
         {
-            tools.AddTool(new TestTool());
+            tools.AddTool(new TestToolHandler());
         })
         .Build();
 

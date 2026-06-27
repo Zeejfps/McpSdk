@@ -230,8 +230,8 @@ namespace McpSdk.Server.Tests.Conformance
                 .WithTransport(new FixedTransportFactory(serverEnd))
                 .WithDefaultToolsCapability(Json, tools =>
                 {
-                    tools.AddTool(new TestTool());
-                    tools.AddTool(new StructuredTool(Json));
+                    tools.AddTool(new TestToolHandler());
+                    tools.AddTool(new StructuredToolHandler(Json));
                 })
                 .Build();
         }

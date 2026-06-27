@@ -3,13 +3,13 @@ using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server.Tests;
 
-public sealed class TestTool : ITool
+public sealed class TestToolHandler : IToolHandler
 {
-    public Tool Info { get; }
+    public Tool Tool { get; }
 
-    public TestTool()
+    public TestToolHandler()
     {
-        Info = new Tool(
+        Tool = new Tool(
             "get-forecast",
             "asdawdawd",
             new ObjectSchema
