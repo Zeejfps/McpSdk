@@ -16,7 +16,6 @@ namespace McpSdk.Server
         private TextWriter _standardOut;
         private TextReader _standardIn;
         private CancellationTokenSource _cts;
-        private Task _readStdInTask;
 
         public StdioTransport(IJson json, ILoggerFactory loggerFactory) : base(json, loggerFactory)
         {
@@ -39,7 +38,9 @@ namespace McpSdk.Server
             // stray Console.Write (e.g. from tool code) can never corrupt the protocol stream.
             Console.SetOut(Console.Error);
 
-            _readStdInTask = ReadStdIn(_standardIn);
+            // Fire and forget
+            _ = ReadStdIn(_standardIn, _cts.Token);
+            
             return Task.CompletedTask;
         }
 
@@ -51,22 +52,26 @@ namespace McpSdk.Server
             return Task.CompletedTask;
         }
 
-        protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
+        protected override async Task Send(string requestAsJson, CancellationToken cancellationToken = default)
         {
             var line = JsonRpcFraming.ToSingleLine(requestAsJson);
             await _standardOut.WriteLineAsync(line).ConfigureAwait(false);
         }
 
-        private async Task ReadStdIn(TextReader standardIn)
+        private async Task ReadStdIn(TextReader standardIn, CancellationToken cancellationToken = default)
         {
-            string messageAsJson;
-            while (!_cts.IsCancellationRequested &&
-                   (messageAsJson = await standardIn.ReadLineAsync().ConfigureAwait(false)) != null)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 Logger.LogDebug("Reading stdin...");
+                var messageAsJson = await standardIn
+                    .ReadLineAsync()
+                    .ConfigureAwait(false);
+                
+                if (messageAsJson == null)
+                    break;
+                
                 OnMessageReceived(messageAsJson);
             }
-            Logger.LogDebug("Null message received");
         }
     }
 
