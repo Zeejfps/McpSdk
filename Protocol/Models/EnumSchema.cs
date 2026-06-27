@@ -105,10 +105,8 @@ public sealed class EnumSchema : JsonSchema
     private void WriteSingleSelect(IJsonWriter writer)
     {
         writer.Write("type", "string");
-        if (Title != null)
-            writer.Write("title", Title);
-        if (Description != null)
-            writer.Write("description", Description);
+        Title?.WriteTo(writer, "title");
+        Description?.WriteTo(writer, "description");
 
         if (Titled)
             writer.Write("oneOf", ChoiceWriters());
@@ -122,14 +120,10 @@ public sealed class EnumSchema : JsonSchema
     private void WriteMultiSelect(IJsonWriter writer)
     {
         writer.Write("type", "array");
-        if (Title != null)
-            writer.Write("title", Title);
-        if (Description != null)
-            writer.Write("description", Description);
-        if (MinItems.HasValue)
-            writer.Write("minItems", MinItems.Value);
-        if (MaxItems.HasValue)
-            writer.Write("maxItems", MaxItems.Value);
+        Title?.WriteTo(writer, "title");
+        Description?.WriteTo(writer, "description");
+        MinItems?.WriteTo(writer, "minItems");
+        MaxItems?.WriteTo(writer, "maxItems");
 
         writer.Write("items", items =>
         {
@@ -159,8 +153,7 @@ public sealed class EnumSchema : JsonSchema
             writers[i] = choice =>
             {
                 choice.Write("const", value);
-                if (title != null)
-                    choice.Write("title", title);
+                title?.WriteTo(choice, "title");
             };
         }
         return writers;

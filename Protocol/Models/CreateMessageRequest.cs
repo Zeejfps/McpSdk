@@ -44,17 +44,14 @@ namespace McpSdk.Protocol.Models
         public void WriteMembers(IJsonWriter writer)
         {
             Messages.WriteTo(writer, "messages");
-            if (Preferences != null)
-                writer.Write("modelPreferences", Preferences);
+            Preferences?.WriteTo(writer, "modelPreferences");
             writer.Write("systemPrompt", SystemPrompt);
-            if (MaxTokens.HasValue)
-                writer.Write("maxTokens", MaxTokens.Value);
+            MaxTokens?.WriteTo(writer, "maxTokens");
 
             // Sampling-with-tools (2025-11-25, SEP-1577): advertised only when the server supplies them.
             if (Tools is { Length: > 0 })
                 Tools.WriteTo(writer, "tools");
-            if (ToolChoice != null)
-                writer.Write("toolChoice", ToolChoice);
+            ToolChoice?.WriteTo(writer, "toolChoice");
         }
 
         public ModelPreferences Preferences { get; }

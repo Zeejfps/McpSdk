@@ -39,15 +39,9 @@ namespace McpSdk.Protocol.Models
         public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("protocolVersion", ProtocolVersion);
-
-            if (Capabilities != null)
-                writer.Write("capabilities", Capabilities);
-
-            if (ServerInfo != null)
-                writer.Write("serverInfo", ServerInfo);
-
-            if (Meta != null)
-                writer.Write("_meta", Meta);
+            Capabilities?.WriteTo(writer, "capabilities");
+            ServerInfo?.WriteTo(writer, "serverInfo");
+            Meta?.WriteTo(writer, "_meta");
         }
     }
 }

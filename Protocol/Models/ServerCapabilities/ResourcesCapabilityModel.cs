@@ -16,10 +16,8 @@ public sealed class ResourcesCapabilityModel : IJsonObjectWriter
 
     public void WriteMembers(IJsonWriter writer)
     {
-        if (IsResourceChangedNotificationSupported.HasValue)
-            writer.Write("subscribe", IsResourceChangedNotificationSupported.Value);
+        IsResourceChangedNotificationSupported?.WriteTo(writer, "subscribe");
         
-        if (IsListChangedNotificationSupported.HasValue) 
-            writer.Write("listChanged", IsListChangedNotificationSupported.Value);
+        IsListChangedNotificationSupported?.WriteTo(writer, "listChanged");
     }
 }

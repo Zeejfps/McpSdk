@@ -17,7 +17,6 @@ public sealed class ListTemplatesResult : IJsonObjectWriter
 
     public void WriteMembers(IJsonWriter writer)
     {
-        if (NextCursor != null)
-            writer.Write("nextCursor", NextCursor);
+        NextCursor?.WriteTo(writer, "nextCursor");
     }
 }

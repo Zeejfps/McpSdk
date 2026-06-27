@@ -36,11 +36,8 @@ public sealed class ResourceLinkContent : Content
         writer.Write("type", "resource_link");
         writer.Write("uri", Uri);
         writer.Write("name", Name);
-        if (Title != null)
-            writer.Write("title", Title);
-        if (Description != null)
-            writer.Write("description", Description);
-        if (MimeType != null)
-            writer.Write("mimeType", MimeType);
+        Title?.WriteTo(writer, "title");
+        Description?.WriteTo(writer, "description");
+        MimeType?.WriteTo(writer, "mimeType");
     }
 }

@@ -23,12 +23,9 @@ public sealed class ArraySchema : JsonSchema
     public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "array");
-        if (MinItems.HasValue)
-            writer.Write("minItems", MinItems.Value);
-        if (MaxItems.HasValue)
-            writer.Write("maxItems", MaxItems.Value);
-        if (Description != null)
-            writer.Write("description", Description);
+        MinItems?.WriteTo(writer, "minItems");
+        MaxItems?.WriteTo(writer, "maxItems");
+        Description?.WriteTo(writer, "description");
         writer.Write("items", itemsWriter =>
         {
             itemsWriter.Write("type", Type);

@@ -24,8 +24,7 @@ public sealed class Error : IJsonObjectWriter
     {
         jsonWriter.Write("code", (int)Code);
         jsonWriter.Write("message", Message);
-        if (Data != null)
-            jsonWriter.Write("data", Data);
+        Data?.WriteTo(jsonWriter, "data");
     }
 
     /// <summary>Writes this error as the named property on the supplied writer.</summary>

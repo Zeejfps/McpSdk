@@ -25,14 +25,9 @@
 
         public void WriteMembers(IJsonWriter writer)
         {
-            if (RootsCapability != null)
-                writer.Write("roots", RootsCapability);
-
-            if (SamplingCapability != null)
-                writer.Write("sampling", SamplingCapability);
-
-            if (ElicitationCapability != null)
-                writer.Write("elicitation", ElicitationCapability);
+            RootsCapability?.WriteTo(writer, "roots");
+            SamplingCapability?.WriteTo(writer, "sampling");
+            ElicitationCapability?.WriteTo(writer, "elicitation");
         }
     }
 }

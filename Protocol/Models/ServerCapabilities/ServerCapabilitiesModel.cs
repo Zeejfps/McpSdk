@@ -35,20 +35,11 @@
         
         public void WriteMembers(IJsonWriter writer)
         {
-            if (Tools != null)
-                writer.Write("tools", Tools);
-            
-            if (Prompts != null)
-                writer.Write("prompts", Prompts);
-            
-            if (Resources != null)
-                writer.Write("resources", Resources);
-            
-            if (Logging != null)
-                writer.Write("logging", Logging);
-            
-            if (Completion != null)
-                writer.Write("completion", Completion);
+            Tools?.WriteTo(writer, "tools");
+            Prompts?.WriteTo(writer, "prompts");
+            Resources?.WriteTo(writer, "resources");
+            Logging?.WriteTo(writer, "logging");
+            Completion?.WriteTo(writer, "completion");
         }
     }
 }

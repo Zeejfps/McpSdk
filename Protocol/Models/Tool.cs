@@ -59,19 +59,14 @@ namespace McpSdk.Protocol.Models
         public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("name", Name);
-            if (Title != null)
-                writer.Write("title", Title);
+            Title?.WriteTo(writer, "title");
             writer.Write("description", Description);
-            if (InputSchema != null)
-                writer.Write("inputSchema", InputSchema);
-            if (OutputSchema != null)
-                writer.Write("outputSchema", OutputSchema);
-            if (Annotations != null)
-                writer.Write("annotations", Annotations);
+            InputSchema?.WriteTo(writer, "inputSchema");
+            OutputSchema?.WriteTo(writer, "outputSchema");
+            Annotations?.WriteTo(writer, "annotations");
             if (Icons is { Length: > 0 })
                 Icons.WriteTo(writer, "icons");
-            if (Meta != null)
-                writer.Write("_meta", Meta);
+            Meta?.WriteTo(writer, "_meta");
         }
     }
 }

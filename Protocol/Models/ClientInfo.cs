@@ -31,12 +31,8 @@
         {
             writer.Write("name", Name);
             writer.Write("version", Version);
-
-            if (Title != null)
-                writer.Write("title", Title);
-
-            if (Description != null)
-                writer.Write("description", Description);
+            Title?.WriteTo(writer, "title");
+            Description?.WriteTo(writer, "description");
         }
     }
 }

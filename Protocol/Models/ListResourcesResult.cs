@@ -27,7 +27,6 @@ public sealed class ListResourcesResult : IJsonObjectWriter
     public void WriteMembers(IJsonWriter jsonWriter)
     {
         Resources.WriteTo(jsonWriter, "resources");
-        if (NextCursor != null)
-            jsonWriter.Write("nextCursor", NextCursor);
+        NextCursor?.WriteTo(jsonWriter, "nextCursor");
     }
 }

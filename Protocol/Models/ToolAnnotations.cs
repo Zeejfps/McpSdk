@@ -35,16 +35,11 @@ namespace McpSdk.Protocol.Models
 
         public void WriteMembers(IJsonWriter writer)
         {
-            if (Title != null)
-                writer.Write("title", Title);
-            if (ReadOnlyHint.HasValue)
-                writer.Write("readOnlyHint", ReadOnlyHint.Value);
-            if (DestructiveHint.HasValue)
-                writer.Write("destructiveHint", DestructiveHint.Value);
-            if (IdempotentHint.HasValue)
-                writer.Write("idempotentHint", IdempotentHint.Value);
-            if (OpenWorldHint.HasValue)
-                writer.Write("openWorldHint", OpenWorldHint.Value);
+            Title?.WriteTo(writer, "title");
+            ReadOnlyHint?.WriteTo(writer, "readOnlyHint");
+            DestructiveHint?.WriteTo(writer, "destructiveHint");
+            IdempotentHint?.WriteTo(writer, "idempotentHint");
+            OpenWorldHint?.WriteTo(writer, "openWorldHint");
         }
     }
 }

@@ -44,8 +44,7 @@ namespace McpSdk.Protocol.Models
         public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("action", Action);
-            if (Content != null)
-                writer.Write("content", Content);
+            Content?.WriteTo(writer, "content");
         }
     }
 }

@@ -35,20 +35,14 @@ public sealed class StringSchema : JsonSchema
     public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", Type);
-        if (Title != null)
-            writer.Write("title", Title);
-        if (MinLength.HasValue)
-            writer.Write("minLength", MinLength.Value);
-        if (MaxLength.HasValue)
-            writer.Write("maxLength", MaxLength.Value);
-        if (Format != null)
-            writer.Write("format", Format);
-        if (Pattern != null)
-            writer.Write("pattern", Pattern);
+        Title?.WriteTo(writer, "title");
+        MinLength?.WriteTo(writer, "minLength");
+        MaxLength?.WriteTo(writer, "maxLength");
+        Format?.WriteTo(writer, "format");
+        Pattern?.WriteTo(writer, "pattern");
         if (Options != null && Options.Length > 0)
             writer.Write("enum", Options);
-        if (Default != null)
-            writer.Write("default", Default);
+        Default?.WriteTo(writer, "default");
         writer.Write("description", Description);
     }
 }

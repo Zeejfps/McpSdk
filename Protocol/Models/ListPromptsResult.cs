@@ -17,7 +17,6 @@ public sealed class ListPromptsResult : IJsonObjectWriter
 
     public void WriteMembers(IJsonWriter jsonWriter)
     {
-        if (NextCursor != null)
-            jsonWriter.Write("nextCursor", NextCursor);
+        NextCursor?.WriteTo(jsonWriter, "nextCursor");
     }
 }

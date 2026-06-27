@@ -32,10 +32,8 @@ namespace McpSdk.Protocol.Models
         public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("src", Src);
-            if (MimeType != null)
-                writer.Write("mimeType", MimeType);
-            if (Sizes != null)
-                writer.Write("sizes", Sizes);
+            MimeType?.WriteTo(writer, "mimeType");
+            Sizes?.WriteTo(writer, "sizes");
         }
 
         /// <summary>
