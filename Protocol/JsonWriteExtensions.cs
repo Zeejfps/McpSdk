@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using McpSdk.Protocol.Models;
 
 namespace McpSdk.Protocol
@@ -25,7 +26,7 @@ namespace McpSdk.Protocol
         public static void WriteTo(this Json value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
         public static void WriteTo(this Json[] value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
         public static void WriteTo(this IJsonObjectWriter value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
-        public static void WriteTo(this IJsonObjectWriter[] value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
         public static void WriteTo(this IJsonProperty value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
+        public static void WriteTo(this IEnumerable<IJsonObjectWriter> value, IJsonWriter writer, string propertyName) => writer.Write(propertyName, value);
     }
 }

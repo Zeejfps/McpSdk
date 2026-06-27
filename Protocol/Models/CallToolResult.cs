@@ -66,16 +66,10 @@ namespace McpSdk.Protocol.Models
 
         public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("content", Content);
-
-            if (StructuredContent != null)
-                writer.Write("structuredContent", StructuredContent);
-
-            if (IsError.HasValue)
-                writer.Write("isError", IsError.Value);
-
-            if (Meta != null)
-                writer.Write("_meta", Meta);
+            Content.WriteTo(writer, "content");
+            StructuredContent?.WriteTo(writer, "structuredContent");
+            IsError?.WriteTo(writer, "isError");
+            Meta?.WriteTo(writer, "_meta");
         }
 
         public Content[] Content { get; }

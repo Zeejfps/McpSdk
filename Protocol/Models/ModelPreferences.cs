@@ -20,7 +20,7 @@ namespace McpSdk.Protocol.Models
 
         public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("hints", Hints);
+            Hints.WriteTo(writer, "hints");
             
             if (IntelligencePriority.HasValue)
                 writer.Write("intelligencePriority", IntelligencePriority.Value);

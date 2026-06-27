@@ -29,7 +29,7 @@
 
         public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("tools", Tools);
+            Tools.WriteTo(writer, "tools");
             if (NextCursor != null)
                 writer.Write("nextCursor", NextCursor);
         }

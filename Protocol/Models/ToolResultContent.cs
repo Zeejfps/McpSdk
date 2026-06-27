@@ -29,6 +29,6 @@ public sealed class ToolResultContent : Content
     {
         writer.Write("type", "tool_result");
         writer.Write("toolUseId", ToolUseId);
-        writer.Write("content", Content);
+        Content.WriteTo(writer, "content");
     }
 }
