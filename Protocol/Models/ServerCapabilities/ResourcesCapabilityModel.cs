@@ -11,7 +11,9 @@ public sealed class ResourcesCapabilityModel : IJsonObjectWriter
         
     public ResourcesCapabilityModel(IJsonObject jsonObject)
     {
-        IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;   
+        // 'subscribe' (resource-changed) and 'listChanged' are independent capabilities.
+        IsResourceChangedNotificationSupported = jsonObject["subscribe"]?.AsBool() ?? false;
+        IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;
     }
 
     public void WriteMembers(IJsonWriter writer)
