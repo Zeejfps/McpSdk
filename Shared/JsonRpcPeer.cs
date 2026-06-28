@@ -8,17 +8,16 @@ using McpSdk.Protocol.Models;
 namespace McpSdk.Shared
 {
     /// <summary>
-    /// The single, transport-independent JSON-RPC engine. It is the one implementation of
-    /// <see cref="ITransport"/> the whole SDK needs: it adds request/response correlation, id generation,
-    /// and inbound dispatch on top of any <see cref="IMessageChannel"/>. It works purely in
-    /// <see cref="JsonRpcMessage"/> models — the channel below renders them to and parses them from the
-    /// wire — so the peer never touches JSON itself.
+    /// The single, transport-independent JSON-RPC engine — the one implementation of
+    /// <see cref="ITransport"/> the whole SDK needs. It adds request/response correlation and inbound
+    /// dispatch on top of any <see cref="IMessageChannel"/> (the sender stamps each request id; the peer
+    /// only matches the reply back to it). It works purely in <see cref="JsonRpcMessage"/> models — the
+    /// channel below renders them to and parses them from the wire — so the peer never touches JSON itself.
     ///
-    /// This is the generalization of the old <c>JsonRpcTransport</c> base class: instead of each transport
-    /// <em>inheriting</em> the JSON-RPC layer (which only worked for single-channel transports), every
-    /// transport <em>composes</em> it — stdio and Streamable HTTP alike — by being an
-    /// <see cref="IMessageChannel"/>. <see cref="McpServer"/> / <see cref="McpClient"/> keep depending on
-    /// <see cref="ITransport"/> and are unaware which channel sits underneath.
+    /// Every transport <em>composes</em> this engine rather than reimplementing it: each one is just an
+    /// <see cref="IMessageChannel"/> — stdio and Streamable HTTP alike — wrapped in a peer.
+    /// <see cref="McpServer"/> / <see cref="McpClient"/> keep depending on <see cref="ITransport"/> and are
+    /// unaware which channel sits underneath.
     /// </summary>
     public sealed class JsonRpcPeer : ITransport
     {
