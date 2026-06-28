@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json;
 using Json.Schema;
 using McpSdk.Protocol;
-using NotImplementedException = System.NotImplementedException;
 
 namespace McpSdk.Adapter.System.Text.Json;
 
