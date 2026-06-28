@@ -97,6 +97,12 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("server advertises subscribe from resource-changed, not listChanged", ServerAdvertisesSubscribeFromResourceChanged);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase G Conformance (Streamable HTTP) ===");
+
+            await RunTest("Streamable HTTP round-trip: initialize + tools/list + tools/call", StreamableHttpRoundTrip);
+            await RunTest("Streamable HTTP: session id, Origin->403, version header, unknown session", StreamableHttpProtocolChecks);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }

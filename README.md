@@ -27,7 +27,6 @@ await client.Connect();
 ```C#
 using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
-using McpSdk.Adapter.SseServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
 

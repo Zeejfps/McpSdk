@@ -1,25 +1,35 @@
-﻿using McpSdk.Adapter.ConsoleLogger;
+using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
-using McpSdk.Adapter.SseClient;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
 using McpSdk.Protocol.Models;
 
-var json = new NewtonsoftJson();//new SystemJson();
+// Demo stdio MCP client. Spawns the MCP server given on the command line, then runs
+// initialize -> tools/list -> tools/call over stdio.
+//
+//   dotnet run --project Client.Tests -- <server-command> [server-args...]
+//
+// e.g. against the sibling test server:
+//   dotnet run --project Client.Tests -- dotnet <path>/McpSdk.Server.Tests.dll stdio-server
+if (args.Length == 0)
+{
+    Console.Error.WriteLine("usage: McpSdk.Client.Tests <server-command> [server-args...]");
+    Environment.Exit(1);
+    return;
+}
+
+var command = args[0];
+var serverArgs = args[1..];
+
+var json = new NewtonsoftJson();
 var loggerFactory = new ClientConsoleLoggerFactory();
-var sseClientFactory = new SseClientFactory(
-    "http://localhost:3000", 
-    "/sse",
-    loggerFactory
-);
 var rootsControllerFactory = new RootsControllerFactory();
 var samplingControllerFactory = new SamplingControllerFactory();
 var client = new ClientBuilder()
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     .WithLogger(loggerFactory)
-    .WithSseTransport(json, sseClientFactory)
-    //.WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
+    .WithStdioTransport(json, command, serverArgs)
     .WithRootsCapability(rootsControllerFactory)
     .WithSamplingCapability(samplingControllerFactory)
     .Build();

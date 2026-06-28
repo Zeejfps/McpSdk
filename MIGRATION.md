@@ -247,17 +247,103 @@ and `resources/templates/list` carry their item arrays; `prompts/get` requests r
 
 ---
 
-## Phase G — Streamable HTTP transport *(deferred follow-up)*
+## Phase G — Streamable HTTP transport
 
-Replaces the legacy dual-endpoint HTTP+SSE (`Adapter.SseServer/HttpListenerSseServer.cs`).
+The final phase, and the whole point of the HTTP work: replace the legacy dual-endpoint
+HTTP+SSE transport (`/sse` GET + `/messages` POST) with the spec's **single-endpoint Streamable
+HTTP** transport. We do this in two movements — **first delete the legacy transport outright**
+(no compatibility flag, no parallel path), **then build Streamable HTTP** on the cleared deck.
+stdio is untouched throughout; it is not legacy and stays.
 
-- [ ] Single MCP endpoint: `POST` returns `application/json` **or** `text/event-stream`; optional
-  `GET` opens a server→client SSE stream.
-- [ ] `Mcp-Session-Id` issued on initialize and echoed thereafter; `MCP-Protocol-Version` header
-  required on subsequent HTTP requests.
-- [ ] `Origin` validation → **HTTP 403**; resumability via `Last-Event-ID` + per-stream event IDs;
-  SSE polling / server-initiated disconnect (SEP-1699).
-- [ ] New `StreamableHttpClient`; retire or keep the old SSE adapter behind a flag.
+### G.1 — Remove the legacy HTTP+SSE transport
+
+Delete it wholesale — there are no production consumers, only the two `*.Tests` demo entry points,
+which move to stdio (and later Streamable HTTP).
+
+- [ ] **Delete whole projects** (4): `Adapter.SseClient/`, `Adapter.SseServer/`,
+  `StdioToSseBridge/`, `TransportBridge/`. The two bridges existed only to tunnel stdio↔legacy-SSE;
+  `McpTransportBridge` has no other consumer once `StdioToSseBridge` is gone.
+- [ ] **Delete SSE files from the core libs** (self-contained — the builders, `McpClient`, and
+  `McpServer` never reference them):
+  - `Client/`: `SseTransport.cs`, `SseTransportFactory.cs`, `SseTransportClientBuilderExtensions.cs`,
+    `ISseClient.cs`, `ISseClientFactory.cs`
+  - `Server/`: `SseTransport.cs`, `SseTransportFactory.cs`, `SseEvent.cs`, `ISseServer.cs`,
+    `ISseSession.cs`
+- [ ] **Update references:**
+  - `MCPSharp.sln` — remove the 4 `Project(...)` declarations **and** their 4 `GlobalSection`
+    config blocks (GUIDs `B0C6F17D…` SseClient, `386DEDC5…` SseServer, `73A33E46…` StdioToSseBridge,
+    `14D62640…` TransportBridge).
+  - `Client.Tests/Client.Tests.csproj` — drop the `Adapter.SseClient` `ProjectReference`.
+  - `Server.Tests/Server.Tests.csproj` — drop the `Adapter.SseServer` `ProjectReference`.
+  - `Client.Tests/Program.cs` — currently a pure SSE demo client; rewrite to drive the server over
+    **stdio** (spawn the `stdio-server` child, as `StdioConformanceTests` already does) until the
+    Streamable HTTP client lands.
+  - `Server.Tests/Program.cs` — delete the default `HttpListenerSseServer` demo block; keep the
+    `conformance` and `stdio-server` modes.
+  - `README.md` — remove the stray `using McpSdk.Adapter.SseServer;` from the Server example (it is
+    imported but unused; the example is already stdio).
+- [ ] **Stays put** (transport-neutral infra, not legacy): stdio (`Client|Server/StdioTransport*.cs`),
+  `Protocol/ITransport.cs`, `Protocol/TransportExtensions.cs`, `Shared/JsonRpcTransport.cs`,
+  `Shared/ITransportFactory.cs`, `Shared/TransportErrorException.cs`, and the in-memory test
+  transport (`Server.Tests/Conformance/InMemoryTransport.cs`, `FixedTransportFactory.cs`).
+- [ ] **Gate:** solution builds clean and `Server.Tests -- conformance` still passes (218 assertions)
+  with zero SSE code remaining.
+
+### G.2 — Streamable HTTP transport (the rebuild)
+
+New transport that satisfies the `ITransport` contract directly (not via `JsonRpcTransport`): unlike
+the symmetric legacy SSE channel, Streamable HTTP correlates each response to the POST that carried
+its request, so the single-`Send` pump doesn't fit. It follows the old core-abstraction + adapter
+split — transport in `Server`/`Client`, the concrete HTTP machinery in adapter projects. New
+projects: `Adapter.StreamableHttpServer/` (`HttpListener`-based, zero new deps) and
+`Adapter.StreamableHttpClient/` (`HttpClient`-based), with `WithStreamableHttpTransport` builder
+extensions on each side. Built in three independently-verifiable increments.
+
+#### G.2a — Core request/response, sessions, security ✅
+
+- [x] **Single endpoint, request/response.** `POST` carries a JSON-RPC message; a request is answered
+  on the same HTTP response with `application/json`, a notification/response with **202 Accepted**
+  (no body). Client `Accept` lists both `application/json` and `text/event-stream`. The server
+  transport (`StreamableHttpServerTransport`) correlates the response back to the originating POST via
+  a per-request-id slot completed by `SendOkResponse`/`SendErrorResponse`; the client transport
+  (`StreamableHttpClientTransport`) does synchronous POST→response with its own id counter.
+- [x] **Sessions.** Server issues `Mcp-Session-Id` on the `initialize` response (the POST that has no
+  session header bootstraps a session + per-session McpServer via the listener's awaited `onSession`
+  callback); client echoes it on every subsequent request. An unknown/expired session → **404**.
+- [x] **Version header.** `MCP-Protocol-Version` required on all post-`initialize` requests (→ **400**
+  if absent); the client captures the negotiated version from the `initialize` result and replays it.
+- [x] **Security.** `Origin` validated against an allow-list → **HTTP 403** (DNS-rebinding guard);
+  absent `Origin` (non-browser clients) is permitted.
+- [x] **Conformance.** In-process `Server.Tests/Conformance/PhaseGConformanceTests.cs`: a real
+  listener + real HTTP client run the full `initialize` → `tools/list` → `tools/call` round-trip over
+  one endpoint, plus raw-HTTP checks for the session id, `Origin`→403, the version-header 400, and the
+  unknown-session 404. Suite now **231 assertions** (was 218).
+
+#### G.2b — SSE streaming + server→client *(next)*
+
+- [ ] **`text/event-stream` responses + GET stream.** A `POST` request MAY be answered with an SSE
+  stream (carrying interleaved server→client traffic before the response); a standalone `GET` opens
+  the server→client SSE stream. Per-stream event `id`s.
+- [ ] **Server-initiated requests/notifications.** Wire `StreamableHttpServerTransport.SendRequest`
+  (currently throws) + `SendNotification` onto the attached stream, with client→server response
+  correlation; the client reads the GET stream into `OnMessageReceived`, driving `RequestReceived`/
+  `NotificationReceived` (sampling / elicitation / logging / `*_list_changed`).
+- [ ] **Conformance.** A server→client round-trip (e.g. a notification or a sampling request) over the
+  stream.
+
+#### G.2c — Resumability, lifecycle, wiring *(after G.2b)*
+
+- [ ] **Resumability.** Client reconnects with `Last-Event-ID`; server replays the missed tail. SSE
+  polling / server-initiated disconnect (SEP-1699, 2025-11-25).
+- [ ] **Lifecycle.** Client `DELETE` terminates the session (server MAY answer `405`); session/McpServer
+  cleanup.
+- [ ] **Demo wiring.** Add a `streamable-http-server` mode to `Server.Tests/Program.cs` and let
+  `Client.Tests/Program.cs` drive a server over Streamable HTTP (today both are stdio).
+
+**Exit:** legacy HTTP+SSE is gone; a Streamable HTTP client and server complete the full
+`initialize`/`tools` round-trip over a single endpoint with session ids, the protocol-version header,
+`Origin`→403 **(G.2a ✅)**, server→client streaming **(G.2b)**, and `Last-Event-ID` resumption
+**(G.2c)** — verified by the Phase G conformance suite.
 
 ---
 
@@ -266,7 +352,9 @@ Replaces the legacy dual-endpoint HTTP+SSE (`Adapter.SseServer/HttpListenerSseSe
 - **Tests:** extend `Server.Tests` / `Client.Tests` with a conformance case per phase (negotiation,
   pagination, structured output, elicitation).
 - **Docs:** update `README.md` examples; add a capability/feature matrix.
-- **Sequencing:** A → B → C → D → E → F can each merge independently; G last.
+- **Sequencing:** A → B → C → D → E → F can each merge independently; G last, and G itself is
+  ordered — **G.1 deletes** the legacy HTTP+SSE transport (shippable on its own: stdio-only SDK),
+  then **G.2 builds** Streamable HTTP.
 
 ## References
 
