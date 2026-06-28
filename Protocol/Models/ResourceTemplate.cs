@@ -40,7 +40,7 @@ namespace McpSdk.Protocol.Models
             Description = jsonObject["description"]?.AsString();
             MimeType = jsonObject["mimeType"]?.AsString();
 
-            Icons = Icon.ArrayFrom(jsonObject["icons"]?.AsObjectArray());
+            Icons = jsonObject["icons"].AsArray(o => new Icon(o));
 
             var metaObj = jsonObject["_meta"]?.AsObject();
             if (metaObj != null)

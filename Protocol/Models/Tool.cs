@@ -49,7 +49,7 @@ namespace McpSdk.Protocol.Models
             if (annotationsObj != null)
                 Annotations = new ToolAnnotations(annotationsObj);
 
-            Icons = Icon.ArrayFrom(jsonObj["icons"]?.AsObjectArray());
+            Icons = jsonObj["icons"].AsArray(o => new Icon(o));
 
             var metaObj = jsonObj["_meta"]?.AsObject();
             if (metaObj != null)

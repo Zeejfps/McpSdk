@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 
 namespace McpSdk.Protocol.Models;
 
@@ -25,8 +24,7 @@ public sealed class GetPromptResult : IJsonObjectWriter
     public GetPromptResult(IJsonObject jsonObject)
     {
         Description = jsonObject["description"]?.AsString();
-        Messages = jsonObject["messages"]?.AsObjectArray()
-            ?.Select(m => new PromptMessage(m)).ToArray() ?? Array.Empty<PromptMessage>();
+        Messages = jsonObject["messages"].AsArray(m => new PromptMessage(m)) ?? Array.Empty<PromptMessage>();
 
         var metaObj = jsonObject["_meta"]?.AsObject();
         if (metaObj != null)

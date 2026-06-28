@@ -221,7 +221,8 @@ classes existed), so this phase **builds them out** rather than merely augmentin
   `_meta`), `PromptArgument` (`name`/`title`/`description`/`required`), `PromptMessage`
   (`role` + a single content block + `_meta`), and `ResourceTemplate` (`uriTemplate`/`name`/`title`/
   `description`/`mimeType`/`icons`/`_meta`). All follow the modern `Tool` pattern: nullable reads,
-  optional fields emitted only when set, `Icon.ArrayFrom` for icons, `Meta` for `_meta`.
+  optional fields emitted only when set, the `IJsonProperty.AsArray<T>` reader extension for object
+  arrays, `Meta` for `_meta`.
 - [x] **`icons` + `title` + `_meta`** added to `Resource` (also made its optional `description`/
   `mimeType` null-safe + conditionally written). `PromptMessage` carries only `_meta` by design —
   `title`/`icons` belong on the content block or parent `Prompt`, not on a message.

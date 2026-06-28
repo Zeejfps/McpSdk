@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 
 namespace McpSdk.Protocol.Models;
 
@@ -18,8 +17,8 @@ public sealed class ListTemplatesResult : IJsonObjectWriter
 
     public ListTemplatesResult(IJsonObject jsonObject)
     {
-        ResourceTemplates = jsonObject["resourceTemplates"]?.AsObjectArray()
-            ?.Select(t => new ResourceTemplate(t)).ToArray() ?? Array.Empty<ResourceTemplate>();
+        ResourceTemplates = jsonObject["resourceTemplates"].AsArray(t => new ResourceTemplate(t))
+            ?? Array.Empty<ResourceTemplate>();
         NextCursor = jsonObject?["nextCursor"]?.AsString();
     }
 
