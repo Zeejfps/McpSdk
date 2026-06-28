@@ -125,6 +125,17 @@ namespace McpSdk.Server.Tests.Conformance
             return Task.CompletedTask;
         }
 
+        private static Task OptionsConfigureAndResolve()
+        {
+            var container = new DiContainer();
+            container.Configure<SampleOptions>(o => o.Name = "configured");
+            var provider = container.BuildServiceProvider();
+
+            Assert(provider.GetRequiredService<IOptions<SampleOptions>>().Value.Name == "configured",
+                "Configure<T> builds options resolvable via IOptions<T>");
+            return Task.CompletedTask;
+        }
+
         private static bool Throws<TException>(Action action, string messageContains) where TException : Exception
         {
             try
@@ -157,6 +168,11 @@ namespace McpSdk.Server.Tests.Conformance
         }
 
         private sealed class Counter { }
+
+        private sealed class SampleOptions
+        {
+            public string Name { get; set; }
+        }
 
         private interface ICycleA { }
         private interface ICycleB { }

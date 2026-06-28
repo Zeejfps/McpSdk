@@ -11,11 +11,11 @@ public sealed class SseTransportFactory : ITransportFactory
 
     public SseTransportFactory(
         IJson json,
-        ISseSession sseSession,
+        IOptions<SseSessionOptions> sseOptions,
         ILoggerFactory loggerFactory)
     {
         _json = json;
-        _sseSession = sseSession;
+        _sseSession = sseOptions.Value.Session;
         _loggerFactory = loggerFactory;
     }
 

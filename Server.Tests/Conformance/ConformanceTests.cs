@@ -108,6 +108,7 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("GetService null / GetRequiredService throws when unregistered", GetServiceReturnsNullGetRequiredThrows);
             await RunTest("circular dependency is detected", CircularDependencyThrows);
             await RunTest("ambiguous constructor is rejected", AmbiguousConstructorThrows);
+            await RunTest("Configure<T> options resolve via IOptions<T>", OptionsConfigureAndResolve);
 
             Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
