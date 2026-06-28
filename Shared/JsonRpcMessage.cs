@@ -2,50 +2,79 @@ using McpSdk.Protocol;
 
 namespace McpSdk.Shared
 {
-    public enum JsonRpcMessageKind
-    {
-        Request,
-        Notification,
-        Response,
-    }
-
     /// <summary>
-    /// A decoded, classified JSON-RPC 2.0 frame. The product of <see cref="JsonRpcCodec.TryDecode(string, out JsonRpcMessage)"/>,
-    /// so every transport classifies inbound messages the same way regardless of how they were framed
-    /// (newline-delimited stdio, an HTTP POST body, or an SSE <c>data:</c> event).
+    /// A JSON-RPC 2.0 message, modeled the same way as <see cref="McpSdk.Protocol.Models.Content"/>: an
+    /// abstract base with one concrete subtype per wire shape — <see cref="JsonRpcRequest"/>,
+    /// <see cref="JsonRpcNotification"/>, <see cref="JsonRpcResponse"/> — each of which both writes itself
+    /// (<see cref="WriteMembers"/>) and is reconstructed from a parsed object (<see cref="FromJsonObject"/>).
+    /// One type per kind owns both directions, so the wire shape for a kind lives in exactly one place
+    /// (rather than being split across a separate encoder and decoder).
+    ///
+    /// The base contributes the shared envelope: <see cref="WriteMembers"/> emits the
+    /// <c>"jsonrpc":"2.0"</c> header and defers the rest to <see cref="WriteBody"/>. Because a message both
+    /// encodes and decodes, the same model flows in both directions across an <see cref="IMessageChannel"/>
+    /// — there is no separate "frame to send" vs "message to dispatch".
     /// </summary>
-    public readonly struct JsonRpcMessage
+    public abstract class JsonRpcMessage : IJsonObjectWriter
     {
-        private JsonRpcMessage(JsonRpcMessageKind kind, RequestId id, string method, IJsonObject parameters, IJsonObject raw)
+        public const string JsonRpcVersion = "2.0";
+
+        public void WriteMembers(IJsonWriter writer)
         {
-            Kind = kind;
-            Id = id;
-            Method = method;
-            Parameters = parameters;
-            Raw = raw;
+            JsonRpcVersion.WriteTo(writer, "jsonrpc");
+            WriteBody(writer);
         }
 
-        public JsonRpcMessageKind Kind { get; }
+        /// <summary>Writes the kind-specific members (id/method/params/result/error) after the shared header.</summary>
+        protected abstract void WriteBody(IJsonWriter writer);
 
-        /// <summary>The request id. Meaningful for <see cref="JsonRpcMessageKind.Request"/> and <see cref="JsonRpcMessageKind.Response"/>.</summary>
-        public RequestId Id { get; }
+        /// <summary>
+        /// Classifies a parsed JSON-RPC object into its concrete subtype, mirroring
+        /// <see cref="McpSdk.Protocol.Models.Content.FromJsonObject"/>. Returns <c>null</c> for an object
+        /// that is neither a request/notification nor a response (no <c>method</c> and no <c>id</c>).
+        /// </summary>
+        public static JsonRpcMessage FromJsonObject(IJsonObject obj)
+        {
+            if (obj == null)
+                return null;
 
-        /// <summary>The method. Meaningful for <see cref="JsonRpcMessageKind.Request"/> and <see cref="JsonRpcMessageKind.Notification"/>.</summary>
-        public string Method { get; }
+            var idProperty = obj["id"];
+            var method = obj["method"]?.AsString();
 
-        /// <summary>The <c>params</c> object (may be null). Meaningful for requests and notifications.</summary>
-        public IJsonObject Parameters { get; }
+            if (method != null)
+                return idProperty == null
+                    ? (JsonRpcMessage)new JsonRpcNotification(method, obj["params"]?.AsObject())
+                    : new JsonRpcRequest(RequestId.FromJson(idProperty), method, obj["params"]?.AsObject());
 
-        /// <summary>The full parsed object — used to read a response's <c>result</c>/<c>error</c>.</summary>
-        public IJsonObject Raw { get; }
+            if (idProperty != null)
+                return new JsonRpcResponse(RequestId.FromJson(idProperty), obj);
 
-        public static JsonRpcMessage Request(RequestId id, string method, IJsonObject parameters, IJsonObject raw) =>
-            new JsonRpcMessage(JsonRpcMessageKind.Request, id, method, parameters, raw);
+            return null; // neither a method nor an id — not a dispatchable JSON-RPC message
+        }
 
-        public static JsonRpcMessage Notification(string method, IJsonObject parameters, IJsonObject raw) =>
-            new JsonRpcMessage(JsonRpcMessageKind.Notification, default, method, parameters, raw);
+        /// <summary>
+        /// Parses a raw inbound frame and classifies it. Returns <c>false</c> for a JSON-RPC batch (removed
+        /// in 2025-06-18), a parse failure, or a non-dispatchable object — the channel decides how to
+        /// log/ignore those.
+        /// </summary>
+        public static bool TryParse(IJson json, string frame, out JsonRpcMessage message)
+        {
+            message = null;
+            if (string.IsNullOrEmpty(frame) || JsonRpcFraming.IsBatch(frame))
+                return false;
 
-        public static JsonRpcMessage Response(RequestId id, IJsonObject raw) =>
-            new JsonRpcMessage(JsonRpcMessageKind.Response, id, null, null, raw);
+            IJsonObject obj;
+            try
+            {
+                obj = json.Parse(frame);
+            }
+            catch
+            {
+                return false;
+            }
+
+            message = FromJsonObject(obj);
+            return message != null;
+        }
     }
 }

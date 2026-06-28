@@ -9,8 +9,8 @@ namespace McpSdk.Shared
 {
     public abstract class JsonRpcTransport : ITransport
     {
-        private readonly JsonRpcCodec _codec;
-        private readonly Dictionary<RequestId, TaskCompletionSource<IJsonObject>> _tscByMessageId = new();
+        private readonly IJson _json;
+        private readonly Dictionary<RequestId, TaskCompletionSource<IResponse>> _tscByMessageId = new();
 
         private long _nextMessageId;
 
@@ -18,7 +18,7 @@ namespace McpSdk.Shared
 
         protected JsonRpcTransport(IJson json, ILoggerFactory loggerFactory)
         {
-            _codec = new JsonRpcCodec(json);
+            _json = json;
             Logger = loggerFactory.Create(GetType());
         }
         
@@ -38,9 +38,9 @@ namespace McpSdk.Shared
 
         public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
         {
-            var frame = _codec.EncodeNotification(notification, arguments);
-            Logger.LogDebug($"Sending notification: {frame.Payload}");
-            await Send(frame.Payload, cancellationToken);
+            var wire = _json.Stringify(new JsonRpcNotification(notification, arguments).WriteMembers);
+            Logger.LogDebug($"Sending notification: {wire}");
+            await Send(wire, cancellationToken);
         }
         
         /// <summary>
@@ -54,26 +54,25 @@ namespace McpSdk.Shared
         public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
-            var frame = _codec.EncodeRequest(id, method, payload);
+            var wire = _json.Stringify(new JsonRpcRequest(id, method, payload).WriteMembers);
 
-            Logger.LogDebug($"Sending request: {frame.Payload}");
-            await Send(frame.Payload, cancellationToken);
-            var response = await WaitForResponse(id, cancellationToken);
-            return _codec.ParseResponse(response);
+            Logger.LogDebug($"Sending request: {wire}");
+            await Send(wire, cancellationToken);
+            return await WaitForResponse(id, cancellationToken);
         }
 
         public async Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
-            var frame = _codec.EncodeResult(requestId, writeResult);
-            Logger.LogDebug($"Sending OK response: {frame.Payload}");
-            await Send(frame.Payload, cancellationToken);
+            var wire = _json.Stringify(JsonRpcResponse.Result(requestId, writeResult).WriteMembers);
+            Logger.LogDebug($"Sending OK response: {wire}");
+            await Send(wire, cancellationToken);
         }
 
         public async Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
         {
-            var frame = _codec.EncodeError(requestId, error);
-            Logger.LogDebug($"Sending Error response: {frame.Payload}");
-            await Send(frame.Payload, cancellationToken);
+            var wire = _json.Stringify(JsonRpcResponse.Failure(requestId, error).WriteMembers);
+            Logger.LogDebug($"Sending Error response: {wire}");
+            await Send(wire, cancellationToken);
         }
         
         protected void OnMessageReceived(string messageAsJson)
@@ -90,22 +89,22 @@ namespace McpSdk.Shared
                     return;
                 }
 
-                if (!_codec.TryDecode(messageAsJson, out var message))
+                if (!JsonRpcMessage.TryParse(_json, messageAsJson, out var message))
                     return;
 
-                switch (message.Kind)
+                switch (message)
                 {
-                    case JsonRpcMessageKind.Notification:
-                        OnNotificationReceived(message.Method, message.Parameters);
+                    case JsonRpcNotification notification:
+                        OnNotificationReceived(notification.Method, notification.Parameters);
                         break;
-                    case JsonRpcMessageKind.Request:
-                        OnRequestReceived(message.Id, message.Method, message.Parameters);
+                    case JsonRpcRequest request:
+                        OnRequestReceived(request.Id, request.Method, request.Parameters);
                         break;
-                    case JsonRpcMessageKind.Response:
-                        if (_tscByMessageId.TryGetValue(message.Id, out var tsc))
+                    case JsonRpcResponse response:
+                        if (_tscByMessageId.TryGetValue(response.Id, out var tsc))
                         {
-                            _tscByMessageId.Remove(message.Id);
-                            tsc.TrySetResult(message.Raw);
+                            _tscByMessageId.Remove(response.Id);
+                            tsc.TrySetResult(response.ToResponse());
                         }
                         break;
                 }
@@ -130,9 +129,9 @@ namespace McpSdk.Shared
         protected abstract Task OnStop(CancellationToken cancellationToken = default);
         protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken = default);
 
-        private Task<IJsonObject> WaitForResponse(RequestId messageId, CancellationToken cancellationToken = default)
+        private Task<IResponse> WaitForResponse(RequestId messageId, CancellationToken cancellationToken = default)
         {
-            var tsc = new TaskCompletionSource<IJsonObject>(cancellationToken);
+            var tsc = new TaskCompletionSource<IResponse>(cancellationToken);
             _tscByMessageId[messageId] = tsc;
             return tsc.Task;
         }
