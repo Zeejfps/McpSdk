@@ -23,5 +23,23 @@ namespace McpSdk.Protocol
         {
             return property?.AsObjectArray()?.Select(select).ToArray();
         }
+
+        /// <summary>
+        /// Maps a property the spec types as <c>X | X[]</c> — a single object <em>or</em> an array of
+        /// them — to a typed array via <paramref name="select"/>. The only field shaped this way is a
+        /// sampling message's <c>content</c> (<c>SamplingMessage</c> / <c>CreateMessageResult</c>):
+        /// a plain message carries one block, a tool-use / tool-result message carries several. Unlike
+        /// <see cref="AsArray{T}"/>, an absent property yields an empty array (never null), since this
+        /// models a present content field rather than an optional collection.
+        /// </summary>
+        public static T[] AsArrayOrSingle<T>(this IJsonProperty property, Func<IJsonObject, T> select)
+        {
+            if (property == null)
+                return Array.Empty<T>();
+
+            return property.IsArray
+                ? property.AsObjectArray().Select(select).ToArray()
+                : new[] { select(property.AsObject()) };
+        }
     }
 }

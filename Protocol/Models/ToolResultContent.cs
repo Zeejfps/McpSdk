@@ -16,7 +16,7 @@ public sealed class ToolResultContent : Content
     public ToolResultContent(IJsonObject jsonObject)
     {
         ToolUseId = jsonObject["toolUseId"]?.AsString();
-        Content = Models.Content.CreateMany(jsonObject["content"]);
+        Content = jsonObject["content"].AsArray(Models.Content.FromJsonObject) ?? System.Array.Empty<Content>();
     }
 
     public ToolResultContent(string toolUseId, params Content[] content)

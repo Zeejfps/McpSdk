@@ -18,7 +18,7 @@ namespace McpSdk.Protocol.Models
             Role = jsonObject["role"]?.AsString();
             Model = jsonObject["model"]?.AsString();
             StopReason = jsonObject["stopReason"]?.AsString();
-            Content = Models.Content.CreateMany(jsonObject["content"]);
+            Content = jsonObject["content"].AsArrayOrSingle(Models.Content.FromJsonObject);
         }
 
         public CreateMessagesResult(string role, string model, Content content, string stopReason)

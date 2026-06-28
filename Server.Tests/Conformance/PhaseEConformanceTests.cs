@@ -365,15 +365,15 @@ namespace McpSdk.Server.Tests.Conformance
         private static Task ContentSingleOrArrayParsing()
         {
             var single = Json.Object(w => w.Write("content", new TextContent("hi")));
-            var one = Content.CreateMany(single["content"]);
+            var one = single["content"].AsArrayOrSingle(Content.FromJsonObject);
             Assert(one.Length == 1 && one[0] is TextContent, "a single content object parses to one block");
 
             var array = Json.Object(w => w.Write("content", new Content[] { new TextContent("a"), new TextContent("b") }));
-            var many = Content.CreateMany(array["content"]);
+            var many = array["content"].AsArrayOrSingle(Content.FromJsonObject);
             Assert(many.Length == 2, "a content array parses to many blocks");
 
             var none = Json.Object(w => w.Write("role", "user"));
-            var empty = Content.CreateMany(none["content"]);
+            var empty = none["content"].AsArrayOrSingle(Content.FromJsonObject);
             Assert(empty.Length == 0, "an absent content property parses to an empty array");
 
             return Task.CompletedTask;
