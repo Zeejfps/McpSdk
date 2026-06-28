@@ -19,10 +19,9 @@ namespace McpSdk.Client
     /// </summary>
     public sealed class StreamableHttpClientTransport : ITransport
     {
-        private const string JsonRpcVersion = "2.0";
-
         private readonly IStreamableHttpClient _http;
         private readonly IJson _json;
+        private readonly JsonRpcCodec _codec;
         private readonly ILogger _logger;
 
         private long _nextId;
@@ -36,6 +35,7 @@ namespace McpSdk.Client
         {
             _http = http;
             _json = json;
+            _codec = new JsonRpcCodec(json);
             _logger = loggerFactory.Create<StreamableHttpClientTransport>();
         }
 
@@ -56,13 +56,7 @@ namespace McpSdk.Client
         public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = new RequestId(Interlocked.Increment(ref _nextId));
-            var requestJson = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                id.WriteTo(req, "id");
-                method.WriteTo(req, "method");
-                payload.WriteTo(req, "params");
-            });
+            var requestJson = _codec.EncodeRequest(id, method, payload);
 
             _logger.LogDebug($"POST request: {requestJson}");
             var reply = await _http.PostMessage(requestJson, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
@@ -78,18 +72,12 @@ namespace McpSdk.Client
             var responseObj = _json.Parse(reply.Body);
             CaptureProtocolVersion(responseObj);
             MaybeOpenStream();
-            return ParseResponse(responseObj);
+            return _codec.ParseResponse(responseObj);
         }
 
         public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
         {
-            var json = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                notification.WriteTo(req, "method");
-                if (arguments != null)
-                    arguments.WriteTo(req, "params");
-            });
+            var json = _codec.EncodeNotification(notification, arguments);
 
             _logger.LogDebug($"POST notification: {json}");
             var reply = await _http.PostMessage(json, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
@@ -98,23 +86,13 @@ namespace McpSdk.Client
 
         public async Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
-            var json = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                requestId.WriteTo(req, "id");
-                writeResult.WriteTo(req, "result");
-            });
+            var json = _codec.EncodeResult(requestId, writeResult);
             await _http.PostMessage(json, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
         {
-            var json = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                requestId.WriteTo(req, "id");
-                error.WriteTo(req, "error");
-            });
+            var json = _codec.EncodeError(requestId, error);
             await _http.PostMessage(json, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
         }
 
@@ -174,21 +152,19 @@ namespace McpSdk.Client
 
             try
             {
-                if (JsonRpcFraming.IsBatch(messageJson))
+                if (!_codec.TryDecode(messageJson, out var message))
                     return;
 
-                var message = _json.Parse(messageJson);
-                var idProp = message["id"];
-                var method = message["method"]?.AsString();
-                var methodParams = message["params"]?.AsObject();
-
-                if (method == null)
-                    return; // a stray response; nothing to correlate on this stream
-
-                if (idProp == null)
-                    NotificationReceived?.Invoke(method, methodParams);
-                else
-                    RequestReceived?.Invoke(RequestId.FromJson(idProp), method, methodParams);
+                switch (message.Kind)
+                {
+                    case JsonRpcMessageKind.Notification:
+                        NotificationReceived?.Invoke(message.Method, message.Parameters);
+                        break;
+                    case JsonRpcMessageKind.Request:
+                        RequestReceived?.Invoke(message.Id, message.Method, message.Parameters);
+                        break;
+                    // A response would be a stray frame on this stream; nothing to correlate.
+                }
             }
             catch (Exception ex)
             {
@@ -196,13 +172,6 @@ namespace McpSdk.Client
             }
         }
 
-        private IResponse ParseResponse(IJsonObject response)
-        {
-            var errorProp = response["error"];
-            if (errorProp == null)
-                return Response.FromResult(response["result"].AsObject());
-            return Response.FromError(new Error(errorProp.AsObject()));
-        }
     }
 
     public sealed class StreamableHttpClientTransportFactory : ITransportFactory

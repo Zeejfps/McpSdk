@@ -24,9 +24,7 @@ namespace McpSdk.Server
     /// </summary>
     public sealed class StreamableHttpServerTransport : ITransport
     {
-        private const string JsonRpcVersion = "2.0";
-
-        private readonly IJson _json;
+        private readonly JsonRpcCodec _codec;
         private readonly ILogger _logger;
         private readonly object _gate = new object();
 
@@ -50,7 +48,7 @@ namespace McpSdk.Server
 
         public StreamableHttpServerTransport(IJson json, ILoggerFactory loggerFactory, string sessionId)
         {
-            _json = json;
+            _codec = new JsonRpcCodec(json);
             _logger = loggerFactory.Create<StreamableHttpServerTransport>();
             SessionId = sessionId;
         }
@@ -110,105 +108,73 @@ namespace McpSdk.Server
                 return Task.FromResult<string>(null);
             }
 
-            IJsonObject message;
-            try
+            if (!_codec.TryDecode(messageJson, out var message))
             {
-                message = _json.Parse(messageJson);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex);
+                _logger.LogDebug("Ignored an unparseable or non-dispatchable frame.");
                 return Task.FromResult<string>(null);
             }
 
-            var idProp = message["id"];
-            var method = message["method"]?.AsString();
-            var methodParams = message["params"]?.AsObject();
-
-            if (method != null)
+            switch (message.Kind)
             {
-                if (idProp == null)
-                {
+                case JsonRpcMessageKind.Notification:
                     // Notification: dispatch and acknowledge with 202 (no body).
-                    NotificationReceived?.Invoke(method, methodParams);
+                    NotificationReceived?.Invoke(message.Method, message.Parameters);
+                    return Task.FromResult<string>(null);
+
+                case JsonRpcMessageKind.Request:
+                {
+                    // Request: reserve a slot for its response, then dispatch. The POST stays open until
+                    // the server answers via SendOkResponse/SendErrorResponse, which completes this task.
+                    var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    lock (_gate)
+                        _pendingByRequestId[message.Id] = tcs;
+
+                    RequestReceived?.Invoke(message.Id, message.Method, message.Parameters);
+                    return tcs.Task;
+                }
+
+                case JsonRpcMessageKind.Response:
+                {
+                    // The client's reply to a server-initiated request. Complete the pending outgoing
+                    // request and acknowledge the POST with 202.
+                    TaskCompletionSource<IJsonObject> outgoing;
+                    lock (_gate)
+                    {
+                        if (_pendingOutgoingByRequestId.TryGetValue(message.Id, out outgoing))
+                            _pendingOutgoingByRequestId.Remove(message.Id);
+                    }
+                    outgoing?.TrySetResult(message.Raw);
                     return Task.FromResult<string>(null);
                 }
 
-                // Request: reserve a slot for its response, then dispatch. The POST stays open until the
-                // server answers via SendOkResponse/SendErrorResponse, which completes this task.
-                var id = RequestId.FromJson(idProp);
-                var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-                lock (_gate)
-                    _pendingByRequestId[id] = tcs;
-
-                RequestReceived?.Invoke(id, method, methodParams);
-                return tcs.Task;
+                default:
+                    return Task.FromResult<string>(null);
             }
-
-            // A client→server response: the reply to a server-initiated request. Complete the pending
-            // outgoing request and acknowledge the POST with 202.
-            if (idProp != null)
-            {
-                var responseId = RequestId.FromJson(idProp);
-                TaskCompletionSource<IJsonObject> outgoing;
-                lock (_gate)
-                {
-                    if (_pendingOutgoingByRequestId.TryGetValue(responseId, out outgoing))
-                        _pendingOutgoingByRequestId.Remove(responseId);
-                }
-                outgoing?.TrySetResult(message);
-            }
-            return Task.FromResult<string>(null);
         }
 
         public Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
-            var response = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                requestId.WriteTo(req, "id");
-                writeResult.WriteTo(req, "result");
-            });
-            CompletePending(requestId, response);
+            CompletePending(requestId, _codec.EncodeResult(requestId, writeResult));
             return Task.CompletedTask;
         }
 
         public Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
         {
-            var response = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                requestId.WriteTo(req, "id");
-                error.WriteTo(req, "error");
-            });
-            CompletePending(requestId, response);
+            CompletePending(requestId, _codec.EncodeError(requestId, error));
             return Task.CompletedTask;
         }
 
         // Server-initiated notification → the client's SSE stream (dropped if no stream is attached).
         public Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
         {
-            var message = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                notification.WriteTo(req, "method");
-                if (arguments != null)
-                    arguments.WriteTo(req, "params");
-            });
-            return EmitEvent(message);
+            return EmitEvent(_codec.EncodeNotification(notification, arguments));
         }
 
         // Server-initiated request → the client's SSE stream; the response returns as a client POST.
         public async Task<IResponse> SendRequest(string method, Json request, CancellationToken cancellationToken = default)
         {
             var id = new RequestId(Interlocked.Increment(ref _nextOutgoingId));
-            var frame = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                id.WriteTo(req, "id");
-                method.WriteTo(req, "method");
-                request.WriteTo(req, "params");
-            });
+            var frame = _codec.EncodeRequest(id, method, request);
 
             var tcs = new TaskCompletionSource<IJsonObject>(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_gate)
@@ -218,7 +184,7 @@ namespace McpSdk.Server
             using (cancellationToken.Register(() => tcs.TrySetCanceled()))
             {
                 var responseObj = await tcs.Task.ConfigureAwait(false);
-                return ParseResponse(responseObj);
+                return _codec.ParseResponse(responseObj);
             }
         }
 
@@ -297,14 +263,6 @@ namespace McpSdk.Server
             }
 
             return writer(eventId, messageJson);
-        }
-
-        private IResponse ParseResponse(IJsonObject response)
-        {
-            var errorProp = response["error"];
-            if (errorProp == null)
-                return Response.FromResult(response["result"].AsObject());
-            return Response.FromError(new Error(errorProp.AsObject()));
         }
 
         private void DetachStream(Func<long, string, Task> writeEvent)
