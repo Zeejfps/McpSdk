@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server.Tests.Conformance
 {
@@ -389,7 +390,7 @@ namespace McpSdk.Server.Tests.Conformance
             var builder = new ClientBuilder()
                 .WithName("Phase E Client")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd));
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(clientEnd)));
 
             if (elicitation != null)
                 builder.WithElicitationCapability(elicitation);

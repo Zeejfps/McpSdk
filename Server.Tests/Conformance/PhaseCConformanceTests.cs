@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server.Tests.Conformance
 {
@@ -171,7 +172,7 @@ namespace McpSdk.Server.Tests.Conformance
             return new ClientBuilder()
                 .WithName("Phase C Client")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(clientEnd)))
                 .Build();
         }
     }

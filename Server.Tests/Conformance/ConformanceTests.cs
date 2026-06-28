@@ -97,6 +97,19 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("server advertises subscribe from resource-changed, not listChanged", ServerAdvertisesSubscribeFromResourceChanged);
 
             Console.WriteLine();
+            Console.WriteLine("=== DI Container ===");
+
+            await RunTest("instance registration resolves the same object", InstanceResolutionReturnsSameInstance);
+            await RunTest("reflection injects constructor dependencies", ReflectionConstructorInjection);
+            await RunTest("factory registration resolves from the provider", FactoryRegistrationUsesProvider);
+            await RunTest("singleton is cached, transient is fresh each time", SingletonIsCachedTransientIsNot);
+            await RunTest("last registration of a service type wins", LastRegistrationWins);
+            await RunTest("provider resolves IServiceProvider to itself", ProviderResolvesItself);
+            await RunTest("GetService null / GetRequiredService throws when unregistered", GetServiceReturnsNullGetRequiredThrows);
+            await RunTest("circular dependency is detected", CircularDependencyThrows);
+            await RunTest("ambiguous constructor is rejected", AmbiguousConstructorThrows);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }
@@ -112,7 +125,7 @@ namespace McpSdk.Server.Tests.Conformance
             var client = new ClientBuilder()
                 .WithName("Conf Client")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(clientEnd)))
                 .Build();
             await client.Connect();
 
@@ -163,7 +176,7 @@ namespace McpSdk.Server.Tests.Conformance
             var client = new ClientBuilder()
                 .WithName("Conf Client")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(clientEnd)))
                 .Build();
             await client.Connect();
 
@@ -183,7 +196,7 @@ namespace McpSdk.Server.Tests.Conformance
             var client = new ClientBuilder()
                 .WithName("Conf Client")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(clientEnd)))
                 .Build();
 
             var threw = false;
@@ -256,7 +269,7 @@ namespace McpSdk.Server.Tests.Conformance
             return new ServerBuilder()
                 .WithName("Conf Server")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd)))
                 .WithDefaultToolsCapability(Json, tools =>
                 {
                     tools.AddTool(new TestToolHandler());

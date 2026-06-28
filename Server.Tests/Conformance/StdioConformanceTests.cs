@@ -91,7 +91,7 @@ namespace McpSdk.Server.Tests.Conformance
             var client = new ClientBuilder()
                 .WithName("Stdio Conf Client")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(transport))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(transport)))
                 .Build();
 
             try

@@ -75,13 +75,15 @@ namespace McpSdk.Server
         }
     }
 
-    public static class StdioTransportServerBuilderExtensions
+    public static class StdioTransportContextExtensions
     {
-        public static ServerBuilder WithStdioTransport(this ServerBuilder builder, IJson json)
+        /// <summary>
+        /// Registers the stdio server transport. Requires <see cref="IJson"/> to already be registered in
+        /// the context — it is injected into <see cref="StdioTransportFactory"/>.
+        /// </summary>
+        public static IContext AddStdioTransport(this IContext context)
         {
-            var factory = new StdioTransportFactory(json);
-            builder.WithTransport(factory);
-            return builder;
+            return context.AddSingleton<ITransportFactory, StdioTransportFactory>();
         }
     }
 }

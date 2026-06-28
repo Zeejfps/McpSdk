@@ -60,14 +60,15 @@ namespace McpSdk.Server
         }
     }
 
-    public static class SseTransportServerBuilderExtensions
+    public static class SseTransportContextExtensions
     {
-        public static ServerBuilder WithSseTransport(this ServerBuilder builder, IJson json, ISseSession sseSession)
+        /// <summary>
+        /// Registers the SSE server transport. Requires <see cref="IJson"/> and <see cref="ISseSession"/>
+        /// to already be registered in the context — they are injected into <see cref="SseTransportFactory"/>.
+        /// </summary>
+        public static IContext AddSseTransport(this IContext context)
         {
-            var sseTransportFactory = new SseTransportFactory(json, sseSession);
-            builder.WithTransport(sseTransportFactory);
-            return builder;
+            return context.AddSingleton<ITransportFactory, SseTransportFactory>();
         }
-        
     }
 }

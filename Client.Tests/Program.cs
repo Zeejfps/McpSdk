@@ -3,7 +3,9 @@ using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseClient;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
+using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var loggerFactory = new ClientConsoleLoggerFactory();
@@ -18,8 +20,11 @@ var client = new ClientBuilder()
     .WithName("Echo Client")
     .WithVersion("1.0.0")
     .WithLogger(loggerFactory)
-    .WithSseTransport(json, sseClientFactory)
-    //.WithStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
+    .ConfigureContext(c => c
+        .AddSingleton<IJson>(json)
+        .AddSingleton<ISseClientFactory>(sseClientFactory)
+        .AddSseTransport())
+        //.AddStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
     .WithRootsCapability(rootsControllerFactory)
     .WithSamplingCapability(samplingControllerFactory)
     .Build();

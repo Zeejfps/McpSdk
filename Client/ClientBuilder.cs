@@ -11,15 +11,29 @@ namespace McpSdk.Client
         private string _version;
         private string _title;
         private string _description;
-        private ITransportFactory _transportFactory;
         private IRootsCapabilityFactory _rootsCapabilityFactory;
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
         private IElicitationCapabilityFactory _elicitationCapabilityFactory;
         private ILoggerFactory _loggerFactory;
+        private readonly DiContainer _container = new DiContainer();
 
         public ClientBuilder()
         {
             _loggerFactory = new NullLoggerFactory();
+        }
+
+        /// <summary>
+        /// The service registration surface. Register the transport (and its dependencies) here, e.g.
+        /// <c>builder.Context.AddSseTransport()</c>.
+        /// </summary>
+        public IContext Context => _container;
+
+        /// <summary>Configures <see cref="Context"/> inline while keeping the fluent builder chain.</summary>
+        public ClientBuilder ConfigureContext(Action<IContext> configure)
+        {
+            if (configure == null) throw new ArgumentNullException(nameof(configure));
+            configure(_container);
+            return this;
         }
 
         public ClientBuilder WithName(string name)
@@ -52,12 +66,6 @@ namespace McpSdk.Client
             return this;
         }
         
-        public ClientBuilder WithTransport(ITransportFactory transportFactory)
-        {
-            _transportFactory = transportFactory;
-            return this;
-        }
-
         public ClientBuilder WithRootsCapability(IRootsCapabilityFactory capabilityFactory)
         {
             _rootsCapabilityFactory = capabilityFactory;
@@ -85,10 +93,9 @@ namespace McpSdk.Client
                 throw new ArgumentNullException(nameof(_version), "Client version cannot be null.");
             
             var clientInfo = new ClientInfo(_name, _version, _title, _description);
-            
-            var transport = _transportFactory?.Create(_loggerFactory);
-            if (transport == null)
-                throw new ArgumentNullException(nameof(transport), "Client transport cannot be null.");
+
+            var provider = _container.BuildServiceProvider();
+            var transport = provider.GetRequiredService<ITransportFactory>().Create(_loggerFactory);
 
             var rootsCapability = _rootsCapabilityFactory?.Create();
             var samplingCapability = _samplingCapabilityFactory?.Create();

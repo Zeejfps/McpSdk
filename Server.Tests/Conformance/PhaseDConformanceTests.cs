@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server.Tests.Conformance
 {
@@ -97,7 +98,7 @@ namespace McpSdk.Server.Tests.Conformance
             return new ServerBuilder()
                 .WithName("Page Server")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd)))
                 .WithDefaultToolsCapability(Json, tools =>
                 {
                     tools.PageSize = pageSize;

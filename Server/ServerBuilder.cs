@@ -10,29 +10,37 @@ namespace McpSdk.Server
         private string _version;
         private string _title;
         private string _description;
-        private ITransportFactory _transportFactory;
         private IToolsController _toolsController;
         private IPromptController _promptsController;
         private IResourcesController _resourcesController;
         private ILoggerFactory _loggerFactory;
+        private readonly DiContainer _container = new DiContainer();
 
         public ServerBuilder()
         {
             _loggerFactory = new NullLoggerFactory();
         }
-        
+
+        /// <summary>
+        /// The service registration surface. Register the transport (and its dependencies) here, e.g.
+        /// <c>builder.Context.AddSseTransport()</c>.
+        /// </summary>
+        public IContext Context => _container;
+
+        /// <summary>Configures <see cref="Context"/> inline while keeping the fluent builder chain.</summary>
+        public ServerBuilder ConfigureContext(Action<IContext> configure)
+        {
+            if (configure == null) throw new ArgumentNullException(nameof(configure));
+            configure(_container);
+            return this;
+        }
+
         public ServerBuilder WithLogger(ILoggerFactory loggerFactory)
         {
             _loggerFactory = loggerFactory;
             return this;
         }
 
-        public ServerBuilder WithTransport(ITransportFactory transportFactory)
-        {
-            _transportFactory = transportFactory;
-            return this;
-        }
-        
         public ServerBuilder WithName(string name)
         {
             _name = name;
@@ -84,7 +92,8 @@ namespace McpSdk.Server
                 throw new ArgumentNullException(nameof(_version), "Server version cannot be null.");
             
             var loggerFactory = _loggerFactory;
-            var transport = _transportFactory.Create(loggerFactory);
+            var provider = _container.BuildServiceProvider();
+            var transport = provider.GetRequiredService<ITransportFactory>().Create(loggerFactory);
             var serverInfo = new ServerInfo(_name, _version, _title, _description);
             
             var tools = _toolsController;

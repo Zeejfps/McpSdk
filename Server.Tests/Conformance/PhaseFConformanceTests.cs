@@ -5,6 +5,7 @@ using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
 using McpSdk.Protocol.Models.ServerCapabilities;
+using McpSdk.Shared;
 
 namespace McpSdk.Server.Tests.Conformance
 {
@@ -219,7 +220,7 @@ namespace McpSdk.Server.Tests.Conformance
             var server = new ServerBuilder()
                 .WithName("Conf Server")
                 .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
+                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd)))
                 .WithResourcesCapability(new TestResourcesController(resourceChanged: true, listChanged: false))
                 .Build();
             await server.Start();

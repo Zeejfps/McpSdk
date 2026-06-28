@@ -1,14 +1,17 @@
 using McpSdk.Protocol;
+using McpSdk.Shared;
 
 namespace McpSdk.Client
 {
-    public static class SseTransportClientBuilderExtensions
+    public static class SseTransportContextExtensions
     {
-        public static ClientBuilder WithSseTransport(this ClientBuilder builder, IJson json, ISseClientFactory sseClientFactory)
+        /// <summary>
+        /// Registers the SSE client transport. Requires <see cref="IJson"/> and <see cref="ISseClientFactory"/>
+        /// to already be registered in the context — they are injected into <see cref="SseTransportFactory"/>.
+        /// </summary>
+        public static IContext AddSseTransport(this IContext context)
         {
-            var sseTransportFactory = new SseTransportFactory(json, sseClientFactory);
-            builder.WithTransport(sseTransportFactory);
-            return builder;
+            return context.AddSingleton<ITransportFactory, SseTransportFactory>();
         }
     }
 }

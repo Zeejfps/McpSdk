@@ -1,9 +1,11 @@
 ﻿using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.SseServer;
+using McpSdk.Protocol;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
 using McpSdk.Server.Tests.Conformance;
+using McpSdk.Shared;
 
 if (args.Length > 0 && args[0] == "conformance")
 {
@@ -21,7 +23,9 @@ if (args.Length > 0 && args[0] == "stdio-server")
         .WithName("Stdio Conf Server")
         .WithVersion("1.0.0")
         .WithConsoleLogger()
-        .WithStdioTransport(stdioJson)
+        .ConfigureContext(c => c
+            .AddSingleton<IJson>(stdioJson)
+            .AddStdioTransport())
         .WithDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestToolHandler()))
         .Build();
 
@@ -44,7 +48,10 @@ sseServer.SessionStarted += async sseSession =>
         .WithName("Demo Server")
         .WithVersion("1.0.0")
         .WithLogger(loggerFactory)
-        .WithSseTransport(json, sseSession)
+        .ConfigureContext(c => c
+            .AddSingleton<IJson>(json)
+            .AddSingleton<ISseSession>(sseSession)
+            .AddSseTransport())
         .WithDefaultToolsCapability(json, tools =>
         {
             tools.AddTool(new TestToolHandler());
