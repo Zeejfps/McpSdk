@@ -1,7 +1,7 @@
 using McpSdk.Protocol;
 using McpSdk.Shared;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>A transport factory that always hands back a pre-built transport instance.</summary>
     public sealed class FixedTransportFactory : ITransportFactory

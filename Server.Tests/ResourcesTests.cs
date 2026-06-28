@@ -8,7 +8,7 @@ using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
 using McpSdk.Protocol.Models.ServerCapabilities;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Resources, end to end and at the model layer: <see cref="Resource"/> / <see cref="ResourceTemplate"/>

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using McpSdk.Client;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// The in-process loopback transport (<see cref="InMemoryTransport"/>): a real

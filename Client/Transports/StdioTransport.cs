@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Shared;
 
-namespace McpSdk.Client
+namespace McpSdk.Client.Transports
 {
     /// <summary>
     /// The client stdio transport: spawns the server process and uses its stdin/stdout as the wire,

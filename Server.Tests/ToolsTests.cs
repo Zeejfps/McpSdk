@@ -6,7 +6,7 @@ using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Modern tools: tool metadata (title, behavioural annotations, icons) survives a <c>tools/list</c>

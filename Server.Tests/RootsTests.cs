@@ -6,7 +6,7 @@ using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Roots (the client-offered filesystem-boundary capability): a client with a roots controller

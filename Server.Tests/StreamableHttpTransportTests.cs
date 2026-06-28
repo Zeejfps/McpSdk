@@ -10,13 +10,14 @@ using System.Threading.Tasks;
 using McpSdk.Adapter.StreamableHttpClient;
 using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Client;
+using McpSdk.Client.Transports;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
 using McpSdk.Protocol.Models.ServerCapabilities;
 using McpSdk.Shared;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// The Streamable HTTP transport: a real <see cref="StreamableHttpListener"/> and
@@ -201,7 +202,7 @@ namespace McpSdk.Server.Tests.Conformance
                 });
             await listener.Start();
 
-            var clientTransport = new HttpClientTransport(
+            var clientTransport = new StreamableHttpTransport(
                 new StreamableHttpClientAdapter(url, Loggers), Json, Loggers);
 
             string receivedNotification = null;

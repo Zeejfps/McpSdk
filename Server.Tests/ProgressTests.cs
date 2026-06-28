@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Progress reporting (<c>notifications/progress</c>): the server emits progress only for a request

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// The <c>ping</c> base-protocol utility in both directions, plus the unknown-method contract on the

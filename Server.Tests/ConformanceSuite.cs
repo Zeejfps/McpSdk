@@ -12,7 +12,7 @@ using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ServerCapabilities;
 using McpSdk.Shared;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Accumulates pass/fail counts and prints a live PASS/FAIL log for an entire conformance run. A

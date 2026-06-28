@@ -5,7 +5,7 @@ using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// The stdio transport over a real OS pipe: a client <see cref="StdioTransport"/> spawns this same
@@ -28,7 +28,7 @@ namespace McpSdk.Server.Tests.Conformance
         {
             var (command, arguments) = ResolveStdioServerCommand();
             var json = new NewtonsoftJson();
-            var transport = new McpSdk.Client.StdioTransport(command, arguments, json, Loggers);
+            var transport = new Client.Transports.StdioTransport(command, arguments, json, Loggers);
             var client = new ClientBuilder()
                 .WithName("Stdio Conf Client")
                 .WithVersion("1.0.0")

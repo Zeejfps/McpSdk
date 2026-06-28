@@ -6,7 +6,7 @@ using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Request cancellation (<c>notifications/cancelled</c>): cancelling the client's <c>CallTool</c> task

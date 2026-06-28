@@ -5,7 +5,7 @@ using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Tool-enabled sampling (server→client <c>sampling/createMessage</c>, 2025-11-25): a tool-capable

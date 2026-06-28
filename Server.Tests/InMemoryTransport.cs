@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Shared;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// In-process loopback transport used by the conformance suite — a <see cref="JsonRpcTransport"/> whose

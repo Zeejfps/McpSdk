@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// The shared <c>Content</c> model used by tool results, sampling, and prompts: every content type

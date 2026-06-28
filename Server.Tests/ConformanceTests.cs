@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Entry point for the conformance run. Builds every feature suite, runs them in order against one

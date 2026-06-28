@@ -6,7 +6,7 @@ using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Server logging (<c>notifications/message</c> + <c>logging/setLevel</c>): a server that advertises

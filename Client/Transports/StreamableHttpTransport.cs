@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Shared;
 
-namespace McpSdk.Client
+namespace McpSdk.Client.Transports
 {
     /// <summary>
     /// The Streamable HTTP client transport: the HTTP/SSE wire boundary. Outbound messages are rendered
@@ -14,7 +14,7 @@ namespace McpSdk.Client
     /// <see cref="SendMessage"/>. Server-initiated messages arrive on the standalone GET stream. The
     /// session id and negotiated protocol version are captured here and replayed as headers.
     /// </summary>
-    public sealed class HttpClientTransport : JsonRpcTransport
+    public sealed class StreamableHttpTransport : JsonRpcTransport
     {
         private readonly IStreamableHttpClient _http;
         private readonly IJson _json;
@@ -25,7 +25,7 @@ namespace McpSdk.Client
         private int _streamOpened;
         private CancellationTokenSource _streamCts;
 
-        public HttpClientTransport(IStreamableHttpClient http, IJson json, ILoggerFactory loggerFactory)
+        public StreamableHttpTransport(IStreamableHttpClient http, IJson json, ILoggerFactory loggerFactory)
             : base(loggerFactory)
         {
             _http = http;
@@ -138,7 +138,7 @@ namespace McpSdk.Client
         }
 
         public ITransport Create(ILoggerFactory loggerFactory)
-            => new HttpClientTransport(_http, _json, loggerFactory);
+            => new StreamableHttpTransport(_http, _json, loggerFactory);
     }
 
     public static class StreamableHttpClientBuilderExtensions

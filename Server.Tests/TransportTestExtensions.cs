@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Test-only conveniences that let a test drive a bare <see cref="ITransport"/> as a request sender:

@@ -6,7 +6,7 @@ using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Elicitation (server→client <c>elicitation/create</c>, 2025-11-25): the client advertises the

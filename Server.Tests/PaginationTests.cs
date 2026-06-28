@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
-namespace McpSdk.Server.Tests.Conformance
+namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// Cursor-based pagination: the opaque-cursor helper round-trips offsets (and rejects junk), a

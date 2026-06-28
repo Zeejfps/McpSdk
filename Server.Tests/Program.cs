@@ -3,7 +3,6 @@ using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
-using McpSdk.Server.Tests.Conformance;
 
 if (args.Length > 0 && args[0] == "conformance")
 {
