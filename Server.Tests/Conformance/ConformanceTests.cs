@@ -101,6 +101,9 @@ namespace McpSdk.Server.Tests.Conformance
 
             await RunTest("Streamable HTTP round-trip: initialize + tools/list + tools/call", StreamableHttpRoundTrip);
             await RunTest("Streamable HTTP: session id, Origin->403, version header, unknown session", StreamableHttpProtocolChecks);
+            await RunTest("Streamable HTTP server->client: notification + request over the SSE stream", StreamableHttpServerToClient);
+            await RunTest("Streamable HTTP resumability: Last-Event-ID replays only the missed tail", StreamableHttpResumability);
+            await RunTest("Streamable HTTP lifecycle: DELETE terminates the session (then 404)", StreamableHttpDeleteTerminatesSession);
 
             Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");

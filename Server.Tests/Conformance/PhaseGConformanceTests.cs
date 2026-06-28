@@ -1,7 +1,10 @@
 #nullable disable
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using McpSdk.Adapter.StreamableHttpClient;
@@ -10,6 +13,7 @@ using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
+using McpSdk.Protocol.Models.ServerCapabilities;
 
 namespace McpSdk.Server.Tests.Conformance
 {
@@ -149,7 +153,237 @@ namespace McpSdk.Server.Tests.Conformance
             }
         }
 
+        private static async Task StreamableHttpServerToClient()
+        {
+            const string baseUrl = "http://localhost:17455";
+            const string endpointPath = "/mcp";
+            var url = $"{baseUrl}{endpointPath}";
+
+            StreamableHttpServerTransport serverTransport = null;
+
+            var listener = new StreamableHttpListener(
+                baseUrl,
+                endpointPath,
+                Json,
+                Loggers,
+                onSession: transport =>
+                {
+                    serverTransport = (StreamableHttpServerTransport)transport;
+
+                    // Answer initialize at the transport level — no full McpServer needed for this test.
+                    serverTransport.RequestReceived += (id, method, args) =>
+                    {
+                        if (method == "initialize")
+                        {
+                            var result = new InitializeResult(
+                                ProtocolVersion.Latest, new ServerCapabilitiesModel(), new ServerInfo("S2C Server", "1.0.0"));
+                            _ = serverTransport.SendOkResponse(id, result.WriteMembers);
+                        }
+                    };
+                    return Task.CompletedTask;
+                });
+            await listener.Start();
+
+            var clientTransport = new StreamableHttpClientTransport(
+                new StreamableHttpClientAdapter(url, Loggers), Json, Loggers);
+
+            string receivedNotification = null;
+            clientTransport.NotificationReceived += (method, args) => receivedNotification = method;
+            // Answer a server→client request by echoing back an ok flag.
+            clientTransport.RequestReceived += async (id, method, args) =>
+                await clientTransport.SendOkResponse(id, w => w.Write("ok", true));
+
+            try
+            {
+                await clientTransport.Start();
+                var init = await WithTimeout(
+                    clientTransport.SendRequest(
+                        "initialize",
+                        new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("S2C Client", "1.0.0")).WriteMembers),
+                    10000, "initialize");
+                Assert(init.IsOk, "transport-level initialize over Streamable HTTP succeeded");
+
+                // Server → client notification over the SSE stream (buffered until the GET stream attaches).
+                await serverTransport.SendNotification("notifications/message", w => w.Write("level", "info"));
+                var gotNotification = await WaitUntil(() => receivedNotification == "notifications/message", 10000);
+                Assert(gotNotification, "client received a server→client notification over the SSE stream");
+
+                // Server → client request, answered by the client via a POST, correlated back to the server.
+                var pingResult = await WithTimeout(
+                    serverTransport.SendRequest("ping", w => { }), 10000, "server→client request");
+                Assert(pingResult.IsOk, "server received the client's response to a server→client request");
+                Assert(pingResult.Result?["ok"]?.AsBool() == true, "the server→client request round-tripped its result");
+            }
+            finally
+            {
+                await clientTransport.Stop();
+                await listener.Stop();
+            }
+        }
+
+        private static async Task StreamableHttpResumability()
+        {
+            const string baseUrl = "http://localhost:17456";
+            const string endpointPath = "/mcp";
+            var url = $"{baseUrl}{endpointPath}";
+
+            StreamableHttpServerTransport serverTransport = null;
+
+            var listener = new StreamableHttpListener(
+                baseUrl,
+                endpointPath,
+                Json,
+                Loggers,
+                onSession: transport =>
+                {
+                    serverTransport = (StreamableHttpServerTransport)transport;
+                    serverTransport.RequestReceived += (id, method, args) =>
+                    {
+                        if (method == "initialize")
+                        {
+                            var result = new InitializeResult(
+                                ProtocolVersion.Latest, new ServerCapabilitiesModel(), new ServerInfo("Resume Server", "1.0.0"));
+                            _ = serverTransport.SendOkResponse(id, result.WriteMembers);
+                        }
+                    };
+                    return Task.CompletedTask;
+                });
+            await listener.Start();
+
+            try
+            {
+                using var http = new HttpClient();
+                var initResp = await Post(http, url, InitializeBody(1));
+                Assert((int)initResp.StatusCode == 200, "resume: initialize returns 200");
+                var sessionId = initResp.Headers.GetValues("Mcp-Session-Id").First();
+
+                // Queue four server→client notifications (event ids 1..4) before any stream attaches.
+                for (var seq = 1; seq <= 4; seq++)
+                {
+                    var captured = seq;
+                    await serverTransport.SendNotification("notifications/message", w => w.Write("seq", captured));
+                }
+
+                // Reconnect "after event 2": the server must replay only the missed tail (events 3 + 4).
+                using var getRequest = new HttpRequestMessage(HttpMethod.Get, url);
+                getRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+                getRequest.Headers.TryAddWithoutValidation("Mcp-Session-Id", sessionId);
+                getRequest.Headers.TryAddWithoutValidation("MCP-Protocol-Version", ProtocolVersion.Latest);
+                getRequest.Headers.TryAddWithoutValidation("Last-Event-ID", "2");
+
+                using var getResponse = await http.SendAsync(getRequest, HttpCompletionOption.ResponseHeadersRead);
+                Assert((int)getResponse.StatusCode == 200, "resume: the GET stream opens with 200");
+
+                var stream = await getResponse.Content.ReadAsStreamAsync();
+                var events = await WithTimeout(ReadSseEvents(stream, 2), 10000, "resume replay");
+
+                Assert(events.Count == 2, $"resume: replayed exactly the missed tail (got {events.Count} events)");
+                AssertEqual("3", events.Count > 0 ? events[0].Id : null, "resume: first replayed event id is 3");
+                AssertEqual("4", events.Count > 1 ? events[1].Id : null, "resume: second replayed event id is 4");
+                var firstSeq = events.Count > 0 ? Json.Parse(events[0].Data)["params"].AsObject()["seq"].AsInt() : -1;
+                Assert(firstSeq == 3, $"resume: replay starts at seq 3, skipping already-seen events (got {firstSeq})");
+            }
+            finally
+            {
+                await listener.Stop();
+            }
+        }
+
+        private static async Task StreamableHttpDeleteTerminatesSession()
+        {
+            const string baseUrl = "http://localhost:17457";
+            const string endpointPath = "/mcp";
+            var url = $"{baseUrl}{endpointPath}";
+
+            var listener = new StreamableHttpListener(
+                baseUrl,
+                endpointPath,
+                Json,
+                Loggers,
+                onSession: async transport =>
+                {
+                    var server = new ServerBuilder()
+                        .WithName("Delete Server")
+                        .WithVersion("1.0.0")
+                        .WithStreamableHttpTransport(transport)
+                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
+                        .Build();
+                    await server.Start();
+                });
+            await listener.Start();
+
+            try
+            {
+                using var http = new HttpClient();
+                var initResp = await Post(http, url, InitializeBody(1));
+                var sessionId = initResp.Headers.GetValues("Mcp-Session-Id").First();
+
+                var before = await Post(http, url, ListToolsBody(2),
+                    ("Mcp-Session-Id", sessionId), ("MCP-Protocol-Version", ProtocolVersion.Latest));
+                Assert((int)before.StatusCode == 200, "delete: the session serves requests before termination");
+
+                using var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, url);
+                deleteRequest.Headers.TryAddWithoutValidation("Mcp-Session-Id", sessionId);
+                deleteRequest.Headers.TryAddWithoutValidation("MCP-Protocol-Version", ProtocolVersion.Latest);
+                using var deleteResponse = await http.SendAsync(deleteRequest);
+                Assert((int)deleteResponse.StatusCode == 200,
+                    $"delete: DELETE terminates the session with 200 (got {(int)deleteResponse.StatusCode})");
+
+                var after = await Post(http, url, ListToolsBody(3),
+                    ("Mcp-Session-Id", sessionId), ("MCP-Protocol-Version", ProtocolVersion.Latest));
+                Assert((int)after.StatusCode == 404,
+                    $"delete: a request on the terminated session is 404 (got {(int)after.StatusCode})");
+            }
+            finally
+            {
+                await listener.Stop();
+            }
+        }
+
         // -- Helpers -------------------------------------------------------------------------
+
+        private static async Task<List<(string Id, string Data)>> ReadSseEvents(Stream stream, int count)
+        {
+            var events = new List<(string, string)>();
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            var data = new StringBuilder();
+            string id = null;
+
+            while (events.Count < count)
+            {
+                var line = await reader.ReadLineAsync();
+                if (line == null)
+                    break;
+
+                if (line.Length == 0)
+                {
+                    if (data.Length > 0)
+                    {
+                        events.Add((id, data.ToString()));
+                        data.Clear();
+                        id = null;
+                    }
+                    continue;
+                }
+
+                if (line[0] == ':')
+                    continue;
+
+                if (line.StartsWith("data:", StringComparison.Ordinal))
+                {
+                    var value = line.Substring(5).TrimStart(' ');
+                    if (data.Length > 0)
+                        data.Append('\n');
+                    data.Append(value);
+                }
+                else if (line.StartsWith("id:", StringComparison.Ordinal))
+                {
+                    id = line.Substring(3).TrimStart(' ');
+                }
+            }
+
+            return events;
+        }
 
         private static async Task<HttpResponseMessage> Post(HttpClient http, string url, string body, params (string Name, string Value)[] headers)
         {

@@ -34,7 +34,19 @@ namespace McpSdk.Server
         // completes when McpServer answers via SendOkResponse/SendErrorResponse, unblocking the POST.
         private readonly Dictionary<RequestId, TaskCompletionSource<string>> _pendingByRequestId = new();
 
-        private Func<string, Task> _streamWriter;
+        // Server-initiated requests awaiting the client's response (which arrives as a separate POST).
+        private readonly Dictionary<RequestId, TaskCompletionSource<IJsonObject>> _pendingOutgoingByRequestId = new();
+
+        // Server→client SSE events, retained for Last-Event-ID resumption (a bounded ring of the most
+        // recent ones). Also covers the "produced before the first stream attached" case via replay.
+        private readonly List<(long Id, string Json)> _eventBuffer = new();
+
+        private Func<long, string, Task> _streamWriter;
+        private long _nextOutgoingId;
+        private long _nextEventId;
+        private long _deliveredThrough;
+
+        private const int MaxBufferedEvents = 256;
 
         public StreamableHttpServerTransport(IJson json, ILoggerFactory loggerFactory, string sessionId)
         {
@@ -49,10 +61,40 @@ namespace McpSdk.Server
         /// <summary>The <c>Mcp-Session-Id</c> this transport is bound to.</summary>
         public string SessionId { get; }
 
+        private readonly CancellationTokenSource _lifetimeCts = new CancellationTokenSource();
+
         // ITransport lifecycle: the HTTP listener owns the socket, so there is nothing to start/stop here.
         public Task Start(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task Stop() => Task.CompletedTask;
+
+        /// <summary>Fires when the session is terminated, so an open SSE stream can close promptly.</summary>
+        public CancellationToken Lifetime => _lifetimeCts.Token;
+
+        /// <summary>
+        /// Tears the session down (client <c>DELETE</c>): detaches the stream, cancels any in-flight
+        /// requests, and signals <see cref="Lifetime"/> so the open SSE stream closes.
+        /// </summary>
+        public void Terminate()
+        {
+            List<TaskCompletionSource<string>> inbound;
+            List<TaskCompletionSource<IJsonObject>> outbound;
+            lock (_gate)
+            {
+                _streamWriter = null;
+                inbound = new List<TaskCompletionSource<string>>(_pendingByRequestId.Values);
+                _pendingByRequestId.Clear();
+                outbound = new List<TaskCompletionSource<IJsonObject>>(_pendingOutgoingByRequestId.Values);
+                _pendingOutgoingByRequestId.Clear();
+            }
+
+            foreach (var tcs in inbound)
+                tcs.TrySetCanceled();
+            foreach (var tcs in outbound)
+                tcs.TrySetCanceled();
+
+            try { _lifetimeCts.Cancel(); } catch { /* already disposed */ }
+        }
 
         /// <summary>
         /// Hands an inbound client→server JSON-RPC frame to the server. Returns the JSON-RPC response to
@@ -103,8 +145,19 @@ namespace McpSdk.Server
                 return tcs.Task;
             }
 
-            // A client→server response (a reply to a server-initiated request). Outbound-request
-            // correlation arrives with the SSE stream; acknowledge with 202 for now.
+            // A client→server response: the reply to a server-initiated request. Complete the pending
+            // outgoing request and acknowledge the POST with 202.
+            if (idProp != null)
+            {
+                var responseId = RequestId.FromJson(idProp);
+                TaskCompletionSource<IJsonObject> outgoing;
+                lock (_gate)
+                {
+                    if (_pendingOutgoingByRequestId.TryGetValue(responseId, out outgoing))
+                        _pendingOutgoingByRequestId.Remove(responseId);
+                }
+                outgoing?.TrySetResult(message);
+            }
             return Task.FromResult<string>(null);
         }
 
@@ -142,26 +195,69 @@ namespace McpSdk.Server
                 if (arguments != null)
                     arguments.WriteTo(req, "params");
             });
-            return PushToStream(message);
+            return EmitEvent(message);
         }
 
-        // Server-initiated request → the client's SSE stream. Response correlation lands with the
-        // standalone GET stream (Phase G increment 2); the core tools flow never reaches this path.
-        public Task<IResponse> SendRequest(string method, Json request, CancellationToken cancellationToken = default)
+        // Server-initiated request → the client's SSE stream; the response returns as a client POST.
+        public async Task<IResponse> SendRequest(string method, Json request, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException(
-                "Server-initiated requests over Streamable HTTP require the SSE stream (Phase G increment 2).");
+            var id = new RequestId(Interlocked.Increment(ref _nextOutgoingId));
+            var frame = _json.Stringify(req =>
+            {
+                JsonRpcVersion.WriteTo(req, "jsonrpc");
+                id.WriteTo(req, "id");
+                method.WriteTo(req, "method");
+                request.WriteTo(req, "params");
+            });
+
+            var tcs = new TaskCompletionSource<IJsonObject>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_gate)
+                _pendingOutgoingByRequestId[id] = tcs;
+
+            await EmitEvent(frame).ConfigureAwait(false);
+            using (cancellationToken.Register(() => tcs.TrySetCanceled()))
+            {
+                var responseObj = await tcs.Task.ConfigureAwait(false);
+                return ParseResponse(responseObj);
+            }
         }
 
         /// <summary>
-        /// Attaches the writer for this session's server→client SSE stream (the client's <c>GET</c>).
-        /// Returns a handle that detaches the stream when disposed.
+        /// Attaches the writer for this session's server→client SSE stream (the client's <c>GET</c>),
+        /// resuming after <paramref name="lastEventId"/> when the client supplied one. With no
+        /// <c>Last-Event-ID</c> it resumes after the highest event already delivered to a stream, which
+        /// replays any events produced before the first stream attached. The writer receives
+        /// <c>(eventId, json)</c>. Returns a handle that detaches the stream when disposed.
         /// </summary>
-        public IDisposable AttachStream(Func<string, Task> writeEvent)
+        public IDisposable AttachStream(string lastEventId, Func<long, string, Task> writeEvent)
         {
+            if (writeEvent == null)
+                throw new ArgumentNullException(nameof(writeEvent));
+
+            List<(long Id, string Json)> replay;
             lock (_gate)
-                _streamWriter = writeEvent ?? throw new ArgumentNullException(nameof(writeEvent));
+            {
+                _streamWriter = writeEvent;
+                var resumeFrom = TryParseEventId(lastEventId, out var parsed) ? parsed : _deliveredThrough;
+                replay = new List<(long, string)>();
+                foreach (var ev in _eventBuffer)
+                    if (ev.Id > resumeFrom)
+                        replay.Add(ev);
+                if (replay.Count > 0)
+                    _deliveredThrough = Math.Max(_deliveredThrough, replay[replay.Count - 1].Id);
+            }
+
+            // Replay the missed tail in order before live events flow.
+            foreach (var ev in replay)
+                _ = writeEvent(ev.Id, ev.Json);
+
             return new StreamHandle(this, writeEvent);
+        }
+
+        private static bool TryParseEventId(string value, out long id)
+        {
+            id = 0;
+            return !string.IsNullOrEmpty(value) && long.TryParse(value, out id);
         }
 
         private void CompletePending(RequestId requestId, string response)
@@ -176,25 +272,42 @@ namespace McpSdk.Server
             if (tcs != null)
                 tcs.TrySetResult(response);
             else
-                _ = PushToStream(response); // no POST is waiting; fall back to the stream
+                _ = EmitEvent(response); // no POST is waiting; fall back to the stream
         }
 
-        private Task PushToStream(string messageJson)
+        // Assigns a monotonic SSE event id, retains the event for resumption, and writes it to the
+        // attached stream (if any). Events produced before a stream attaches wait in the buffer and are
+        // replayed on attach.
+        private Task EmitEvent(string messageJson)
         {
-            Func<string, Task> writer;
+            long eventId;
+            Func<long, string, Task> writer;
             lock (_gate)
-                writer = _streamWriter;
-
-            if (writer == null)
             {
-                _logger.LogDebug("No SSE stream is attached; dropping a server→client message.");
-                return Task.CompletedTask;
+                eventId = ++_nextEventId;
+                _eventBuffer.Add((eventId, messageJson));
+                if (_eventBuffer.Count > MaxBufferedEvents)
+                    _eventBuffer.RemoveAt(0);
+
+                writer = _streamWriter;
+                if (writer == null)
+                    return Task.CompletedTask;
+
+                _deliveredThrough = eventId;
             }
 
-            return writer(messageJson);
+            return writer(eventId, messageJson);
         }
 
-        private void DetachStream(Func<string, Task> writeEvent)
+        private IResponse ParseResponse(IJsonObject response)
+        {
+            var errorProp = response["error"];
+            if (errorProp == null)
+                return Response.FromResult(response["result"].AsObject());
+            return Response.FromError(new Error(errorProp.AsObject()));
+        }
+
+        private void DetachStream(Func<long, string, Task> writeEvent)
         {
             lock (_gate)
             {
@@ -206,9 +319,9 @@ namespace McpSdk.Server
         private sealed class StreamHandle : IDisposable
         {
             private readonly StreamableHttpServerTransport _transport;
-            private readonly Func<string, Task> _writeEvent;
+            private readonly Func<long, string, Task> _writeEvent;
 
-            public StreamHandle(StreamableHttpServerTransport transport, Func<string, Task> writeEvent)
+            public StreamHandle(StreamableHttpServerTransport transport, Func<long, string, Task> writeEvent)
             {
                 _transport = transport;
                 _writeEvent = writeEvent;

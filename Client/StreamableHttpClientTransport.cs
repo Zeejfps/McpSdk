@@ -28,6 +28,9 @@ namespace McpSdk.Client
         private long _nextId;
         private string _sessionId;
         private string _protocolVersion;
+        private string _lastEventId;
+        private int _streamOpened;
+        private CancellationTokenSource _streamCts;
 
         public StreamableHttpClientTransport(IStreamableHttpClient http, IJson json, ILoggerFactory loggerFactory)
         {
@@ -41,7 +44,14 @@ namespace McpSdk.Client
 
         public Task Start(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public Task Stop() => Task.CompletedTask;
+        public Task Stop()
+        {
+            _streamCts?.Cancel();
+            var sessionId = _sessionId;
+            return string.IsNullOrEmpty(sessionId)
+                ? Task.CompletedTask
+                : _http.DeleteSession(sessionId, _protocolVersion);
+        }
 
         public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
@@ -67,6 +77,7 @@ namespace McpSdk.Client
 
             var responseObj = _json.Parse(reply.Body);
             CaptureProtocolVersion(responseObj);
+            MaybeOpenStream();
             return ParseResponse(responseObj);
         }
 
@@ -123,6 +134,66 @@ namespace McpSdk.Client
             var version = responseObj["result"]?.AsObject()?["protocolVersion"]?.AsString();
             if (!string.IsNullOrEmpty(version))
                 _protocolVersion = version;
+        }
+
+        // Opens the standalone server→client SSE stream once, after initialization has yielded the
+        // session id (and the negotiated version for its header). Idempotent.
+        private void MaybeOpenStream()
+        {
+            if (string.IsNullOrEmpty(_sessionId))
+                return;
+            if (Interlocked.Exchange(ref _streamOpened, 1) == 1)
+                return;
+
+            _streamCts = new CancellationTokenSource();
+            _ = Task.Run(() => StreamLoop(_streamCts.Token));
+        }
+
+        // Keeps the server→client SSE stream open, reconnecting (resuming from the last seen event id)
+        // if it drops, until the transport stops.
+        private async Task StreamLoop(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await _http.OpenStream(_sessionId, _protocolVersion, _lastEventId, OnStreamEvent, cancellationToken).ConfigureAwait(false);
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                // The stream ended on its own; back off briefly, then resume from _lastEventId.
+                try { await Task.Delay(250, cancellationToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+            }
+        }
+
+        // Dispatches a server→client frame from the SSE stream. Only requests and notifications arrive
+        // here; responses to the client's own requests come back synchronously on their POST.
+        private void OnStreamEvent(string eventId, string messageJson)
+        {
+            if (!string.IsNullOrEmpty(eventId))
+                _lastEventId = eventId;
+
+            try
+            {
+                if (JsonRpcFraming.IsBatch(messageJson))
+                    return;
+
+                var message = _json.Parse(messageJson);
+                var idProp = message["id"];
+                var method = message["method"]?.AsString();
+                var methodParams = message["params"]?.AsObject();
+
+                if (method == null)
+                    return; // a stray response; nothing to correlate on this stream
+
+                if (idProp == null)
+                    NotificationReceived?.Invoke(method, methodParams);
+                else
+                    RequestReceived?.Invoke(RequestId.FromJson(idProp), method, methodParams);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
         }
 
         private IResponse ParseResponse(IJsonObject response)

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -76,6 +77,103 @@ namespace McpSdk.Adapter.StreamableHttpClient
             }
 
             return result;
+        }
+
+        public async Task OpenStream(
+            string sessionId,
+            string protocolVersion,
+            string lastEventId,
+            Action<string, string> onEvent,
+            CancellationToken cancellationToken = default)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, _endpointUrl);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+            if (!string.IsNullOrEmpty(sessionId))
+                request.Headers.TryAddWithoutValidation(SessionIdHeader, sessionId);
+            if (!string.IsNullOrEmpty(protocolVersion))
+                request.Headers.TryAddWithoutValidation(ProtocolVersionHeader, protocolVersion);
+            if (!string.IsNullOrEmpty(lastEventId))
+                request.Headers.TryAddWithoutValidation("Last-Event-ID", lastEventId);
+
+            try
+            {
+                using var httpResponse = await _httpClient
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!httpResponse.IsSuccessStatusCode)
+                {
+                    // A server that does not offer the standalone stream (e.g. 405) is fine — the client
+                    // simply never receives server-initiated traffic. Nothing to pump.
+                    return;
+                }
+
+                using var stream = await httpResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+
+                // Minimal SSE framing: accumulate `data:` lines and the event `id:`, dispatch on the
+                // blank line that terminates each event. `event:` is unused (all events are messages).
+                var data = new StringBuilder();
+                string eventId = null;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var line = await reader.ReadLineAsync().ConfigureAwait(false);
+                    if (line == null)
+                        break; // stream closed by the server
+
+                    if (line.Length == 0)
+                    {
+                        if (data.Length > 0)
+                        {
+                            var payload = data.ToString();
+                            data.Clear();
+                            onEvent(eventId, payload);
+                        }
+                        eventId = null;
+                        continue;
+                    }
+
+                    if (line[0] == ':')
+                        continue; // comment / heartbeat
+
+                    if (line.StartsWith("data:", StringComparison.Ordinal))
+                    {
+                        var value = line.Substring(5).TrimStart(' ');
+                        if (data.Length > 0)
+                            data.Append('\n');
+                        data.Append(value);
+                    }
+                    else if (line.StartsWith("id:", StringComparison.Ordinal))
+                    {
+                        eventId = line.Substring(3).TrimStart(' ');
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug($"Server→client stream ended: {ex.Message}");
+            }
+        }
+
+        public async Task DeleteSession(string sessionId, string protocolVersion, CancellationToken cancellationToken = default)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Delete, _endpointUrl);
+            if (!string.IsNullOrEmpty(sessionId))
+                request.Headers.TryAddWithoutValidation(SessionIdHeader, sessionId);
+            if (!string.IsNullOrEmpty(protocolVersion))
+                request.Headers.TryAddWithoutValidation(ProtocolVersionHeader, protocolVersion);
+
+            try
+            {
+                using var _ = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug($"DELETE session failed: {ex.Message}");
+            }
         }
 
         public void Dispose() => _httpClient.Dispose();

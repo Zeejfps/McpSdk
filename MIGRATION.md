@@ -319,31 +319,40 @@ extensions on each side. Built in three independently-verifiable increments.
   one endpoint, plus raw-HTTP checks for the session id, `Origin`→403, the version-header 400, and the
   unknown-session 404. Suite now **231 assertions** (was 218).
 
-#### G.2b — SSE streaming + server→client *(next)*
+#### G.2b — SSE streaming + server→client ✅
 
-- [ ] **`text/event-stream` responses + GET stream.** A `POST` request MAY be answered with an SSE
-  stream (carrying interleaved server→client traffic before the response); a standalone `GET` opens
-  the server→client SSE stream. Per-stream event `id`s.
-- [ ] **Server-initiated requests/notifications.** Wire `StreamableHttpServerTransport.SendRequest`
-  (currently throws) + `SendNotification` onto the attached stream, with client→server response
-  correlation; the client reads the GET stream into `OnMessageReceived`, driving `RequestReceived`/
-  `NotificationReceived` (sampling / elicitation / logging / `*_list_changed`).
-- [ ] **Conformance.** A server→client round-trip (e.g. a notification or a sampling request) over the
-  stream.
+- [x] **Standalone GET stream.** A `GET` to the endpoint (session id + version headers) opens the
+  server→client `text/event-stream`; the listener attaches it to the session transport and holds it
+  open with cancellable comment heartbeats. Each frame is an SSE `id:`/`data:` event. (POST requests
+  stay `application/json`; routing all server→client traffic over the GET stream is a valid server
+  profile, so the optional "POST answered with an SSE stream" path is intentionally not implemented.)
+- [x] **Server-initiated requests/notifications.** `StreamableHttpServerTransport.SendNotification`
+  pushes onto the stream; `SendRequest` (formerly threw) assigns an id, pushes, and awaits the
+  client's reply — which arrives as a separate client POST and is correlated back. The client transport
+  opens the GET stream after initialize and dispatches inbound frames to `RequestReceived` /
+  `NotificationReceived` (driving sampling / elicitation / logging / `*_list_changed`).
+- [x] **Conformance.** A transport-level server→client round-trip over real HTTP: a notification
+  reaches the client, and a server→client request is answered by the client and correlated back to the
+  server. Suite **235 assertions**.
 
-#### G.2c — Resumability, lifecycle, wiring *(after G.2b)*
+#### G.2c — Resumability, lifecycle, wiring ✅
 
-- [ ] **Resumability.** Client reconnects with `Last-Event-ID`; server replays the missed tail. SSE
-  polling / server-initiated disconnect (SEP-1699, 2025-11-25).
-- [ ] **Lifecycle.** Client `DELETE` terminates the session (server MAY answer `405`); session/McpServer
-  cleanup.
-- [ ] **Demo wiring.** Add a `streamable-http-server` mode to `Server.Tests/Program.cs` and let
-  `Client.Tests/Program.cs` drive a server over Streamable HTTP (today both are stdio).
+- [x] **Resumability.** The server transport stamps each server→client event with a monotonic id and
+  retains a bounded ring (256) for replay; a `GET` carrying `Last-Event-ID` replays only the missed
+  tail. The client tracks the last event id and reconnects (resuming) if the stream drops.
+- [x] **Lifecycle.** Client `DELETE` terminates the session — the listener drops it and `Terminate()`s
+  the transport (detaches the stream, cancels in-flight requests, closes the GET via a linked token);
+  subsequent requests on it → **404**. The client sends `DELETE` on `Stop()`.
+- [x] **Demo wiring.** `Server.Tests/Program.cs` gained a `streamable-http-server [baseUrl]` mode
+  (one endpoint, per-session McpServer); `Client.Tests/Program.cs` drives an `http(s)` URL over
+  Streamable HTTP (or a stdio command otherwise). Verified cross-process end-to-end.
+- [x] **Conformance.** Raw-HTTP `Last-Event-ID` replay (only the missed tail, skipping seen events) and
+  `DELETE`→200→404 lifecycle. Suite **244 assertions** (was 218 at the end of Phase F).
 
-**Exit:** legacy HTTP+SSE is gone; a Streamable HTTP client and server complete the full
+**Exit:** ✅ legacy HTTP+SSE is gone; a Streamable HTTP client and server complete the full
 `initialize`/`tools` round-trip over a single endpoint with session ids, the protocol-version header,
-`Origin`→403 **(G.2a ✅)**, server→client streaming **(G.2b)**, and `Last-Event-ID` resumption
-**(G.2c)** — verified by the Phase G conformance suite.
+`Origin`→403, server→client streaming, and `Last-Event-ID` resumption — verified by the Phase G
+conformance suite (244 assertions) and a cross-process demo (`Server.Tests` ↔ `Client.Tests`).
 
 ---
 
