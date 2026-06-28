@@ -14,7 +14,7 @@ namespace McpSdk.Server
 
         public ITransport Create(ILoggerFactory loggerFactory)
         {
-            return new StdioTransport(_json, loggerFactory);
+            return new JsonRpcPeer(new StdioServerChannel(_json), loggerFactory);
         }
     }
 }
