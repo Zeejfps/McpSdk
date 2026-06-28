@@ -8,13 +8,16 @@ The SDK uses a small dependency-injection container behind an `IContext` registr
 (modeled on `Microsoft.Extensions.DependencyInjection`). Every builder exposes that `Context`, and
 adapters contribute features as `Context.AddX(...)` extension methods. **The transport is registered
 the same way** — `Context.AddStdioTransport()` or `Context.AddStreamableHttpTransport(...)` — so
-there is a single `CreateBuilder` per role (server / client) and the transport is just another
-registration rather than a separate factory or builder type.
+there is a single builder type per role (server / client) — `new ServerBuilder(name, version)` /
+`new ClientBuilder(name, version)` — and the transport is just another registration rather than a
+separate factory or builder type.
 
 ## Design rules
 
-- **Name and version** are **factory parameters** of `CreateBuilder` — you can't forget them, the
-  code won't compile without them.
+- **Name and version** are **required constructor parameters** of the builder
+  (`new ServerBuilder(name, version)` / `new ClientBuilder(name, version)`) — you can't forget them, the
+  code won't compile without them. There is no static `CreateBuilder` factory; you construct the builder
+  directly.
 - **The transport** is a required registration: `Context.AddStdioTransport()` /
   `Context.AddStreamableHttpTransport(...)`. Its address (baseUrl + path, launch command, or
   endpoint url) is a required parameter of *that* method. Forgetting to register a transport at all
@@ -32,7 +35,7 @@ registration rather than a separate factory or builder type.
 ### Server over stdio
 
 ```csharp
-var serverBuilder = McpServer.CreateBuilder("Demo Server", "1.0.0");
+var serverBuilder = new ServerBuilder("Demo Server", "1.0.0");
 
 serverBuilder.Context
     .AddStdioTransport()                         // the transport (required; Build() throws if none)
@@ -71,7 +74,7 @@ clients — a tool's definition is identical for every client, and tool handlers
 > `path` is the endpoint route (`/mcp`). Don't put the path in the base url.
 
 ```csharp
-var serverBuilder = McpServer.CreateBuilder("Demo Server", "1.0.0");
+var serverBuilder = new ServerBuilder("Demo Server", "1.0.0");
 
 // Shared by every session
 serverBuilder.Context
@@ -99,7 +102,7 @@ await httpServer.Start();                         // accepts connections; one Mc
 ### Client over stdio
 
 ```csharp
-var clientBuilder = McpClient.CreateBuilder("Echo client", "1.0.0");
+var clientBuilder = new ClientBuilder("Echo client", "1.0.0");
 
 clientBuilder.Context
     .AddStdioTransport("echo")                   // command to launch (+ optional arguments)
@@ -117,7 +120,7 @@ await client.Connect();
 The client takes the single, full endpoint url (the address it POSTs to — base url plus path).
 
 ```csharp
-var clientBuilder = McpClient.CreateBuilder("Echo client", "1.0.0");
+var clientBuilder = new ClientBuilder("Echo client", "1.0.0");
 
 clientBuilder.Context
     .AddStreamableHttpTransport("http://localhost:3000/mcp")
@@ -134,19 +137,15 @@ await httpClient.Connect();
 
 ### Entry points
 
-There is one factory per role. Each lives in the core library and takes only name and version; the
-transport is added afterwards on `Context`.
+There is one builder per role, each in the core library. Name and version are **required constructor
+parameters**; the transport and everything else are added afterwards on `Context`. There is no static
+`CreateBuilder` factory — you construct the builder directly, which keeps the same compile-time
+guarantee (the code won't compile without name and version) and avoids a second public `McpServer` /
+`McpClient` symbol colliding with the runtime classes of those names.
 
 ```csharp
-public static class McpServer        // McpSdk.Server
-{
-    public static ServerBuilder CreateBuilder(string name, string version);
-}
-
-public static class McpClient        // McpSdk.Client
-{
-    public static ClientBuilder CreateBuilder(string name, string version);
-}
+var serverBuilder = new ServerBuilder("Demo Server", "1.0.0");   // McpSdk.Server
+var clientBuilder = new ClientBuilder("Echo client", "1.0.0");   // McpSdk.Client
 ```
 
 ### Builders
@@ -157,12 +156,14 @@ transport returns the same builder type, so there is no per-transport builder.
 ```csharp
 public sealed class ServerBuilder
 {
+    public ServerBuilder(string name, string version);
     public IContext Context { get; }
     public IServer Build();
 }
 
 public sealed class ClientBuilder
 {
+    public ClientBuilder(string name, string version);
     public IContext Context { get; }
     public IClient Build();
 }
@@ -292,7 +293,7 @@ public interface IToolsBuilder
 
 ### Options shapes
 
-`Name` and `Version` are not here — they are required `CreateBuilder` parameters.
+`Name` and `Version` are not here — they are required builder constructor parameters.
 
 ```csharp
 public sealed class ServerInfoOptions
@@ -313,7 +314,7 @@ public sealed class ClientInfoOptions
 ## Implementation note — how `Build()` selects the transport
 
 This is about how the API is built, not part of the public surface, but it explains why one
-`CreateBuilder` and one builder type can produce structurally different servers.
+builder type can produce structurally different servers.
 
 `AddStdioTransport()` / `AddStreamableHttpTransport(...)` don't register a leaf service — they
 register the **server host**: the object that owns the lifecycle. Internally:
