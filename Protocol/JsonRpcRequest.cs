@@ -1,6 +1,4 @@
-using McpSdk.Protocol;
-
-namespace McpSdk.Shared
+namespace McpSdk.Protocol
 {
     /// <summary>A JSON-RPC request: an id-bearing method call that expects a response.</summary>
     public sealed class JsonRpcRequest : JsonRpcMessage

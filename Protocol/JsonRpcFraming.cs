@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace McpSdk.Shared
+namespace McpSdk.Protocol
 {
     /// <summary>
     /// Wire-framing rules shared by every transport (MCP 2025-11-25).

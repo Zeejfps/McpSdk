@@ -172,13 +172,13 @@ namespace McpSdk.Server.Tests.Conformance
                     serverTransport = transport;
 
                     // Answer initialize at the transport level — no full McpServer needed for this test.
-                    serverTransport.RequestReceived += (id, method, args) =>
+                    serverTransport.RequestReceived += request =>
                     {
-                        if (method == "initialize")
+                        if (request.Method == "initialize")
                         {
                             var result = new InitializeResult(
                                 ProtocolVersion.Latest, new ServerCapabilitiesModel(), new ServerInfo("S2C Server", "1.0.0"));
-                            _ = serverTransport.SendOkResponse(id, result.WriteMembers);
+                            _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id,result.WriteMembers));
                         }
                     };
                     // Start the peer so it subscribes to the channel and dispatches inbound frames
@@ -191,10 +191,10 @@ namespace McpSdk.Server.Tests.Conformance
                 new HttpClientChannel(new StreamableHttpClientAdapter(url, Loggers), Json, Loggers), Loggers);
 
             string receivedNotification = null;
-            clientTransport.NotificationReceived += (method, args) => receivedNotification = method;
+            clientTransport.NotificationReceived += notification => receivedNotification = notification.Method;
             // Answer a server→client request by echoing back an ok flag.
-            clientTransport.RequestReceived += async (id, method, args) =>
-                await clientTransport.SendOkResponse(id, w => w.Write("ok", true));
+            clientTransport.RequestReceived += async request =>
+                await clientTransport.SendResponse(JsonRpcResponse.Ok(request.Id,w => w.Write("ok", true)));
 
             try
             {
@@ -240,13 +240,13 @@ namespace McpSdk.Server.Tests.Conformance
                 onSession: transport =>
                 {
                     serverTransport = transport;
-                    serverTransport.RequestReceived += (id, method, args) =>
+                    serverTransport.RequestReceived += request =>
                     {
-                        if (method == "initialize")
+                        if (request.Method == "initialize")
                         {
                             var result = new InitializeResult(
                                 ProtocolVersion.Latest, new ServerCapabilitiesModel(), new ServerInfo("Resume Server", "1.0.0"));
-                            _ = serverTransport.SendOkResponse(id, result.WriteMembers);
+                            _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id,result.WriteMembers));
                         }
                     };
                     return serverTransport.Start();

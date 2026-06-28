@@ -1,6 +1,4 @@
-using McpSdk.Protocol;
-
-namespace McpSdk.Shared
+namespace McpSdk.Protocol
 {
     /// <summary>A JSON-RPC notification: a method call with no id, so it expects no response.</summary>
     public sealed class JsonRpcNotification : JsonRpcMessage
