@@ -9,11 +9,6 @@ using McpSdk.Shared;
 
 var json = new NewtonsoftJson();//new SystemJson();
 var loggerFactory = new ClientConsoleLoggerFactory();
-var sseClientFactory = new SseClientFactory(
-    "http://localhost:3000", 
-    "/sse",
-    loggerFactory
-);
 var rootsControllerFactory = new RootsControllerFactory();
 var samplingControllerFactory = new SamplingControllerFactory();
 var client = new ClientBuilder()
@@ -21,8 +16,8 @@ var client = new ClientBuilder()
     .WithVersion("1.0.0")
     .ConfigureContext(c => c
         .AddLogger(loggerFactory)
-        .AddSingleton<IJson>(json)
-        .AddSingleton<ISseClientFactory>(sseClientFactory)
+        .AddNewtonsoftJson()
+        .AddSseClient("http://localhost:3000", "/sse")
         .AddSseTransport()
         //.AddStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
         .AddRootsCapability(rootsControllerFactory)

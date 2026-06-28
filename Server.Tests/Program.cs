@@ -18,15 +18,14 @@ if (args.Length > 0 && args[0] == "conformance")
 // blocks forever; the transport reserves stdout for protocol frames and sends all logging to stderr.
 if (args.Length > 0 && args[0] == "stdio-server")
 {
-    var stdioJson = new NewtonsoftJson();
     var stdioServer = new ServerBuilder()
         .WithName("Stdio Conf Server")
         .WithVersion("1.0.0")
         .ConfigureContext(c => c
             .AddConsoleLogger()
-            .AddSingleton<IJson>(stdioJson)
+            .AddNewtonsoftJson()
             .AddStdioTransport()
-            .AddDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestToolHandler())))
+            .AddDefaultToolsCapability(tools => tools.AddTool(new TestToolHandler())))
         .Build();
 
     await stdioServer.Start();
@@ -35,7 +34,6 @@ if (args.Length > 0 && args[0] == "stdio-server")
 }
 
 var loggerFactory = new ServerConsoleLoggerFactory();
-var json = new NewtonsoftJson();
 var sseServer = new HttpListenerSseServer(
     "http://localhost:3000", 
     "/sse", 
@@ -49,10 +47,10 @@ sseServer.SessionStarted += async sseSession =>
         .WithVersion("1.0.0")
         .ConfigureContext(c => c
             .AddLogger(loggerFactory)
-            .AddSingleton<IJson>(json)
-            .AddSingleton<ISseSession>(sseSession)
+            .AddNewtonsoftJson()
+            .AddSseSession(sseSession)
             .AddSseTransport()
-            .AddDefaultToolsCapability(json, tools =>
+            .AddDefaultToolsCapability(tools =>
             {
                 tools.AddTool(new TestToolHandler());
             }))

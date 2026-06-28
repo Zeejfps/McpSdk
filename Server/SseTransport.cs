@@ -70,5 +70,11 @@ namespace McpSdk.Server
         {
             return context.AddSingleton<ITransportFactory, SseTransportFactory>();
         }
+
+        /// <summary>Registers the per-connection <see cref="ISseSession"/> the SSE transport sends through.</summary>
+        public static IContext AddSseSession(this IContext context, ISseSession sseSession)
+        {
+            return context.AddSingleton<ISseSession>(sseSession);
+        }
     }
 }

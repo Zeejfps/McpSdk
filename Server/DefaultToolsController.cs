@@ -112,11 +112,14 @@ namespace McpSdk.Server
 
     public static class DefaultToolsControllerExtensions
     {
-        public static IContext AddDefaultToolsCapability(this IContext context, IJson json, Action<DefaultToolsController> configure)
+        public static IContext AddDefaultToolsCapability(this IContext context, Action<DefaultToolsController> configure)
         {
-            var toolsController = new DefaultToolsController(json);
-            configure(toolsController);
-            return context.AddToolsCapability(toolsController);
+            return context.AddSingleton<IToolsController>(sp =>
+            {
+                var toolsController = new DefaultToolsController(sp.GetRequiredService<IJson>());
+                configure(toolsController);
+                return toolsController;
+            });
         }
     }
 }

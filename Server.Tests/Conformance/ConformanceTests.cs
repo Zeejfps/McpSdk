@@ -270,8 +270,9 @@ namespace McpSdk.Server.Tests.Conformance
                 .WithName("Conf Server")
                 .WithVersion("1.0.0")
                 .ConfigureContext(c => c
+                    .AddSingleton<IJson>(Json)
                     .AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd))
-                    .AddDefaultToolsCapability(Json, tools =>
+                    .AddDefaultToolsCapability(tools =>
                     {
                         tools.AddTool(new TestToolHandler());
                         tools.AddTool(new StructuredToolHandler(Json));

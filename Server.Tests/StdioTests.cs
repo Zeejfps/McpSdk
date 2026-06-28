@@ -10,15 +10,14 @@ public sealed class StdioTests
 
     public async Task Run()
     {
-        var json = new NewtonsoftJson();
         var mcpServer = new ServerBuilder()
             .WithName("Demo Server")
             .WithVersion("1.0.0")
             .ConfigureContext(c => c
                 .AddConsoleLogger()
-                .AddSingleton<IJson>(json)
+                .AddNewtonsoftJson()
                 .AddStdioTransport()
-                .AddDefaultToolsCapability(json, tools =>
+                .AddDefaultToolsCapability(tools =>
                 {
                     tools.AddTool(new TestToolHandler());
                 }))

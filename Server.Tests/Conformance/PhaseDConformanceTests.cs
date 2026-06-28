@@ -99,8 +99,9 @@ namespace McpSdk.Server.Tests.Conformance
                 .WithName("Page Server")
                 .WithVersion("1.0.0")
                 .ConfigureContext(c => c
+                    .AddSingleton<IJson>(Json)
                     .AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd))
-                    .AddDefaultToolsCapability(Json, tools =>
+                    .AddDefaultToolsCapability(tools =>
                     {
                         tools.PageSize = pageSize;
                         for (var i = 0; i < toolCount; i++)
