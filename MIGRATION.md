@@ -356,14 +356,103 @@ conformance suite (244 assertions) and a cross-process demo (`Server.Tests` ↔ 
 
 ---
 
+## Phase H — Base-protocol & utility completeness
+
+Phases A–G were organized around the **changelog** — what each revision *added*. That lens missed
+the long-stable parts of the spec that never changed and so never appeared in a changelog: the
+base-protocol **utilities** (`ping`, cancellation, progress) and several server **utility methods**
+(`logging/setLevel`, `completion/complete`, resource subscriptions). A few of these were *modelled*
+in earlier phases but never *wired* — e.g. the full completion model set and `ICompletionController`
+exist, yet `completion/complete` is not in the server's handler table; `ResourcesCapabilityModel`
+can advertise `subscribe: true`, but no `resources/subscribe` handler exists. Advertising a
+capability the server can't service is an active conformance violation, so this phase closes the
+gap between *modelled* and *served*.
+
+Two cross-cutting bugs motivate doing it now:
+
+- **Client hangs on any unknown server→client request.** `McpClient.OnRequestReceived` handles only
+  `roots/list` / `sampling/createMessage` / `elicitation/create` and **silently drops** everything
+  else — no response at all. A server→client `ping` (or anything new) never returns. The server
+  correctly replies `MethodNotFound`; the client must too.
+- **Capabilities advertised but unserved** (`completion`, `resources.subscribe`, `logging`).
+
+### H.1 — Ping + unknown-method correctness (base protocol)
+
+- [ ] **`ping` responder on both sides.** Either party MAY send `ping`; the receiver MUST reply
+  promptly with an empty result `{}`. Register `ping` in `McpServer` and `McpClient`.
+- [ ] **Client unknown-method → `MethodNotFound`.** `McpClient.OnRequestReceived` returns a
+  `-32601` error for any method it doesn't handle, instead of dropping it (fixes the hang).
+- [ ] **`IClient.Ping()`** convenience to actively ping the server (the responder is the compliance
+  requirement; this makes it usable + testable).
+
+### H.2 — Cancellation (`notifications/cancelled`)
+
+- [ ] **Canceller side.** When a `CancellationToken` passed to an outbound request fires, the sender
+  emits `notifications/cancelled` (`requestId` + optional `reason`) before unwinding. Wired in
+  `McpClient.SendRequest`.
+- [ ] **Receiver side.** `McpServer` tracks in-flight requests; an inbound `notifications/cancelled`
+  cancels the matching request and **suppresses its response** (spec permits dropping it). Never
+  errors on the notification, and ignores an unknown/already-finished id.
+- [ ] **Cooperative cancellation.** A per-request ambient `McpRequestContext` (carrying the
+  `CancellationToken`) lets long-running controllers observe cancellation without a breaking
+  signature change to the controller interfaces.
+
+### H.3 — Progress (`notifications/progress`)
+
+- [ ] **Token capture.** `McpServer` reads `_meta.progressToken` (string or number) off an inbound
+  request and exposes it on `McpRequestContext`.
+- [ ] **Emit.** `McpRequestContext.ReportProgress(progress, total?, message?)` sends
+  `notifications/progress` keyed to that token; a no-op when the caller supplied none.
+- [ ] **Inbound dispatch.** Both peers route an inbound `notifications/progress` to an optional
+  handler (default: log) instead of dropping it. New `Protocol/Models/ProgressNotification.cs`.
+
+### H.4 — Logging utility
+
+- [ ] **`LoggingLevel`** model (the eight RFC-5424 levels: `debug`…`emergency`).
+- [ ] **`logging/setLevel` handler** in `McpServer`, gated on a new
+  `ServerBuilder.WithLoggingCapability(...)`; advertises the `logging` capability only when enabled.
+- [ ] **Emit `notifications/message`.** Server-side API to send a structured log
+  (`level` / `logger` / `data`), filtered by the client's last-set level.
+- [ ] **Client inbound dispatch.** `McpClient` routes `notifications/message` to an optional handler.
+
+### H.5 — Completion wiring
+
+- [ ] **Register `completion/complete`** in `McpServer`, consuming the existing `ICompletionController`
+  / `CompletionRequest` / `CompletionResult` models (previously dead code).
+- [ ] **`ServerBuilder.WithCompletionCapability(...)`** advertises the `completion` capability and
+  installs the controller. `completion/complete` returns `MethodNotFound` only when not configured.
+
+### H.6 — Resource subscriptions + notifications
+
+- [ ] **`resources/subscribe` / `resources/unsubscribe` handlers** in `McpServer`, gated on the
+  `resources.subscribe` capability (so advertise ⇒ serve).
+- [ ] **`notifications/resources/updated`** emitted (per-URI) and **`notifications/resources/list_changed`**
+  emitted — the two resource notifications the server never sent (it only sent tools/prompts variants).
+- [ ] **Controller surface.** `IResourcesController` gains the subscribe/unsubscribe + per-URI
+  `ResourceUpdated` plumbing alongside its existing `ListChanged` / `ResourceChanged` events.
+
+**Exit:** every method the server advertises is actually served; `ping` round-trips both directions
+and an unknown server→client method returns `MethodNotFound`; `notifications/cancelled` cancels an
+in-flight request; `notifications/progress` round-trips against a captured `progressToken`;
+`logging/setLevel` + `notifications/message` work end-to-end; `completion/complete` returns
+suggestions; and `resources/subscribe`/`unsubscribe` + the `updated`/`list_changed` notifications
+round-trip. Verified by a new `PhaseHConformanceTests` suite.
+
+*Still out of scope (unchanged): OAuth 2.1 authorization, experimental Tasks. Note: "fully
+spec-compliant" for a **public** Streamable HTTP server normally implies the Authorization spec —
+fine to defer for stdio / trusted-network use, but a conscious choice, not an omission.*
+
+---
+
 ## Cross-cutting
 
 - **Tests:** extend `Server.Tests` / `Client.Tests` with a conformance case per phase (negotiation,
   pagination, structured output, elicitation).
 - **Docs:** update `README.md` examples; add a capability/feature matrix.
-- **Sequencing:** A → B → C → D → E → F can each merge independently; G last, and G itself is
+- **Sequencing:** A → B → C → D → E → F can each merge independently; G next, and G itself is
   ordered — **G.1 deletes** the legacy HTTP+SSE transport (shippable on its own: stdio-only SDK),
-  then **G.2 builds** Streamable HTTP.
+  then **G.2 builds** Streamable HTTP. **H** closes the base-protocol/utility gaps and its
+  sub-phases (H.1–H.6) are independent of one another — each is shippable on its own.
 
 ## References
 
