@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 
 namespace McpSdk.Protocol.Models
@@ -49,14 +50,7 @@ namespace McpSdk.Protocol.Models
 
         public CallToolResult(IJsonObject jsonObject)
         {
-            var contentArray = jsonObject["content"].AsObjectArray();
-            var content = new Content[contentArray.Length];
-            for (var i = 0; i < contentArray.Length; i++)
-            {
-                var contentObj = contentArray[i];
-                content[i] = Models.Content.Create(contentObj);
-            }
-            Content = content;
+            Content = jsonObject["content"].AsArray(Models.Content.FromJsonObject) ?? Array.Empty<Content>();
             IsError = jsonObject["isError"]?.AsBool();
             StructuredContent = jsonObject["structuredContent"]?.AsObject();
             var metaObj = jsonObject["_meta"]?.AsObject();

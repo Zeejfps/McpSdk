@@ -115,14 +115,14 @@ namespace McpSdk.Server.Tests.Conformance
         private static Task ContentTypesRoundTrip()
         {
             var audioJson = Json.Object(new AudioContent("audio/wav", "QUJD").WriteMembers);
-            var audio = Content.Create(audioJson) as AudioContent;
+            var audio = Content.FromJsonObject(audioJson) as AudioContent;
             Assert(audio != null, "audio content type is recognized by Content.Create");
             AssertEqual("audio/wav", audio?.MimeType, "audio mimeType round-trips");
             AssertEqual("QUJD", audio?.Base64EncodedData, "audio data round-trips");
 
             var linkJson = Json.Object(
                 new ResourceLinkContent("file:///x.txt", "x.txt", "X File", "a file", "text/plain").WriteMembers);
-            var link = Content.Create(linkJson) as ResourceLinkContent;
+            var link = Content.FromJsonObject(linkJson) as ResourceLinkContent;
             Assert(link != null, "resource_link content type is recognized by Content.Create");
             AssertEqual("file:///x.txt", link?.Uri, "resource_link uri round-trips");
             AssertEqual("x.txt", link?.Name, "resource_link name round-trips");
