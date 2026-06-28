@@ -14,6 +14,7 @@ using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
 using McpSdk.Protocol.Models.ServerCapabilities;
+using McpSdk.Shared;
 
 namespace McpSdk.Server.Tests.Conformance
 {
@@ -159,7 +160,7 @@ namespace McpSdk.Server.Tests.Conformance
             const string endpointPath = "/mcp";
             var url = $"{baseUrl}{endpointPath}";
 
-            StreamableHttpServerTransport serverTransport = null;
+            ITransport serverTransport = null;
 
             var listener = new StreamableHttpListener(
                 baseUrl,
@@ -168,7 +169,7 @@ namespace McpSdk.Server.Tests.Conformance
                 Loggers,
                 onSession: transport =>
                 {
-                    serverTransport = (StreamableHttpServerTransport)transport;
+                    serverTransport = transport;
 
                     // Answer initialize at the transport level — no full McpServer needed for this test.
                     serverTransport.RequestReceived += (id, method, args) =>
@@ -180,12 +181,14 @@ namespace McpSdk.Server.Tests.Conformance
                             _ = serverTransport.SendOkResponse(id, result.WriteMembers);
                         }
                     };
-                    return Task.CompletedTask;
+                    // Start the peer so it subscribes to the channel and dispatches inbound frames
+                    // (what McpServer.Start would do for us in the full-server tests).
+                    return serverTransport.Start();
                 });
             await listener.Start();
 
-            var clientTransport = new StreamableHttpClientTransport(
-                new StreamableHttpClientAdapter(url, Loggers), Json, Loggers);
+            var clientTransport = new JsonRpcPeer(
+                new HttpClientChannel(new StreamableHttpClientAdapter(url, Loggers), Json, Loggers), Json, Loggers);
 
             string receivedNotification = null;
             clientTransport.NotificationReceived += (method, args) => receivedNotification = method;
@@ -227,7 +230,7 @@ namespace McpSdk.Server.Tests.Conformance
             const string endpointPath = "/mcp";
             var url = $"{baseUrl}{endpointPath}";
 
-            StreamableHttpServerTransport serverTransport = null;
+            ITransport serverTransport = null;
 
             var listener = new StreamableHttpListener(
                 baseUrl,
@@ -236,7 +239,7 @@ namespace McpSdk.Server.Tests.Conformance
                 Loggers,
                 onSession: transport =>
                 {
-                    serverTransport = (StreamableHttpServerTransport)transport;
+                    serverTransport = transport;
                     serverTransport.RequestReceived += (id, method, args) =>
                     {
                         if (method == "initialize")
@@ -246,7 +249,7 @@ namespace McpSdk.Server.Tests.Conformance
                             _ = serverTransport.SendOkResponse(id, result.WriteMembers);
                         }
                     };
-                    return Task.CompletedTask;
+                    return serverTransport.Start();
                 });
             await listener.Start();
 
