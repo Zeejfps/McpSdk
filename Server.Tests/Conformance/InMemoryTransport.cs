@@ -1,3 +1,4 @@
+#nullable disable
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,52 +8,58 @@ using McpSdk.Shared;
 namespace McpSdk.Server.Tests.Conformance
 {
     /// <summary>
-    /// In-process loopback transport used by the conformance suite. Two instances are linked as a
-    /// pair; whatever one sends is delivered to the other's message pump on a background task (to
-    /// mimic a real async transport and avoid re-entrancy). Every raw JSON line sent and received
-    /// is recorded so tests can assert on the exact wire format (e.g. the negotiated version or the
-    /// echoed request id).
+    /// In-process loopback transport used by the conformance suite. It is no longer its own JSON-RPC
+    /// engine: it composes the shared <see cref="JsonRpcPeer"/> over a paired <see cref="InMemoryChannel"/>,
+    /// the same three-layer stack the real transports use. It re-exposes the channel's wire recording
+    /// (<see cref="Sent"/> / <see cref="Received"/>) and raw-frame injection (<see cref="SendRaw"/>) so the
+    /// existing tests keep driving a single object as both an <see cref="ITransport"/> and a wire probe.
     /// </summary>
-    public sealed class InMemoryTransport : JsonRpcTransport
+    public sealed class InMemoryTransport : ITransport
     {
-        private InMemoryTransport _peer;
+        private readonly InMemoryChannel _channel;
+        private readonly JsonRpcPeer _peer;
 
-        public List<string> Sent { get; } = new();
-        public List<string> Received { get; } = new();
-
-        public InMemoryTransport(IJson json, ILoggerFactory loggerFactory) : base(json, loggerFactory)
+        private InMemoryTransport(InMemoryChannel channel, ILoggerFactory loggerFactory)
         {
+            _channel = channel;
+            _peer = new JsonRpcPeer(channel, loggerFactory);
         }
+
+        public List<string> Sent => _channel.Sent;
+        public List<string> Received => _channel.Received;
 
         public static (InMemoryTransport client, InMemoryTransport server) CreatePair(IJson json, ILoggerFactory loggerFactory)
         {
-            var client = new InMemoryTransport(json, loggerFactory);
-            var server = new InMemoryTransport(json, loggerFactory);
-            client._peer = server;
-            server._peer = client;
-            return (client, server);
+            var (a, b) = InMemoryChannel.CreatePair(json);
+            return (new InMemoryTransport(a, loggerFactory), new InMemoryTransport(b, loggerFactory));
         }
 
-        /// <summary>Sends a raw, pre-serialized JSON-RPC message (used to craft custom request ids).</summary>
-        public Task SendRaw(string messageAsJson) => Send(messageAsJson);
+        /// <summary>Sends a raw, pre-serialized JSON-RPC frame (used to craft custom request ids).</summary>
+        public Task SendRaw(string messageAsJson) => _channel.SendRaw(messageAsJson);
 
-        protected override Task OnStart(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        protected override Task OnStop(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        protected override Task Send(string requestAsJson, CancellationToken cancellationToken = default)
+        public event RequestReceivedCallback RequestReceived
         {
-            lock (Sent)
-                Sent.Add(requestAsJson);
-
-            var peer = _peer;
-            _ = Task.Run(() =>
-            {
-                lock (peer.Received)
-                    peer.Received.Add(requestAsJson);
-                peer.OnMessageReceived(requestAsJson);
-            });
-            return Task.CompletedTask;
+            add => _peer.RequestReceived += value;
+            remove => _peer.RequestReceived -= value;
         }
+
+        public event NotificationReceivedCallback NotificationReceived
+        {
+            add => _peer.NotificationReceived += value;
+            remove => _peer.NotificationReceived -= value;
+        }
+
+        public Task Start(CancellationToken cancellationToken = default) => _peer.Start(cancellationToken);
+
+        public Task Stop() => _peer.Stop();
+
+        public Task SendNotification(JsonRpcNotification notification, CancellationToken cancellationToken = default)
+            => _peer.SendNotification(notification, cancellationToken);
+
+        public Task<JsonRpcResponse> SendRequest(JsonRpcRequest request, CancellationToken cancellationToken = default)
+            => _peer.SendRequest(request, cancellationToken);
+
+        public Task SendResponse(JsonRpcResponse response, CancellationToken cancellationToken = default)
+            => _peer.SendResponse(response, cancellationToken);
     }
 }
