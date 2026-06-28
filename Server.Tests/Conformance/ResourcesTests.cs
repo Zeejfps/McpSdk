@@ -152,12 +152,26 @@ namespace McpSdk.Server.Tests.Conformance
             var controller = new TestResourcesController(resourceChanged: false, listChanged: false);
             var (clientEnd, _) = await StartResourceServer(controller);
 
-            // NOTE: ReadResourceResult/ReadResourceRequest are currently stubs (they carry no contents),
-            // so this can only assert the method is routed and the controller is invoked — not that
-            // contents round-trip. Tighten once those models carry a Contents payload.
             var resp = await clientEnd.SendRequest("resources/read", w => w.Write("uri", "file:///a.txt"));
             Assert(resp.IsOk, "resources/read returns a (non-error) result");
             Assert(controller.ReadInvoked, "the resources controller's ReadResource was invoked");
+            AssertEqual("file:///a.txt", controller.ReadUri, "the requested uri reaches the controller");
+
+            // The contents the controller returned round-trip back to the client (text + blob).
+            var result = new ReadResourceResult(resp.Result);
+            Assert(result.Contents.Length == 2, "resources/read returns both content entries");
+
+            var text = result.Contents[0] as TextResourceContents;
+            Assert(text != null, "the first entry parses as text resource contents");
+            AssertEqual("file:///a.txt", text?.Uri, "text content uri round-trips");
+            AssertEqual("text/plain", text?.MimeType, "text content mimeType round-trips");
+            AssertEqual("hello", text?.Text, "text content text round-trips");
+
+            var blob = result.Contents[1] as BlobResourceContents;
+            Assert(blob != null, "the second entry parses as blob resource contents");
+            AssertEqual("file:///a.txt", blob?.Uri, "blob content uri round-trips");
+            AssertEqual("application/octet-stream", blob?.MimeType, "blob content mimeType round-trips");
+            AssertEqual("QUJD", blob?.Blob, "blob content data round-trips");
         }
 
         private async Task ListResourceTemplatesThroughServer()
@@ -263,6 +277,7 @@ namespace McpSdk.Server.Tests.Conformance
             public Resource[] ResourcesToReturn { get; set; } = Array.Empty<Resource>();
             public ResourceTemplate[] TemplatesToReturn { get; set; } = Array.Empty<ResourceTemplate>();
             public bool ReadInvoked { get; private set; }
+            public string ReadUri { get; private set; }
             public List<string> Subscribed { get; } = new();
 
             public event Action ListChanged;
@@ -280,7 +295,15 @@ namespace McpSdk.Server.Tests.Conformance
             public Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest, McpRequestContext context)
             {
                 ReadInvoked = true;
-                return Task.FromResult(new ReadResourceResult());
+                ReadUri = readResourceRequest.Uri;
+                // Echo the requested uri back through both contents shapes so a test can assert that the
+                // uri reached the controller and that text + blob contents round-trip to the client.
+                var contents = new ResourceContents[]
+                {
+                    new TextResourceContents(readResourceRequest.Uri, "text/plain", "hello"),
+                    new BlobResourceContents(readResourceRequest.Uri, "application/octet-stream", "QUJD"),
+                };
+                return Task.FromResult(new ReadResourceResult(contents));
             }
 
             public Task Subscribe(string uri, McpRequestContext context) { lock (Subscribed) Subscribed.Add(uri); return Task.CompletedTask; }

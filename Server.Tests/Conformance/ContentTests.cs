@@ -22,6 +22,7 @@ namespace McpSdk.Server.Tests.Conformance
             await Test("audio + resource_link content types round-trip", AudioAndResourceLinkRoundTrip);
             await Test("image + embedded resource content types round-trip", ImageAndEmbeddedResourceRoundTrip);
             await Test("content parses as a single object or an array", ContentSingleOrArrayParsing);
+            await Test("an unmodeled content type round-trips verbatim", UnknownContentRoundTripsVerbatim);
         }
 
         private Task AudioAndResourceLinkRoundTrip()
@@ -67,6 +68,28 @@ namespace McpSdk.Server.Tests.Conformance
             AssertEqual("file:///note.txt", contents?.Uri, "embedded resource uri round-trips");
             AssertEqual("text/plain", contents?.MimeType, "embedded resource mimeType round-trips");
             AssertEqual("hello", contents?.Text, "embedded resource text round-trips");
+
+            return Task.CompletedTask;
+        }
+
+        private Task UnknownContentRoundTripsVerbatim()
+        {
+            // A forward-compat peer may send a content type this SDK does not model. The catch-all
+            // UnknownContent must preserve the source verbatim, not flatten it to {"type":"unknown"}.
+            var sourceJson = Json.Object(w =>
+            {
+                w.Write("type", "future_widget");
+                w.Write("widgetId", "w-42");
+                w.Write("payload", Json.Object(p => p.Write("nested", true)));
+            });
+
+            var content = Content.FromJsonObject(sourceJson);
+            Assert(content is UnknownContent, "an unmodeled content type maps to UnknownContent");
+
+            var roundTripped = Json.Object(content.WriteMembers);
+            AssertEqual("future_widget", roundTripped["type"]?.AsString(), "the unknown type is preserved (not rewritten to 'unknown')");
+            AssertEqual("w-42", roundTripped["widgetId"]?.AsString(), "an unmodeled scalar field round-trips");
+            Assert(roundTripped["payload"]?.AsObject()?["nested"]?.AsBool() == true, "an unmodeled nested object round-trips");
 
             return Task.CompletedTask;
         }
