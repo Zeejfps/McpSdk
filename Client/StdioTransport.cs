@@ -10,12 +10,11 @@ using McpSdk.Shared;
 namespace McpSdk.Client
 {
     /// <summary>
-    /// The client stdio half of the transport seam: spawns the server process and exposes its
-    /// stdin/stdout as the wire boundary, rendering outbound JSON-RPC messages and parsing inbound ones as
-    /// newline-delimited UTF-8 (no BOM). No ids, no correlation — wrap it in a <see cref="JsonRpcPeer"/> to
-    /// get an <c>ITransport</c>.
+    /// The client stdio transport: spawns the server process and uses its stdin/stdout as the wire,
+    /// rendering outbound JSON-RPC messages and parsing inbound ones as newline-delimited UTF-8 (no BOM).
+    /// Correlation and dispatch are inherited from <see cref="JsonRpcTransport"/>.
     /// </summary>
-    public sealed class StdioClientChannel : IMessageChannel
+    public sealed class StdioTransport : JsonRpcTransport
     {
         // UTF-8 with no BOM: the stdio spec mandates UTF-8, and a BOM would corrupt the first frame.
         private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -23,7 +22,6 @@ namespace McpSdk.Client
         private readonly string _command;
         private readonly string _arguments;
         private readonly IJson _json;
-        private readonly ILogger _logger;
 
         private StreamWriter _standardIn;
         private Process _process;
@@ -31,17 +29,15 @@ namespace McpSdk.Client
         private Task _readStdOutTask;
         private Task _readStdErrTask;
 
-        public StdioClientChannel(string command, string arguments, IJson json, ILoggerFactory loggerFactory)
+        public StdioTransport(string command, string arguments, IJson json, ILoggerFactory loggerFactory)
+            : base(loggerFactory)
         {
             _command = command;
             _arguments = arguments;
             _json = json;
-            _logger = loggerFactory.Create<StdioClientChannel>();
         }
 
-        public event Action<JsonRpcMessage> MessageReceived;
-
-        public Task Start(CancellationToken cancellationToken = default)
+        protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             var processStartInfo = new ProcessStartInfo
             {
@@ -76,7 +72,7 @@ namespace McpSdk.Client
             return Task.CompletedTask;
         }
 
-        public async Task Stop()
+        protected override async Task OnStop()
         {
             try
             {
@@ -87,11 +83,11 @@ namespace McpSdk.Client
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex);
+                Logger.LogError(ex);
             }
         }
 
-        public async Task Send(JsonRpcMessage message, CancellationToken cancellationToken = default)
+        protected override async Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
             await _standardIn.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
         }
@@ -104,9 +100,9 @@ namespace McpSdk.Client
                 if (line == null)
                     break;
 
-                _logger.LogDebug($"[SERVER-OUT] {line}");
+                Logger.LogDebug($"[SERVER-OUT] {line}");
                 if (JsonRpcMessage.TryParse(_json, line, out var message))
-                    MessageReceived?.Invoke(message);
+                    OnMessageReceived(message);
             }
         }
 
@@ -118,7 +114,7 @@ namespace McpSdk.Client
                 if (message == null)
                     break;
 
-                _logger.LogDebug($"[SERVER-ERR] {message}");
+                Logger.LogDebug($"[SERVER-ERR] {message}");
             }
         }
     }

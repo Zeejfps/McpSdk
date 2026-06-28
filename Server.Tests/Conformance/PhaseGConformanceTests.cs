@@ -181,14 +181,14 @@ namespace McpSdk.Server.Tests.Conformance
                             _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id,result.WriteMembers));
                         }
                     };
-                    // Start the peer so it subscribes to the channel and dispatches inbound frames
-                    // (what McpServer.Start would do for us in the full-server tests).
+                    // Start the transport so it dispatches inbound frames (what McpServer.Start would do
+                    // for us in the full-server tests).
                     return serverTransport.Start();
                 });
             await listener.Start();
 
-            var clientTransport = new JsonRpcPeer(
-                new HttpClientChannel(new StreamableHttpClientAdapter(url, Loggers), Json, Loggers), Loggers);
+            var clientTransport = new HttpClientTransport(
+                new StreamableHttpClientAdapter(url, Loggers), Json, Loggers);
 
             string receivedNotification = null;
             clientTransport.NotificationReceived += notification => receivedNotification = notification.Method;

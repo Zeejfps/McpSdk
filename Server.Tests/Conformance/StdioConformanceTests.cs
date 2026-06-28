@@ -88,7 +88,7 @@ namespace McpSdk.Server.Tests.Conformance
         {
             var (command, arguments) = ResolveStdioServerCommand();
             var json = new NewtonsoftJson();
-            var transport = new JsonRpcPeer(new StdioClientChannel(command, arguments, json, Loggers), Loggers);
+            var transport = new McpSdk.Client.StdioTransport(command, arguments, json, Loggers);
             var client = new ClientBuilder()
                 .WithName("Stdio Conf Client")
                 .WithVersion("1.0.0")

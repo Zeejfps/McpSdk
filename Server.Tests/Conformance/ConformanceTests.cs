@@ -106,10 +106,10 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("Streamable HTTP lifecycle: DELETE terminates the session (then 404)", StreamableHttpDeleteTerminatesSession);
 
             Console.WriteLine();
-            Console.WriteLine("=== Architecture Spike (IMessageChannel + JsonRpcPeer) ===");
+            Console.WriteLine("=== Architecture Spike (shared JsonRpcTransport engine) ===");
 
-            await RunTest("McpServer<->McpClient over JsonRpcPeer + in-memory channel", PeerOverInMemoryChannel);
-            await RunTest("New-stack client (JsonRpcPeer + StdioClientChannel) <-> real stdio-server child", PeerOverRealStdio);
+            await RunTest("McpServer<->McpClient over the loopback InMemoryTransport", PeerOverInMemoryChannel);
+            await RunTest("Client StdioTransport <-> real stdio-server child", PeerOverRealStdio);
 
             Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");

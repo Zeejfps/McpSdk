@@ -8,24 +8,22 @@ using McpSdk.Shared;
 namespace McpSdk.Server
 {
     /// <summary>
-    /// The Streamable HTTP server channel: the HTTP/SSE delivery layer for one MCP session, exposed as a
-    /// dumb <see cref="IMessageChannel"/> so a shared <see cref="JsonRpcPeer"/> sits on top. It owns only
-    /// the genuinely HTTP-specific concerns:
+    /// The Streamable HTTP server transport for one MCP session. On top of the inherited
+    /// <see cref="JsonRpcTransport"/> engine (correlation + dispatch), it owns the genuinely
+    /// HTTP-specific concerns:
     /// <list type="bullet">
     ///   <item>routing an outbound frame — a JSON-RPC <em>response</em> goes back on the POST that
     ///   carried its request; a server-initiated request/notification goes onto the SSE stream;</item>
     ///   <item>the SSE event-id replay buffer for <c>Last-Event-ID</c> resumption.</item>
     /// </list>
-    /// Request/response <em>correlation</em>, id generation, and envelope encoding live one layer up in
-    /// the peer/codec — so, unlike the old per-transport class, this channel has no outbound-request map
-    /// and no id counter.
+    /// The HTTP listener drives it directly through <see cref="HandleInboundPost"/> and
+    /// <see cref="AttachStream"/>, while the <c>McpServer</c> sees it only as an <see cref="ITransport"/>.
     /// </summary>
-    public sealed class HttpServerChannel : IMessageChannel
+    public sealed class HttpServerTransport : JsonRpcTransport
     {
         private const int MaxBufferedEvents = 256;
 
         private readonly IJson _json;
-        private readonly ILogger _logger;
         private readonly object _gate = new object();
 
         // Inbound client requests awaiting their HTTP response: id -> the POST's completion.
@@ -39,27 +37,25 @@ namespace McpSdk.Server
         private long _nextEventId;
         private long _deliveredThrough;
 
-        public HttpServerChannel(IJson json, ILoggerFactory loggerFactory, string sessionId)
+        public HttpServerTransport(IJson json, ILoggerFactory loggerFactory, string sessionId) : base(loggerFactory)
         {
             _json = json;
-            _logger = loggerFactory.Create<HttpServerChannel>();
             SessionId = sessionId;
         }
 
-        public event Action<JsonRpcMessage> MessageReceived;
-
-        /// <summary>The <c>Mcp-Session-Id</c> this channel is bound to.</summary>
+        /// <summary>The <c>Mcp-Session-Id</c> this transport is bound to.</summary>
         public string SessionId { get; }
 
         /// <summary>Fires when the session is torn down, so an open SSE stream can close promptly.</summary>
         public CancellationToken Lifetime => _lifetimeCts.Token;
 
-        public Task Start(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        protected override Task OnStart(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public Task Stop()
+        protected override Task OnStop()
         {
             // Session teardown (DELETE / listener stop): detach the stream, release any open POSTs, and
-            // signal the GET loop to close.
+            // signal the GET loop to close. (The base has already failed any in-flight server→client
+            // requests.)
             List<TaskCompletionSource<string>> pending;
             lock (_gate)
             {
@@ -74,9 +70,9 @@ namespace McpSdk.Server
             return Task.CompletedTask;
         }
 
-        // -- Outbound (peer -> wire) ---------------------------------------------------------
+        // -- Outbound (engine -> wire) -------------------------------------------------------
 
-        public Task Send(JsonRpcMessage message, CancellationToken cancellationToken = default)
+        protected override Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
             var payload = _json.Stringify(message.WriteMembers);
 
@@ -101,40 +97,40 @@ namespace McpSdk.Server
             return EmitEvent(payload);
         }
 
-        // -- Inbound (HTTP listener -> peer) -------------------------------------------------
+        // -- Inbound (HTTP listener -> engine) -----------------------------------------------
 
         /// <summary>
-        /// Hands an inbound POST body to the peer. Returns the JSON-RPC response to write back on this
+        /// Hands an inbound POST body to the engine. Returns the JSON-RPC response to write back on this
         /// POST (when the body is a request), or <c>null</c> for a notification/response (answered 202).
         /// </summary>
         public Task<string> HandleInboundPost(string body)
         {
             if (JsonRpcFraming.IsBatch(body))
             {
-                _logger.LogError("Rejected a JSON-RPC batch; batching was removed in MCP 2025-06-18.");
+                Logger.LogError("Rejected a JSON-RPC batch; batching was removed in MCP 2025-06-18.");
                 return Task.FromResult<string>(null);
             }
 
             if (!JsonRpcMessage.TryParse(_json, body, out var message))
             {
-                _logger.LogDebug("Ignored an unparseable or non-dispatchable frame.");
+                Logger.LogDebug("Ignored an unparseable or non-dispatchable frame.");
                 return Task.FromResult<string>(null);
             }
 
             if (message is JsonRpcRequest request)
             {
-                // Hold the POST open until the peer answers — its SendResponse routes the response back
-                // here via Send. Register before dispatch so a synchronous reply lands.
+                // Hold the POST open until the server answers — its SendResponse routes the response back
+                // here via SendMessage. Register before dispatch so a synchronous reply lands.
                 var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
                 lock (_gate)
                     _pendingPostById[request.Id] = tcs;
 
-                MessageReceived?.Invoke(message);
+                OnMessageReceived(message);
                 return tcs.Task;
             }
 
             // A notification, or the client's reply to a server-initiated request: dispatch, answer 202.
-            MessageReceived?.Invoke(message);
+            OnMessageReceived(message);
             return Task.FromResult<string>(null);
         }
 
@@ -210,25 +206,24 @@ namespace McpSdk.Server
 
         private sealed class StreamHandle : IDisposable
         {
-            private readonly HttpServerChannel _channel;
+            private readonly HttpServerTransport _transport;
             private readonly Func<long, string, Task> _writeEvent;
 
-            public StreamHandle(HttpServerChannel channel, Func<long, string, Task> writeEvent)
+            public StreamHandle(HttpServerTransport transport, Func<long, string, Task> writeEvent)
             {
-                _channel = channel;
+                _transport = transport;
                 _writeEvent = writeEvent;
             }
 
-            public void Dispose() => _channel.DetachStream(_writeEvent);
+            public void Dispose() => _transport.DetachStream(_writeEvent);
         }
     }
 
     public static class StreamableHttpServerBuilderExtensions
     {
         /// <summary>
-        /// Wires a pre-built per-session transport (the <see cref="JsonRpcPeer"/> the HTTP listener
-        /// created over an <see cref="HttpServerChannel"/>) into the server, from the listener's session
-        /// callback.
+        /// Wires a pre-built per-session <see cref="HttpServerTransport"/> (created by the HTTP listener)
+        /// into the server, from the listener's session callback.
         /// </summary>
         public static ServerBuilder WithStreamableHttpTransport(this ServerBuilder builder, ITransport transport)
         {
