@@ -13,7 +13,8 @@ namespace McpSdk.Client
         public static IContext AddStdioTransport(this IContext context, string command, string[] args)
         {
             return context.AddSingleton<ITransportFactory>(
-                sp => new StdioTransportFactory(sp.GetRequiredService<IJson>(), command, args));
+                sp => new StdioTransportFactory(
+                    sp.GetRequiredService<IJson>(), sp.GetRequiredService<ILoggerFactory>(), command, args));
         }
     }
 }

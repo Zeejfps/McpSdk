@@ -269,12 +269,13 @@ namespace McpSdk.Server.Tests.Conformance
             return new ServerBuilder()
                 .WithName("Conf Server")
                 .WithVersion("1.0.0")
-                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd)))
-                .WithDefaultToolsCapability(Json, tools =>
-                {
-                    tools.AddTool(new TestToolHandler());
-                    tools.AddTool(new StructuredToolHandler(Json));
-                })
+                .ConfigureContext(c => c
+                    .AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd))
+                    .AddDefaultToolsCapability(Json, tools =>
+                    {
+                        tools.AddTool(new TestToolHandler());
+                        tools.AddTool(new StructuredToolHandler(Json));
+                    }))
                 .Build();
         }
 

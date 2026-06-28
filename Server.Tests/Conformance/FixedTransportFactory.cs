@@ -13,6 +13,6 @@ namespace McpSdk.Server.Tests.Conformance
             _transport = transport;
         }
 
-        public ITransport Create(ILoggerFactory loggerFactory) => _transport;
+        public ITransport Create() => _transport;
     }
 }

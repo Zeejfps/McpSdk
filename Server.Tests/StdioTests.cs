@@ -14,14 +14,14 @@ public sealed class StdioTests
         var mcpServer = new ServerBuilder()
             .WithName("Demo Server")
             .WithVersion("1.0.0")
-            .WithConsoleLogger()
             .ConfigureContext(c => c
+                .AddConsoleLogger()
                 .AddSingleton<IJson>(json)
-                .AddStdioTransport())
-            .WithDefaultToolsCapability(json, tools =>
-            {
-                tools.AddTool(new TestToolHandler());
-            })
+                .AddStdioTransport()
+                .AddDefaultToolsCapability(json, tools =>
+                {
+                    tools.AddTool(new TestToolHandler());
+                }))
             .Build();
 
         await mcpServer.Start();

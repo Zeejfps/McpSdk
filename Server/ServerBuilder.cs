@@ -10,15 +10,11 @@ namespace McpSdk.Server
         private string _version;
         private string _title;
         private string _description;
-        private IToolsController _toolsController;
-        private IPromptController _promptsController;
-        private IResourcesController _resourcesController;
-        private ILoggerFactory _loggerFactory;
         private readonly DiContainer _container = new DiContainer();
 
         public ServerBuilder()
         {
-            _loggerFactory = new NullLoggerFactory();
+            _container.AddSingleton<ILoggerFactory>(new NullLoggerFactory());
         }
 
         /// <summary>
@@ -32,12 +28,6 @@ namespace McpSdk.Server
         {
             if (configure == null) throw new ArgumentNullException(nameof(configure));
             configure(_container);
-            return this;
-        }
-
-        public ServerBuilder WithLogger(ILoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
             return this;
         }
 
@@ -65,24 +55,6 @@ namespace McpSdk.Server
             return this;
         }
 
-        public ServerBuilder WithResourcesCapability(IResourcesController resourcesController)
-        {
-            _resourcesController = resourcesController;
-            return this;
-        }
-        
-        public ServerBuilder WithPromptsCapability(IPromptController promptsController)
-        {
-            _promptsController = promptsController;
-            return this;
-        }
-        
-        public ServerBuilder WithToolsCapability(IToolsController toolsController)
-        {
-            _toolsController = toolsController;
-            return this;
-        }
-
         public IServer Build()
         {
             if (_name == null)
@@ -91,15 +63,15 @@ namespace McpSdk.Server
             if (_version == null)
                 throw new ArgumentNullException(nameof(_version), "Server version cannot be null.");
             
-            var loggerFactory = _loggerFactory;
             var provider = _container.BuildServiceProvider();
-            var transport = provider.GetRequiredService<ITransportFactory>().Create(loggerFactory);
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+            var transport = provider.GetRequiredService<ITransportFactory>().Create();
             var serverInfo = new ServerInfo(_name, _version, _title, _description);
-            
-            var tools = _toolsController;
-            var prompts = _promptsController;
-            var resources = _resourcesController;
-            
+
+            var tools = provider.GetService<IToolsController>();
+            var prompts = provider.GetService<IPromptController>();
+            var resources = provider.GetService<IResourcesController>();
+
             var server =  new McpServer(
                 transport,
                 serverInfo, 

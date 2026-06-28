@@ -4,6 +4,6 @@ namespace McpSdk.Shared
 {
     public interface ITransportFactory
     {
-        ITransport Create(ILoggerFactory loggerFactory);
+        ITransport Create();
     }
 }

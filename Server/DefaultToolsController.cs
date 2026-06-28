@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
@@ -111,12 +112,11 @@ namespace McpSdk.Server
 
     public static class DefaultToolsControllerExtensions
     {
-        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, Action<DefaultToolsController> configure)
+        public static IContext AddDefaultToolsCapability(this IContext context, IJson json, Action<DefaultToolsController> configure)
         {
             var toolsController = new DefaultToolsController(json);
             configure(toolsController);
-            builder.WithToolsCapability(toolsController);
-            return builder;
+            return context.AddToolsCapability(toolsController);
         }
     }
 }

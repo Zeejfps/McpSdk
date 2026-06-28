@@ -19,14 +19,14 @@ var samplingControllerFactory = new SamplingControllerFactory();
 var client = new ClientBuilder()
     .WithName("Echo Client")
     .WithVersion("1.0.0")
-    .WithLogger(loggerFactory)
     .ConfigureContext(c => c
+        .AddLogger(loggerFactory)
         .AddSingleton<IJson>(json)
         .AddSingleton<ISseClientFactory>(sseClientFactory)
-        .AddSseTransport())
+        .AddSseTransport()
         //.AddStdioTransport("G:\\Dev\\C#\\MCPSharp\\Server.Tests\\bin\\Debug\\net9.0\\McpSdk.Server.Tests.exe", [])
-    .WithRootsCapability(rootsControllerFactory)
-    .WithSamplingCapability(samplingControllerFactory)
+        .AddRootsCapability(rootsControllerFactory)
+        .AddSamplingCapability(samplingControllerFactory))
     .Build();
 
 await client.Connect();

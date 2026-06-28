@@ -22,11 +22,11 @@ if (args.Length > 0 && args[0] == "stdio-server")
     var stdioServer = new ServerBuilder()
         .WithName("Stdio Conf Server")
         .WithVersion("1.0.0")
-        .WithConsoleLogger()
         .ConfigureContext(c => c
+            .AddConsoleLogger()
             .AddSingleton<IJson>(stdioJson)
-            .AddStdioTransport())
-        .WithDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestToolHandler()))
+            .AddStdioTransport()
+            .AddDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestToolHandler())))
         .Build();
 
     await stdioServer.Start();
@@ -47,15 +47,15 @@ sseServer.SessionStarted += async sseSession =>
     var mcpServer = new ServerBuilder()
         .WithName("Demo Server")
         .WithVersion("1.0.0")
-        .WithLogger(loggerFactory)
         .ConfigureContext(c => c
+            .AddLogger(loggerFactory)
             .AddSingleton<IJson>(json)
             .AddSingleton<ISseSession>(sseSession)
-            .AddSseTransport())
-        .WithDefaultToolsCapability(json, tools =>
-        {
-            tools.AddTool(new TestToolHandler());
-        })
+            .AddSseTransport()
+            .AddDefaultToolsCapability(json, tools =>
+            {
+                tools.AddTool(new TestToolHandler());
+            }))
         .Build();
 
     await mcpServer.Start();

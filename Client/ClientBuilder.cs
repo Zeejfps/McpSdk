@@ -11,15 +11,11 @@ namespace McpSdk.Client
         private string _version;
         private string _title;
         private string _description;
-        private IRootsCapabilityFactory _rootsCapabilityFactory;
-        private ISamplingCapabilityFactory _samplingCapabilityFactory;
-        private IElicitationCapabilityFactory _elicitationCapabilityFactory;
-        private ILoggerFactory _loggerFactory;
         private readonly DiContainer _container = new DiContainer();
 
         public ClientBuilder()
         {
-            _loggerFactory = new NullLoggerFactory();
+            _container.AddSingleton<ILoggerFactory>(new NullLoggerFactory());
         }
 
         /// <summary>
@@ -60,30 +56,6 @@ namespace McpSdk.Client
             return this;
         }
 
-        public ClientBuilder WithLogger(ILoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
-            return this;
-        }
-        
-        public ClientBuilder WithRootsCapability(IRootsCapabilityFactory capabilityFactory)
-        {
-            _rootsCapabilityFactory = capabilityFactory;
-            return this;
-        }
-        
-        public ClientBuilder WithSamplingCapability(ISamplingCapabilityFactory capabilityFactory)
-        {
-            _samplingCapabilityFactory = capabilityFactory;
-            return this;
-        }
-
-        public ClientBuilder WithElicitationCapability(IElicitationCapabilityFactory capabilityFactory)
-        {
-            _elicitationCapabilityFactory = capabilityFactory;
-            return this;
-        }
-
         public IClient Build()
         {
             if (_name == null)
@@ -95,13 +67,12 @@ namespace McpSdk.Client
             var clientInfo = new ClientInfo(_name, _version, _title, _description);
 
             var provider = _container.BuildServiceProvider();
-            var transport = provider.GetRequiredService<ITransportFactory>().Create(_loggerFactory);
+            var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+            var transport = provider.GetRequiredService<ITransportFactory>().Create();
 
-            var rootsCapability = _rootsCapabilityFactory?.Create();
-            var samplingCapability = _samplingCapabilityFactory?.Create();
-            var elicitationCapability = _elicitationCapabilityFactory?.Create();
-
-            var loggerFactory = _loggerFactory;
+            var rootsCapability = provider.GetService<IRootsCapabilityFactory>()?.Create();
+            var samplingCapability = provider.GetService<ISamplingCapabilityFactory>()?.Create();
+            var elicitationCapability = provider.GetService<IElicitationCapabilityFactory>()?.Create();
 
             return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability, elicitationCapability);
         }

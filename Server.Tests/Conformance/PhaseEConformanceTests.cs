@@ -393,9 +393,9 @@ namespace McpSdk.Server.Tests.Conformance
                 .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(clientEnd)));
 
             if (elicitation != null)
-                builder.WithElicitationCapability(elicitation);
+                builder.Context.AddElicitationCapability(elicitation);
             if (sampling != null)
-                builder.WithSamplingCapability(sampling);
+                builder.Context.AddSamplingCapability(sampling);
 
             return builder.Build();
         }

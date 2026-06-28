@@ -98,13 +98,14 @@ namespace McpSdk.Server.Tests.Conformance
             return new ServerBuilder()
                 .WithName("Page Server")
                 .WithVersion("1.0.0")
-                .ConfigureContext(c => c.AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd)))
-                .WithDefaultToolsCapability(Json, tools =>
-                {
-                    tools.PageSize = pageSize;
-                    for (var i = 0; i < toolCount; i++)
-                        tools.AddTool(new NoOpToolHandler($"tool-{i:D2}"));
-                })
+                .ConfigureContext(c => c
+                    .AddSingleton<ITransportFactory>(new FixedTransportFactory(serverEnd))
+                    .AddDefaultToolsCapability(Json, tools =>
+                    {
+                        tools.PageSize = pageSize;
+                        for (var i = 0; i < toolCount; i++)
+                            tools.AddTool(new NoOpToolHandler($"tool-{i:D2}"));
+                    }))
                 .Build();
         }
 

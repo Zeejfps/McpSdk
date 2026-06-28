@@ -7,17 +7,20 @@ public sealed class SseTransportFactory : ITransportFactory
 {
     private readonly IJson _json;
     private readonly ISseSession _sseSession;
+    private readonly ILoggerFactory _loggerFactory;
 
     public SseTransportFactory(
         IJson json,
-        ISseSession sseSession)
+        ISseSession sseSession,
+        ILoggerFactory loggerFactory)
     {
         _json = json;
         _sseSession = sseSession;
+        _loggerFactory = loggerFactory;
     }
 
-    public ITransport Create(ILoggerFactory loggerFactory)
+    public ITransport Create()
     {
-        return new SseTransport(_json, _sseSession, loggerFactory);
+        return new SseTransport(_json, _sseSession, _loggerFactory);
     }
 }
