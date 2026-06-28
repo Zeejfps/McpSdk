@@ -48,8 +48,9 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
     //     return this;
     // }
     
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
+        writer.Write("$schema", Dialect2020_12);
         writer.Write("type", "object");
         writer.Write("properties", propertyWriter =>
         {
@@ -57,7 +58,7 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
             {
                 var name = kvp.Key;
                 var input = kvp.Value;
-                propertyWriter.Write(name, input.AsJson);
+                propertyWriter.Write(name, input);
             }
         });
         writer.Write("required", _requiredInputsByNameLookup.Keys.ToArray());
@@ -65,7 +66,7 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
     
     public IJsonObject AsJsonObject(IJson json)
     {
-        return json.Object(AsJson);
+        return json.Object(WriteMembers);
     }
 
     public IEnumerator<KeyValuePair<string, JsonSchema>> GetEnumerator()

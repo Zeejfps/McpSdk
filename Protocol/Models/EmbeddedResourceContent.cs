@@ -10,9 +10,9 @@ public sealed class EmbeddedResourceContent : Content
         Resource = ResourceContents.FromJsonObject(resourceObj);
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
         writer.Write("type", "resource");
-        writer.Write("resource", Resource.AsJson);
+        writer.Write("resource", Resource);
     }
 }

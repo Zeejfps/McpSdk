@@ -8,6 +8,6 @@ public interface IPromptController
 {
     event Action ListChanged;
     bool IsListChangedNotificationSupported { get; }
-    Task<ListPromptsResult> ListPrompts();
-    Task<GetPromptResult> GetPrompt(GetPromptRequest request);
+    Task<ListPromptsResult> ListPrompts(ListPromptsRequest request, McpRequestContext context);
+    Task<GetPromptResult> GetPrompt(GetPromptRequest request, McpRequestContext context);
 }

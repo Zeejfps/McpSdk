@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class ModelHint
+    public sealed class ModelHint : IJsonObjectWriter
     {
         public string Name { get; }
 
@@ -14,7 +14,7 @@
             Name = jsonObject["name"]?.AsString();
         }
         
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("name", Name);
         }

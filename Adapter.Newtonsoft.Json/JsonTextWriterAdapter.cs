@@ -1,4 +1,5 @@
-﻿using McpSdk.Protocol;
+﻿using System.Collections.Generic;
+using McpSdk.Protocol;
 using Newtonsoft.Json;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
@@ -66,6 +67,13 @@ namespace McpSdk.Adapter.Newtonsoft.Json
                 _writer.WriteValue(valueItem);
             }
             _writer.WriteEndArray();
+            return this;
+        }
+
+        public IJsonWriter Write(string propertyName, long value)
+        {
+            _writer.WritePropertyName(propertyName);
+            _writer.WriteValue(value);
             return this;
         }
 
@@ -141,6 +149,29 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             {
                 _writer.WriteStartObject();
                 obj(this);
+                _writer.WriteEndObject();
+            }
+            _writer.WriteEndArray();
+            return this;
+        }
+
+        public IJsonWriter Write(string propertyName, IJsonObjectWriter value)
+        {
+            _writer.WritePropertyName(propertyName);
+            _writer.WriteStartObject();
+            value.WriteMembers(this);
+            _writer.WriteEndObject();
+            return this;
+        }
+
+        public IJsonWriter Write(string propertyName, IEnumerable<IJsonObjectWriter> values)
+        {
+            _writer.WritePropertyName(propertyName);
+            _writer.WriteStartArray();
+            foreach (var value in values)
+            {
+                _writer.WriteStartObject();
+                value.WriteMembers(this);
                 _writer.WriteEndObject();
             }
             _writer.WriteEndArray();

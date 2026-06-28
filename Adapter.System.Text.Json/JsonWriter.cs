@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using McpSdk.Protocol;
 
@@ -61,6 +62,12 @@ internal sealed class JsonWriter : IJsonWriter
             _jsonWriter.WriteNumberValue(element);
         }
         _jsonWriter.WriteEndArray();
+        return this;
+    }
+
+    public IJsonWriter Write(string propertyName, long value)
+    {
+        _jsonWriter.WriteNumber(propertyName, value);
         return this;
     }
 
@@ -137,6 +144,27 @@ internal sealed class JsonWriter : IJsonWriter
         {
             _jsonWriter.WriteStartObject();
             obj(this);
+            _jsonWriter.WriteEndObject();
+        }
+        _jsonWriter.WriteEndArray();
+        return this;
+    }
+
+    public IJsonWriter Write(string propertyName, IJsonObjectWriter value)
+    {
+        _jsonWriter.WriteStartObject(propertyName);
+        value.WriteMembers(this);
+        _jsonWriter.WriteEndObject();
+        return this;
+    }
+
+    public IJsonWriter Write(string propertyName, IEnumerable<IJsonObjectWriter> values)
+    {
+        _jsonWriter.WriteStartArray(propertyName);
+        foreach (var value in values)
+        {
+            _jsonWriter.WriteStartObject();
+            value.WriteMembers(this);
             _jsonWriter.WriteEndObject();
         }
         _jsonWriter.WriteEndArray();

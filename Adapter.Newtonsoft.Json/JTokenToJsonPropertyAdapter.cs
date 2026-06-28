@@ -14,6 +14,10 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             _jToken = token;
         }
 
+        public bool IsString => _jToken.Type == JTokenType.String;
+
+        public bool IsArray => _jToken.Type == JTokenType.Array;
+
         public string AsString()
         {
             return _jToken.Value<string>();
@@ -42,6 +46,11 @@ namespace McpSdk.Adapter.Newtonsoft.Json
         public int[] AsIntArray()
         {
             return _jToken.ToObject<int[]>();
+        }
+
+        public long AsLong()
+        {
+            return _jToken.Value<long>();
         }
 
         public float AsFloat()

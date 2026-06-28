@@ -16,7 +16,7 @@ public sealed class ResourceReference : ReferenceModel
         Uri = jsonObject["uri"].AsString();
     }
 
-    public override void AsJson(IJsonWriter jsonWriter)
+    public override void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("type", "ref/resource");
         jsonWriter.Write("uri", Uri);

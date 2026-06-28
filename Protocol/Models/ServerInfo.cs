@@ -1,26 +1,38 @@
-﻿namespace McpSdk.Protocol.Models
+namespace McpSdk.Protocol.Models
 {
-    public sealed class ServerInfo
+    public sealed class ServerInfo : IJsonObjectWriter
     {
         public string Name { get; }
         public string Version { get; }
 
-        public ServerInfo(string name, string version)
+        /// <summary>Human-friendly display name (2025-06-18).</summary>
+        public string Title { get; }
+
+        /// <summary>Human-friendly description (2025-11-25).</summary>
+        public string Description { get; }
+
+        public ServerInfo(string name, string version, string title = null, string description = null)
         {
             Name = name;
             Version = version;
+            Title = title;
+            Description = description;
         }
 
         public ServerInfo(IJsonObject jsonObject)
         {
-            Name = jsonObject["Name"]?.AsString();
-            Version = jsonObject["Version"]?.AsString();
+            Name = jsonObject["name"]?.AsString();
+            Version = jsonObject["version"]?.AsString();
+            Title = jsonObject["title"]?.AsString();
+            Description = jsonObject["description"]?.AsString();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("name", Name);
             writer.Write("version", Version);
+            Title?.WriteTo(writer, "title");
+            Description?.WriteTo(writer, "description");
         }
     }
 }

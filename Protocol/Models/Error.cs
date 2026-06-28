@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models;
 
-public sealed class Error
+public sealed class Error : IJsonObjectWriter
 {
     public ErrorCode Code { get;}
     public string Message { get;}
@@ -20,11 +20,10 @@ public sealed class Error
         Data = data;
     }
 
-    public void AsJson(IJsonWriter jsonWriter)
+    public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("code", (int)Code);
         jsonWriter.Write("message", Message);
-        if (Data != null)
-            jsonWriter.Write("data", Data);
+        Data?.WriteTo(jsonWriter, "data");
     }
 }

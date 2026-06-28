@@ -13,6 +13,10 @@ internal sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
         _element = element;
     }
 
+    public bool IsString => _element.ValueKind == JsonValueKind.String;
+
+    public bool IsArray => _element.ValueKind == JsonValueKind.Array;
+
     public string? AsString()
     {
         return _element.GetString();
@@ -56,6 +60,11 @@ internal sealed class JsonElementToJsonPropertyAdapter : IJsonProperty
             array[i] = _element[i].GetInt32();
         }
         return array;
+    }
+
+    public long AsLong()
+    {
+        return _element.GetInt64();
     }
 
     public float AsFloat()

@@ -16,7 +16,7 @@ public sealed class PromptReference : ReferenceModel
         Name = jsonObject["name"].AsString();
     }
 
-    public override void AsJson(IJsonWriter jsonWriter)
+    public override void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("type", "ref/prompt");
         jsonWriter.Write("name", Name);

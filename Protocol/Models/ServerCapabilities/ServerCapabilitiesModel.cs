@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ServerCapabilities
 {
-    public sealed class ServerCapabilitiesModel
+    public sealed class ServerCapabilitiesModel : IJsonObjectWriter
     {
         public ToolsCapabilityModel Tools { get; set; }
         public PromptsCapabilityModel Prompts { get; set; }
@@ -33,22 +33,13 @@
                 Completion = new CompletionCapabilityModel(completionObj);
         }
         
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
-            if (Tools != null)
-                writer.Write("tools", Tools.AsJson);
-            
-            if (Prompts != null)
-                writer.Write("prompts", Prompts.AsJson);
-            
-            if (Resources != null)
-                writer.Write("resources", Resources.AsJson);
-            
-            if (Logging != null)
-                writer.Write("logging", Logging.AsJson);
-            
-            if (Completion != null)
-                writer.Write("completion", Completion.AsJson);
+            Tools?.WriteTo(writer, "tools");
+            Prompts?.WriteTo(writer, "prompts");
+            Resources?.WriteTo(writer, "resources");
+            Logging?.WriteTo(writer, "logging");
+            Completion?.WriteTo(writer, "completion");
         }
     }
 }

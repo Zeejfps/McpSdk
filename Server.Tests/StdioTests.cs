@@ -16,7 +16,7 @@ public sealed class StdioTests
             .WithStdioTransport(json)
             .WithDefaultToolsCapability(json, tools =>
             {
-                tools.AddTool(new TestTool());
+                tools.AddTool(new TestToolHandler());
             })
             .Build();
 

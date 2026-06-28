@@ -1,34 +1,28 @@
-﻿using System.Linq;
-
-namespace McpSdk.Protocol.Models
+﻿namespace McpSdk.Protocol.Models
 {
-    public sealed class ListToolsResult
+    public sealed class ListToolsResult : IJsonObjectWriter
     {
         public Tool[] Tools { get; }
-        
-        public ListToolsResult(Tool[] tools)
+
+        /// <summary>Opaque cursor for the next page (2025-11-25), or null when this is the last page.</summary>
+        public string NextCursor { get; }
+
+        public ListToolsResult(Tool[] tools, string nextCursor = null)
         {
             Tools = tools;
+            NextCursor = nextCursor;
         }
 
         public ListToolsResult(IJsonObject jsonObject)
         {
-            var toolsArray = jsonObject["tools"].AsObjectArray();
-            var toolsCount = toolsArray.Length;
-            var tools = new Tool[toolsCount];
-            for (var i = 0; i < toolsCount; i++)
-            {
-                var toolObj = toolsArray[i];
-                tools[i] = new Tool(toolObj);
-            }
-            Tools = tools;
+            Tools = jsonObject["tools"].AsArray(t => new Tool(t)) ?? System.Array.Empty<Tool>();
+            NextCursor = jsonObject["nextCursor"]?.AsString();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("tools", Tools
-                .Select<Tool, Json>(tool => tool.AsJson)
-                .ToArray());
+            Tools.WriteTo(writer, "tools");
+            NextCursor?.WriteTo(writer, "nextCursor");
         }
     }
 }

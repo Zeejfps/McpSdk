@@ -1,10 +1,30 @@
-﻿namespace McpSdk.Protocol.Models;
+using System;
 
-public sealed class ListTemplatesResult
+namespace McpSdk.Protocol.Models;
+
+public sealed class ListTemplatesResult : IJsonObjectWriter
 {
+    public ResourceTemplate[] ResourceTemplates { get; }
 
-    public void AsJson(IJsonWriter writer)
+    /// <summary>Opaque cursor for the next page (2025-11-25), or null when this is the last page.</summary>
+    public string NextCursor { get; }
+
+    public ListTemplatesResult(ResourceTemplate[] resourceTemplates, string nextCursor = null)
     {
-        
+        ResourceTemplates = resourceTemplates ?? Array.Empty<ResourceTemplate>();
+        NextCursor = nextCursor;
+    }
+
+    public ListTemplatesResult(IJsonObject jsonObject)
+    {
+        ResourceTemplates = jsonObject["resourceTemplates"].AsArray(t => new ResourceTemplate(t))
+            ?? Array.Empty<ResourceTemplate>();
+        NextCursor = jsonObject?["nextCursor"]?.AsString();
+    }
+
+    public void WriteMembers(IJsonWriter writer)
+    {
+        ResourceTemplates.WriteTo(writer, "resourceTemplates");
+        NextCursor?.WriteTo(writer, "nextCursor");
     }
 }

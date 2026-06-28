@@ -9,9 +9,12 @@ namespace McpSdk.Client
     {
         private string _name;
         private string _version;
+        private string _title;
+        private string _description;
         private ITransportFactory _transportFactory;
         private IRootsCapabilityFactory _rootsCapabilityFactory;
         private ISamplingCapabilityFactory _samplingCapabilityFactory;
+        private IElicitationCapabilityFactory _elicitationCapabilityFactory;
         private ILoggerFactory _loggerFactory;
 
         public ClientBuilder()
@@ -28,6 +31,18 @@ namespace McpSdk.Client
         public ClientBuilder WithVersion(string version)
         {
             _version = version;
+            return this;
+        }
+
+        public ClientBuilder WithTitle(string title)
+        {
+            _title = title;
+            return this;
+        }
+
+        public ClientBuilder WithDescription(string description)
+        {
+            _description = description;
             return this;
         }
 
@@ -54,7 +69,13 @@ namespace McpSdk.Client
             _samplingCapabilityFactory = capabilityFactory;
             return this;
         }
-        
+
+        public ClientBuilder WithElicitationCapability(IElicitationCapabilityFactory capabilityFactory)
+        {
+            _elicitationCapabilityFactory = capabilityFactory;
+            return this;
+        }
+
         public IClient Build()
         {
             if (_name == null)
@@ -63,7 +84,7 @@ namespace McpSdk.Client
             if (_version == null)
                 throw new ArgumentNullException(nameof(_version), "Client version cannot be null.");
             
-            var clientInfo = new ClientInfo(_name, _version);
+            var clientInfo = new ClientInfo(_name, _version, _title, _description);
             
             var transport = _transportFactory?.Create(_loggerFactory);
             if (transport == null)
@@ -71,10 +92,11 @@ namespace McpSdk.Client
 
             var rootsCapability = _rootsCapabilityFactory?.Create();
             var samplingCapability = _samplingCapabilityFactory?.Create();
+            var elicitationCapability = _elicitationCapabilityFactory?.Create();
 
             var loggerFactory = _loggerFactory;
-            
-            return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability);
+
+            return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability, elicitationCapability);
         }
     }
 }

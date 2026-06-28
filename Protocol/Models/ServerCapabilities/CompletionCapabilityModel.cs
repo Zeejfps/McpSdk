@@ -1,6 +1,6 @@
 namespace McpSdk.Protocol.Models.ServerCapabilities;
 
-public sealed class CompletionCapabilityModel
+public sealed class CompletionCapabilityModel : IJsonObjectWriter
 {
     public CompletionCapabilityModel()
     {
@@ -12,7 +12,7 @@ public sealed class CompletionCapabilityModel
         
     }
     
-    public void AsJson(IJsonWriter writer)
+    public void WriteMembers(IJsonWriter writer)
     {
     }
 }

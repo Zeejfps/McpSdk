@@ -4,5 +4,5 @@ namespace McpSdk.Server;
 
 public interface ICompletionController
 {
-    Task<CompletionResult> Complete(CompletionRequest request);
+    Task<CompletionResult> Complete(CompletionRequest request, McpRequestContext context);
 }

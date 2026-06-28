@@ -1,0 +1,37 @@
+namespace McpSdk.Protocol.Models
+{
+    /// <summary>
+    /// A displayable icon (2025-11-25), reused across tools, resources and prompts. <c>Src</c> is a
+    /// URI — an <c>https://</c> URL or an inline <c>data:</c> URI; <c>MimeType</c> and <c>Sizes</c>
+    /// (e.g. <c>"48x48"</c>) are optional hints.
+    /// </summary>
+    public sealed class Icon : IJsonObjectWriter
+    {
+        public string Src { get; set; }
+        public string MimeType { get; set; }
+        public string Sizes { get; set; }
+
+        public Icon() {}
+
+        public Icon(string src, string mimeType = null, string sizes = null)
+        {
+            Src = src;
+            MimeType = mimeType;
+            Sizes = sizes;
+        }
+
+        public Icon(IJsonObject jsonObject)
+        {
+            Src = jsonObject["src"]?.AsString();
+            MimeType = jsonObject["mimeType"]?.AsString();
+            Sizes = jsonObject["sizes"]?.AsString();
+        }
+
+        public void WriteMembers(IJsonWriter writer)
+        {
+            writer.Write("src", Src);
+            MimeType?.WriteTo(writer, "mimeType");
+            Sizes?.WriteTo(writer, "sizes");
+        }
+    }
+}

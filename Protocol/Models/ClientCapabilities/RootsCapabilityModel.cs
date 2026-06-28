@@ -1,6 +1,6 @@
 ﻿namespace McpSdk.Protocol.Models.ClientCapabilities
 {
-    public sealed class RootsCapabilityModel
+    public sealed class RootsCapabilityModel : IJsonObjectWriter
     {
         private bool IsListChangedNotificationSupported { get; }
 
@@ -14,7 +14,7 @@
             IsListChangedNotificationSupported = jsonObject["listChanged"]?.AsBool() ?? false;
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
             writer.Write("listChanged", IsListChangedNotificationSupported);
         }

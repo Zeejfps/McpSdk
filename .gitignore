@@ -1,3 +1,6 @@
+# Claude Code agent working files (worktrees, local state)
+.claude/
+
 .idea/
 *.sln.iml
 .idea_modules/

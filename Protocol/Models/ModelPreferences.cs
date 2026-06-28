@@ -2,7 +2,7 @@
 
 namespace McpSdk.Protocol.Models
 {
-    public sealed class ModelPreferences
+    public sealed class ModelPreferences : IJsonObjectWriter
     {
         public ModelHint[] Hints { get; }
         public float? IntelligencePriority { get; }
@@ -18,17 +18,12 @@ namespace McpSdk.Protocol.Models
             SpeedPriority = jsonObject["speedPriority"]?.AsFloat();
         }
 
-        public void AsJson(IJsonWriter writer)
+        public void WriteMembers(IJsonWriter writer)
         {
-            writer.Write("hints", Hints
-                .Select<ModelHint, Json>(hint => hint.AsJson)
-                .ToArray());
+            Hints.WriteTo(writer, "hints");
             
-            if (IntelligencePriority.HasValue)
-                writer.Write("intelligencePriority", IntelligencePriority.Value);
-            
-            if (SpeedPriority.HasValue)
-                writer.Write("speedPriority", SpeedPriority.Value);
+            IntelligencePriority?.WriteTo(writer, "intelligencePriority");
+            SpeedPriority?.WriteTo(writer, "speedPriority");
         }
     }
 }

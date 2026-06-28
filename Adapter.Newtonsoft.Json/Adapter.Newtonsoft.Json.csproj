@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
-        <LangVersion>8</LangVersion>
+        <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
         <AssemblyName>McpSdk.Adapter.Newtonsoft.Json</AssemblyName>
         <RootNamespace>McpSdk.Adapter.Newtonsoft.Json</RootNamespace>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

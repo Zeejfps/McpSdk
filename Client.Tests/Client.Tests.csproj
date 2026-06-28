@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AssemblyName>McpSdk.Client.Tests</AssemblyName>
@@ -13,8 +13,8 @@
       <ProjectReference Include="..\Adapter.ConsoleLogger\Adapter.ConsoleLogger.csproj" />
       <ProjectReference Include="..\Adapter.Newtonsoft.Json\Adapter.Newtonsoft.Json.csproj" />
       <ProjectReference Include="..\Adapter.System.Text.Json\Adapter.System.Text.Json.csproj" />
+      <ProjectReference Include="..\Adapter.StreamableHttpClient\Adapter.StreamableHttpClient.csproj" />
       <ProjectReference Include="..\Client\Client.csproj" />
-      <ProjectReference Include="..\Adapter.SseClient\Adapter.SseClient.csproj" />
     </ItemGroup>
 
 </Project>

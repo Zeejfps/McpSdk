@@ -14,11 +14,10 @@ public sealed class TextResourceContents : ResourceContents
         Text = jsonObject["text"]?.AsString();
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
-        base.AsJson(writer);
-                        
-        if (Text != null)
-            writer.Write("text", Text);
+        base.WriteMembers(writer);
+
+        Text?.WriteTo(writer, "text");
     }
 }

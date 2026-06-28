@@ -1,184 +1,119 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
-using McpSdk.Protocol.Models;
 
 namespace McpSdk.Shared
 {
+    /// <summary>
+    /// The shared JSON-RPC engine and the one base every transport extends. It owns everything that is the
+    /// same across transports — request/response correlation, inbound dispatch into
+    /// <see cref="RequestReceived"/> / <see cref="NotificationReceived"/>, and the
+    /// <see cref="ITransport"/> send surface — and works purely in <see cref="JsonRpcMessage"/> models, so
+    /// the engine never touches JSON itself.
+    ///
+    /// A concrete transport supplies only the wire: it implements <see cref="SendMessage"/> to render and
+    /// route an outbound message, runs its own read loop in <see cref="OnStart"/>, and calls
+    /// <see cref="OnMessageReceived"/> for each inbound message it parses off the wire. Everything above
+    /// that — correlation, the MCP protocol — is inherited. <see cref="McpServer"/> / <see cref="McpClient"/>
+    /// depend only on <see cref="ITransport"/> and are unaware which transport sits underneath.
+    ///
+    /// Per JSON-RPC 2.0 the request id is the sender's to choose, so id generation lives with the sender
+    /// (e.g. <see cref="McpClient"/>); this base only matches a reply back to its awaiting request.
+    /// </summary>
     public abstract class JsonRpcTransport : ITransport
     {
-        private const string JsonRpcVersion = "2.0";
+        private readonly object _lock = new object();
+        private readonly Dictionary<RequestId, TaskCompletionSource<JsonRpcResponse>> _pending = new();
 
-        private readonly IJson _json;
-        private readonly Dictionary<int, TaskCompletionSource<IJsonObject>> _tscByMessageId = new();
-        
-        private int _nextMessageId;
-        
-        protected ILogger Logger { get; }
-
-        protected JsonRpcTransport(IJson json, ILoggerFactory loggerFactory)
+        protected JsonRpcTransport(ILoggerFactory loggerFactory)
         {
-            _json = json;
             Logger = loggerFactory.Create(GetType());
         }
-        
+
+        protected ILogger Logger { get; }
+
         public event RequestReceivedCallback RequestReceived;
         public event NotificationReceivedCallback NotificationReceived;
-        
-        public Task Start(CancellationToken cancellationToken = default)
+
+        public Task Start(CancellationToken cancellationToken = default) => OnStart(cancellationToken);
+
+        public async Task Stop()
         {
-            return OnStart(cancellationToken);
+            // The connection is closing; fail any in-flight requests rather than letting them hang.
+            List<TaskCompletionSource<JsonRpcResponse>> pending;
+            lock (_lock)
+            {
+                pending = new List<TaskCompletionSource<JsonRpcResponse>>(_pending.Values);
+                _pending.Clear();
+            }
+            foreach (var tcs in pending)
+                tcs.TrySetCanceled();
+
+            await OnStop().ConfigureAwait(false);
         }
 
-        public Task Stop()
+        public async Task<JsonRpcResponse> SendRequest(JsonRpcRequest request, CancellationToken cancellationToken = default)
         {
-            Logger.LogDebug("Stopping transport...");
-            return OnStop();
+            // Register the pending response BEFORE sending, so a transport that delivers the reply
+            // synchronously (e.g. an in-memory loopback) can never complete it before we are listening.
+            var tcs = new TaskCompletionSource<JsonRpcResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_lock)
+                _pending[request.Id] = tcs;
+
+            await SendMessage(request, cancellationToken).ConfigureAwait(false);
+
+            using (cancellationToken.Register(() => tcs.TrySetCanceled()))
+                return await tcs.Task.ConfigureAwait(false);
         }
 
-        public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
-        {
-            var requestAsJson = _json.Stringify(request =>
-            {
-                request.Write("jsonrpc", JsonRpcVersion);
-                request.Write("method", notification);
-                if (arguments != null)
-                {
-                    request.Write("params", arguments);
-                }
-            });
-            Logger.LogDebug($"Sending notification: {requestAsJson}");
-            await Send(requestAsJson, cancellationToken);
-        }
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="method"></param>
-        /// <param name="payload"></param>
-        /// <param name="cancellationToken"></param>
-        /// <exception cref="TransportErrorException"></exception>
-        /// <returns></returns>
-        public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
-        {
-            var id = NextRequestId();
-            var request = _json.Stringify(req =>
-            {
-                req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", id);
-                req.Write("method", method);
-                req.Write("params", payload);
-            });
-            
-            Logger.LogDebug($"Sending request: {request}");
-            await Send(request, cancellationToken);
-            var response = await WaitForResponse(id, cancellationToken);
-            return ParseResponse(response);        
-        }
+        public Task SendNotification(JsonRpcNotification notification, CancellationToken cancellationToken = default)
+            => SendMessage(notification, cancellationToken);
 
-        public async Task SendOkResponse(int requestId, Json writeResult, CancellationToken cancellationToken = default)
-        {
-            var response = _json.Stringify(req =>
-            {
-                req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", requestId);
-                req.Write("result", writeResult);
-            });
-            Logger.LogDebug($"Sending OK response: {response}");
-            await Send(response, cancellationToken);
-        }
-        
-        public async Task SendErrorResponse(int requestId, Error error, CancellationToken cancellationToken = default)
-        {
-            var response = _json.Stringify(req =>
-            {
-                req.Write("jsonrpc", JsonRpcVersion);
-                req.Write("id", requestId);
-                req.Write("error", error.AsJson);
-            });
-            Logger.LogDebug($"Sending Error response: {response}");
-            await Send(response, cancellationToken);
-        }
-        
-        protected void OnMessageReceived(string messageAsJson)
+        public Task SendResponse(JsonRpcResponse response, CancellationToken cancellationToken = default)
+            => SendMessage(response, cancellationToken);
+
+        /// <summary>Renders one outbound message and puts it on the wire (a transport may inspect it to
+        /// route — e.g. an HTTP transport returns a response on the POST that carried its request).</summary>
+        protected abstract Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default);
+
+        /// <summary>Starts the transport's wire and read loop. Inbound messages are surfaced via
+        /// <see cref="OnMessageReceived"/>.</summary>
+        protected abstract Task OnStart(CancellationToken cancellationToken = default);
+
+        /// <summary>Stops the transport's wire and releases its resources.</summary>
+        protected abstract Task OnStop();
+
+        /// <summary>Called by a concrete transport for each message parsed off the wire: dispatches
+        /// requests/notifications to subscribers and correlates a response to its awaiting request.</summary>
+        protected void OnMessageReceived(JsonRpcMessage message)
         {
             try
             {
-                Logger.LogDebug($"Received message: {messageAsJson}");
-                var response = _json.Parse(messageAsJson);
-                var idProp = response["id"];
-                var method = response["method"]?.AsString();
-                var methodParams = response["params"]?.AsObject();
-
-                if (method != null)
+                switch (message)
                 {
-                    if (idProp == null)
-                    {
-                        OnNotificationReceived(method, methodParams);
-                    }
-                    else
-                    {
-                        var id = idProp.AsInt();
-                        OnRequestReceived(id, method, methodParams);
-                    }
-                }
-                else
-                {
-                    if (idProp == null)
-                    {
-                        return;
-                    }
-
-                    var id = idProp.AsInt();
-                    if (!_tscByMessageId.TryGetValue(id, out var tsc))
-                        return;
-
-                    _tscByMessageId.Remove(id);
-                    tsc.TrySetResult(response);
+                    case JsonRpcNotification notification:
+                        NotificationReceived?.Invoke(notification);
+                        break;
+                    case JsonRpcRequest request:
+                        RequestReceived?.Invoke(request);
+                        break;
+                    case JsonRpcResponse response:
+                        TaskCompletionSource<JsonRpcResponse> tcs;
+                        lock (_lock)
+                        {
+                            if (_pending.TryGetValue(response.Id, out tcs))
+                                _pending.Remove(response.Id);
+                        }
+                        tcs?.TrySetResult(response);
+                        break;
                 }
             }
             catch (Exception e)
             {
                 Logger.LogError(e);
             }
-        }
-
-        protected virtual void OnNotificationReceived(string method, IJsonObject methodParams)
-        {
-            NotificationReceived?.Invoke(method, methodParams);
-        }
-
-        protected virtual void OnRequestReceived(int requestId, string method, IJsonObject methodParams)
-        {
-            RequestReceived?.Invoke(requestId, method, methodParams);
-        }
-        
-        protected abstract Task OnStart(CancellationToken cancellationToken = default);
-        protected abstract Task OnStop(CancellationToken cancellationToken = default);
-        protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken = default);
-
-        private Task<IJsonObject> WaitForResponse(int messageId, CancellationToken cancellationToken = default)
-        {
-            var tsc = new TaskCompletionSource<IJsonObject>(cancellationToken);
-            _tscByMessageId[messageId] = tsc;
-            return tsc.Task;
-        }
-        
-        private Response ParseResponse(IJsonObject response)
-        {
-            var errorProp = response["error"];
-            if (errorProp == null)
-                return Response.FromResult(response["result"].AsObject());
-            
-            var errorObj = errorProp.AsObject();
-            return Response.FromError(new Error(errorObj));
-        }
-        
-        private int NextRequestId()
-        {
-            return Interlocked.Increment(ref _nextMessageId);
         }
     }
 }

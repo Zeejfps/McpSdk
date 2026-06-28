@@ -14,11 +14,10 @@ public sealed class BlobResourceContents : ResourceContents
         Blob = jsonObject["blob"]?.AsString();
     }
 
-    public override void AsJson(IJsonWriter writer)
+    public override void WriteMembers(IJsonWriter writer)
     {
-        base.AsJson(writer);
-                        
-        if (Blob != null)
-            writer.Write("blob", Blob);
+        base.WriteMembers(writer);
+
+        Blob?.WriteTo(writer, "blob");
     }
 }
