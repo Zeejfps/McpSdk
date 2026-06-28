@@ -15,12 +15,7 @@ public sealed class ListResourcesResult : IJsonObjectWriter
 
     public ListResourcesResult(IJsonObject jsonObject)
     {
-        var resources = jsonObject["resources"].AsObjectArray();
-        Resources = new Resource[resources.Length];
-        for (var i = 0; i < resources.Length; i++)
-        {
-            Resources[i] = new Resource(resources[i]);
-        }
+        Resources = jsonObject["resources"].AsArray(r => new Resource(r)) ?? System.Array.Empty<Resource>();
         NextCursor = jsonObject["nextCursor"]?.AsString();
     }
 

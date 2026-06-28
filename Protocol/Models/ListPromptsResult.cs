@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 
 namespace McpSdk.Protocol.Models;
 
@@ -18,8 +17,7 @@ public sealed class ListPromptsResult : IJsonObjectWriter
 
     public ListPromptsResult(IJsonObject jsonObject)
     {
-        Prompts = jsonObject["prompts"]?.AsObjectArray()
-            ?.Select(p => new Prompt(p)).ToArray() ?? Array.Empty<Prompt>();
+        Prompts = jsonObject["prompts"].AsArray(p => new Prompt(p)) ?? Array.Empty<Prompt>();
         NextCursor = jsonObject?["nextCursor"]?.AsString();
     }
 

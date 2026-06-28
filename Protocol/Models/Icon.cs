@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace McpSdk.Protocol.Models
 {
     /// <summary>
@@ -34,16 +32,6 @@ namespace McpSdk.Protocol.Models
             writer.Write("src", Src);
             MimeType?.WriteTo(writer, "mimeType");
             Sizes?.WriteTo(writer, "sizes");
-        }
-
-        /// <summary>
-        /// Maps a raw array of icon objects (e.g. <c>obj["icons"]?.AsObjectArray()</c>) to icons, or
-        /// null when the input is null. The caller owns the property key, so the same mapper serves any
-        /// parent (tool, resource, prompt).
-        /// </summary>
-        public static Icon[] ArrayFrom(IJsonObject[] array)
-        {
-            return array?.Select(icon => new Icon(icon)).ToArray();
         }
     }
 }

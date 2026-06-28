@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace McpSdk.Protocol.Models
 {
     /// <summary>
@@ -39,10 +37,8 @@ namespace McpSdk.Protocol.Models
             Title = jsonObject["title"]?.AsString();
             Description = jsonObject["description"]?.AsString();
 
-            Arguments = jsonObject["arguments"]?.AsObjectArray()
-                ?.Select(arg => new PromptArgument(arg)).ToArray();
-
-            Icons = Icon.ArrayFrom(jsonObject["icons"]?.AsObjectArray());
+            Arguments = jsonObject["arguments"].AsArray(arg => new PromptArgument(arg));
+            Icons = jsonObject["icons"].AsArray(o => new Icon(o));
 
             var metaObj = jsonObject["_meta"]?.AsObject();
             if (metaObj != null)
