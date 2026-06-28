@@ -129,7 +129,7 @@ namespace McpSdk.Server
         {
             try
             {
-                await _transport.SendNotification("notifications/tools/list_changed");
+                await _transport.SendNotification(new JsonRpcNotification("notifications/tools/list_changed", (Json)null));
             }
             catch (Exception ex)
             {
@@ -234,7 +234,7 @@ namespace McpSdk.Server
         {
             try
             {
-                await _transport.SendNotification(notification, arguments);
+                await _transport.SendNotification(new JsonRpcNotification(notification, arguments));
             }
             catch (Exception ex)
             {

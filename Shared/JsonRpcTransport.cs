@@ -12,8 +12,6 @@ namespace McpSdk.Shared
         private readonly IJson _json;
         private readonly Dictionary<RequestId, TaskCompletionSource<JsonRpcResponse>> _tscByMessageId = new();
 
-        private long _nextMessageId;
-
         protected ILogger Logger { get; }
 
         protected JsonRpcTransport(IJson json, ILoggerFactory loggerFactory)
@@ -36,29 +34,26 @@ namespace McpSdk.Shared
             return OnStop();
         }
 
-        public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
+        public async Task SendNotification(JsonRpcNotification notification, CancellationToken cancellationToken = default)
         {
-            var wire = _json.Stringify(new JsonRpcNotification(notification, arguments).WriteMembers);
+            var wire = _json.Stringify(notification.WriteMembers);
             Logger.LogDebug($"Sending notification: {wire}");
             await Send(wire, cancellationToken);
         }
-        
+
         /// <summary>
-        /// 
+        /// Sends a fully-formed request and awaits its correlated response. The id carried by
+        /// <paramref name="request"/> is chosen by the sender; this transport only matches the inbound
+        /// response back to it.
         /// </summary>
-        /// <param name="method"></param>
-        /// <param name="payload"></param>
-        /// <param name="cancellationToken"></param>
         /// <exception cref="TransportErrorException"></exception>
-        /// <returns></returns>
-        public async Task<JsonRpcResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
+        public async Task<JsonRpcResponse> SendRequest(JsonRpcRequest request, CancellationToken cancellationToken = default)
         {
-            var id = NextRequestId();
-            var wire = _json.Stringify(new JsonRpcRequest(id, method, payload).WriteMembers);
+            var wire = _json.Stringify(request.WriteMembers);
 
             Logger.LogDebug($"Sending request: {wire}");
             await Send(wire, cancellationToken);
-            return await WaitForResponse(id, cancellationToken);
+            return await WaitForResponse(request.Id, cancellationToken);
         }
 
         public async Task SendResponse(JsonRpcResponse response, CancellationToken cancellationToken = default)
@@ -127,11 +122,6 @@ namespace McpSdk.Shared
             var tsc = new TaskCompletionSource<JsonRpcResponse>(cancellationToken);
             _tscByMessageId[messageId] = tsc;
             return tsc.Task;
-        }
-        
-        private RequestId NextRequestId()
-        {
-            return new RequestId(Interlocked.Increment(ref _nextMessageId));
         }
     }
 }
