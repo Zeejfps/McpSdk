@@ -461,9 +461,11 @@ fine to defer for stdio / trusted-network use, but a conscious choice, not an om
 
 ## Cross-cutting
 
-- **Tests:** extend `Server.Tests` / `Client.Tests` with a conformance case per phase (negotiation,
-  pagination, structured output, elicitation).
-- **Docs:** update `README.md` examples; add a capability/feature matrix.
+- **Tests:** ✅ a conformance case per phase lives in `Server.Tests/Conformance` (negotiation,
+  pagination, structured output, elicitation, …) — 331 assertions, run via
+  `dotnet run --project Server.Tests -- conformance`.
+- **Docs:** ✅ `README.md` examples updated (stdio + Streamable HTTP) and a capability/feature matrix
+  (generated from the actually-served methods/builders) added.
 - **Sequencing:** A → B → C → D → E → F can each merge independently; G next, and G itself is
   ordered — **G.1 deletes** the legacy HTTP+SSE transport (shippable on its own: stdio-only SDK),
   then **G.2 builds** Streamable HTTP. **H** closes the base-protocol/utility gaps and its
