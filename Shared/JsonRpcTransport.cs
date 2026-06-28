@@ -38,9 +38,9 @@ namespace McpSdk.Shared
 
         public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
         {
-            var requestAsJson = _codec.EncodeNotification(notification, arguments);
-            Logger.LogDebug($"Sending notification: {requestAsJson}");
-            await Send(requestAsJson, cancellationToken);
+            var frame = _codec.EncodeNotification(notification, arguments);
+            Logger.LogDebug($"Sending notification: {frame.Payload}");
+            await Send(frame.Payload, cancellationToken);
         }
         
         /// <summary>
@@ -54,26 +54,26 @@ namespace McpSdk.Shared
         public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
-            var request = _codec.EncodeRequest(id, method, payload);
+            var frame = _codec.EncodeRequest(id, method, payload);
 
-            Logger.LogDebug($"Sending request: {request}");
-            await Send(request, cancellationToken);
+            Logger.LogDebug($"Sending request: {frame.Payload}");
+            await Send(frame.Payload, cancellationToken);
             var response = await WaitForResponse(id, cancellationToken);
             return _codec.ParseResponse(response);
         }
 
         public async Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
-            var response = _codec.EncodeResult(requestId, writeResult);
-            Logger.LogDebug($"Sending OK response: {response}");
-            await Send(response, cancellationToken);
+            var frame = _codec.EncodeResult(requestId, writeResult);
+            Logger.LogDebug($"Sending OK response: {frame.Payload}");
+            await Send(frame.Payload, cancellationToken);
         }
 
         public async Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
         {
-            var response = _codec.EncodeError(requestId, error);
-            Logger.LogDebug($"Sending Error response: {response}");
-            await Send(response, cancellationToken);
+            var frame = _codec.EncodeError(requestId, error);
+            Logger.LogDebug($"Sending Error response: {frame.Payload}");
+            await Send(frame.Payload, cancellationToken);
         }
         
         protected void OnMessageReceived(string messageAsJson)

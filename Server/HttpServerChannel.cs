@@ -76,27 +76,28 @@ namespace McpSdk.Server
 
         // -- Outbound (peer -> wire) ---------------------------------------------------------
 
-        public Task Send(string frame, CancellationToken cancellationToken = default)
+        public Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
         {
             // A response goes back on the POST that carried its request; everything else (a
-            // server-initiated request or a notification) goes onto the SSE stream.
-            if (_codec.TryDecode(frame, out var message) && message.Kind == JsonRpcMessageKind.Response)
+            // server-initiated request or a notification) goes onto the SSE stream. The frame already
+            // carries its kind and id, so there is nothing to re-parse here.
+            if (frame.Kind == JsonRpcMessageKind.Response)
             {
                 TaskCompletionSource<string> tcs = null;
                 lock (_gate)
                 {
-                    if (_pendingPostById.TryGetValue(message.Id, out tcs))
-                        _pendingPostById.Remove(message.Id);
+                    if (_pendingPostById.TryGetValue(frame.Id, out tcs))
+                        _pendingPostById.Remove(frame.Id);
                 }
                 if (tcs != null)
                 {
-                    tcs.TrySetResult(frame);
+                    tcs.TrySetResult(frame.Payload);
                     return Task.CompletedTask;
                 }
                 // No POST is waiting (it already closed) — fall through to the stream.
             }
 
-            return EmitEvent(frame);
+            return EmitEvent(frame.Payload);
         }
 
         // -- Inbound (HTTP listener -> peer) -------------------------------------------------
