@@ -283,13 +283,13 @@ namespace McpSdk.Server.Tests.Conformance
         /// <summary>Wires a bare transport to answer "initialize" with a fixed protocol version.</summary>
         private static void ActAsRawServer(InMemoryTransport serverEnd, string versionToReturn)
         {
-            serverEnd.RequestReceived += (id, method, arguments) =>
+            serverEnd.RequestReceived += request =>
             {
-                if (method != "initialize")
+                if (request.Method != "initialize")
                     return;
 
                 var result = new InitializeResult(versionToReturn, new ServerCapabilitiesModel(), new ServerInfo("Raw Server", "1.0.0"));
-                _ = serverEnd.SendOkResponse(id, result.WriteMembers);
+                _ = serverEnd.SendResponse(JsonRpcResponse.Ok(request.Id, result.WriteMembers));
             };
         }
 

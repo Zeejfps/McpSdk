@@ -1,6 +1,4 @@
-using McpSdk.Protocol;
-
-namespace McpSdk.Shared
+namespace McpSdk.Protocol
 {
     /// <summary>
     /// A JSON-RPC 2.0 message, modeled the same way as <see cref="McpSdk.Protocol.Models.Content"/>: an
@@ -12,7 +10,7 @@ namespace McpSdk.Shared
     ///
     /// The base contributes the shared envelope: <see cref="WriteMembers"/> emits the
     /// <c>"jsonrpc":"2.0"</c> header and defers the rest to <see cref="WriteBody"/>. Because a message both
-    /// encodes and decodes, the same model flows in both directions across an <see cref="IMessageChannel"/>
+    /// encodes and decodes, the same model flows in both directions across an <c>IMessageChannel</c>
     /// — there is no separate "frame to send" vs "message to dispatch".
     /// </summary>
     public abstract class JsonRpcMessage : IJsonObjectWriter

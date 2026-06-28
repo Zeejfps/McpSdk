@@ -11,7 +11,7 @@ namespace McpSdk.Protocol
         /// the model directly (<c>SendRequest("tools/list", request)</c>) instead of threading its
         /// <see cref="IJsonObjectWriter.WriteMembers"/> method group.
         /// </summary>
-        public static Task<IResponse> SendRequest(
+        public static Task<JsonRpcResponse> SendRequest(
             this ITransport transport,
             string method,
             IJsonObjectWriter request,

@@ -33,8 +33,11 @@ namespace McpSdk.Client
             _transport.SendNotification("notifications/roots/list_changed");
         }
 
-        private void OnRequestReceived(RequestId requestId, string method, IJsonObject args)
+        private void OnRequestReceived(JsonRpcRequest request)
         {
+            var requestId = request.Id;
+            var method = request.Method;
+            var args = request.Parameters;
             if (method == "roots/list")
             {
                 OnListRootsRequestReceived(requestId, args);
@@ -56,10 +59,10 @@ namespace McpSdk.Client
                 var elicitation = _elicitation;
                 if (elicitation == null)
                 {
-                    await _transport.SendErrorResponse(
+                    await _transport.SendResponse(JsonRpcResponse.Failure(
                         requestId,
                         new Error(ErrorCode.MethodNotFound, "Elicitation is not supported by this client")
-                    );
+                    ));
                     return;
                 }
 
@@ -71,23 +74,23 @@ namespace McpSdk.Client
                     (!request.IsUrlMode && !elicitation.SupportsFormMode);
                 if (unsupportedMode)
                 {
-                    await _transport.SendErrorResponse(
+                    await _transport.SendResponse(JsonRpcResponse.Failure(
                         requestId,
                         new Error(ErrorCode.InvalidParams, $"Elicitation mode '{request.Mode ?? ElicitRequest.ModeForm}' is not supported")
-                    );
+                    ));
                     return;
                 }
 
                 var result = await elicitation.Elicit(request);
-                await _transport.SendOkResponse(requestId, result.WriteMembers);
+                await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
+                await _transport.SendResponse(JsonRpcResponse.Failure(
                     requestId,
                     new Error(ErrorCode.InternalError, "Internal client error")
-                );
+                ));
             }
         }
 
@@ -101,15 +104,15 @@ namespace McpSdk.Client
                 
                 var request = new CreateMessageRequest(methodParams);
                 var result = await sampling.CreateMessages(request);
-                await _transport.SendOkResponse(requestId, result.WriteMembers);
+                await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
+                await _transport.SendResponse(JsonRpcResponse.Failure(
                     requestId,
                     new Error(ErrorCode.InternalError, "Internal client error")
-                );
+                ));
             }
         }
 
@@ -121,21 +124,21 @@ namespace McpSdk.Client
                     return;
 
                 var result = await _roots.ListRoots().ConfigureAwait(false);
-                await _transport.SendOkResponse(requestId, result.WriteMembers).ConfigureAwait(false);
+                await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
-                    requestId, 
+                await _transport.SendResponse(JsonRpcResponse.Failure(
+                    requestId,
                     new Error(ErrorCode.InternalError, "Internal client error")
-                );
+                ));
             }
         }
 
-        private void OnNotificationReceived(string notification, IJsonObject args)
+        private void OnNotificationReceived(JsonRpcNotification notification)
         {
-            _logger.LogDebug($"Notification Received: {notification}, {args}");
+            _logger.LogDebug($"Notification Received: {notification.Method}, {notification.Parameters}");
         }
         
         public async Task Connect()

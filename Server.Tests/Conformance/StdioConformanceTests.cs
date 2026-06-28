@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
+using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Shared;
 

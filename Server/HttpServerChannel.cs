@@ -123,8 +123,8 @@ namespace McpSdk.Server
 
             if (message is JsonRpcRequest request)
             {
-                // Hold the POST open until the peer answers — its SendOkResponse/SendErrorResponse routes
-                // the response back here via Send. Register before dispatch so a synchronous reply lands.
+                // Hold the POST open until the peer answers — its SendResponse routes the response back
+                // here via Send. Register before dispatch so a synchronous reply lands.
                 var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
                 lock (_gate)
                     _pendingPostById[request.Id] = tcs;

@@ -10,7 +10,7 @@ namespace McpSdk.Shared
     public abstract class JsonRpcTransport : ITransport
     {
         private readonly IJson _json;
-        private readonly Dictionary<RequestId, TaskCompletionSource<IResponse>> _tscByMessageId = new();
+        private readonly Dictionary<RequestId, TaskCompletionSource<JsonRpcResponse>> _tscByMessageId = new();
 
         private long _nextMessageId;
 
@@ -51,7 +51,7 @@ namespace McpSdk.Shared
         /// <param name="cancellationToken"></param>
         /// <exception cref="TransportErrorException"></exception>
         /// <returns></returns>
-        public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
+        public async Task<JsonRpcResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
             var wire = _json.Stringify(new JsonRpcRequest(id, method, payload).WriteMembers);
@@ -61,17 +61,10 @@ namespace McpSdk.Shared
             return await WaitForResponse(id, cancellationToken);
         }
 
-        public async Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
+        public async Task SendResponse(JsonRpcResponse response, CancellationToken cancellationToken = default)
         {
-            var wire = _json.Stringify(JsonRpcResponse.Result(requestId, writeResult).WriteMembers);
-            Logger.LogDebug($"Sending OK response: {wire}");
-            await Send(wire, cancellationToken);
-        }
-
-        public async Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
-        {
-            var wire = _json.Stringify(JsonRpcResponse.Failure(requestId, error).WriteMembers);
-            Logger.LogDebug($"Sending Error response: {wire}");
+            var wire = _json.Stringify(response.WriteMembers);
+            Logger.LogDebug($"Sending response: {wire}");
             await Send(wire, cancellationToken);
         }
         
@@ -95,16 +88,16 @@ namespace McpSdk.Shared
                 switch (message)
                 {
                     case JsonRpcNotification notification:
-                        OnNotificationReceived(notification.Method, notification.Parameters);
+                        OnNotificationReceived(notification);
                         break;
                     case JsonRpcRequest request:
-                        OnRequestReceived(request.Id, request.Method, request.Parameters);
+                        OnRequestReceived(request);
                         break;
                     case JsonRpcResponse response:
                         if (_tscByMessageId.TryGetValue(response.Id, out var tsc))
                         {
                             _tscByMessageId.Remove(response.Id);
-                            tsc.TrySetResult(response.ToResponse());
+                            tsc.TrySetResult(response);
                         }
                         break;
                 }
@@ -115,23 +108,23 @@ namespace McpSdk.Shared
             }
         }
 
-        protected virtual void OnNotificationReceived(string method, IJsonObject methodParams)
+        protected virtual void OnNotificationReceived(JsonRpcNotification notification)
         {
-            NotificationReceived?.Invoke(method, methodParams);
+            NotificationReceived?.Invoke(notification);
         }
 
-        protected virtual void OnRequestReceived(RequestId requestId, string method, IJsonObject methodParams)
+        protected virtual void OnRequestReceived(JsonRpcRequest request)
         {
-            RequestReceived?.Invoke(requestId, method, methodParams);
+            RequestReceived?.Invoke(request);
         }
 
         protected abstract Task OnStart(CancellationToken cancellationToken = default);
         protected abstract Task OnStop(CancellationToken cancellationToken = default);
         protected abstract Task Send(string requestAsJson, CancellationToken cancellationToken = default);
 
-        private Task<IResponse> WaitForResponse(RequestId messageId, CancellationToken cancellationToken = default)
+        private Task<JsonRpcResponse> WaitForResponse(RequestId messageId, CancellationToken cancellationToken = default)
         {
-            var tsc = new TaskCompletionSource<IResponse>(cancellationToken);
+            var tsc = new TaskCompletionSource<JsonRpcResponse>(cancellationToken);
             _tscByMessageId[messageId] = tsc;
             return tsc.Task;
         }
