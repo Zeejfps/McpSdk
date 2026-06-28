@@ -6,17 +6,24 @@ like — not how it will be built internally.
 
 The SDK uses a small dependency-injection container behind an `IContext` registration surface
 (modeled on `Microsoft.Extensions.DependencyInjection`). Every builder exposes that `Context`, and
-adapters contribute features as `Context.AddX(...)` extension methods.
+adapters contribute features as `Context.AddX(...)` extension methods. **The transport is registered
+the same way** — `Context.AddStdioTransport()` or `Context.AddStreamableHttpTransport(...)` — so
+there is a single `CreateBuilder` per role (server / client) and the transport is just another
+registration rather than a separate factory or builder type.
 
 ## Design rules
 
-- **Required values** (name, version, transport address) are **factory parameters** — you can't
-  forget them, the code won't compile without them.
+- **Name and version** are **factory parameters** of `CreateBuilder` — you can't forget them, the
+  code won't compile without them.
+- **The transport** is a required registration: `Context.AddStdioTransport()` /
+  `Context.AddStreamableHttpTransport(...)`. Its address (baseUrl + path, launch command, or
+  endpoint url) is a required parameter of *that* method. Forgetting to register a transport at all
+  is caught by `Build()`, not by the compiler.
 - **Optional metadata** (title, description) goes through `ConfigureInfo(...)`.
 - **Everything else** — serializer, logger, capabilities — is registered on `Context.AddX(...)`.
   Every capability follows the same `Add<Name>Capability(...)` shape, so learning one teaches the rest.
-- `Build()` is synchronous and validates the wiring (a missing serializer throws here, not later).
-  `Start()` / `Connect()` are asynchronous (they do I/O).
+- `Build()` is synchronous and validates the wiring (a missing serializer *or* transport throws
+  here, not later). `Start()` / `Connect()` are asynchronous (they do I/O).
 
 ---
 
@@ -25,9 +32,10 @@ adapters contribute features as `Context.AddX(...)` extension methods.
 ### Server over stdio
 
 ```csharp
-var serverBuilder = StdioMcpServer.CreateBuilder("Demo Server", "1.0.0");
+var serverBuilder = McpServer.CreateBuilder("Demo Server", "1.0.0");
 
 serverBuilder.Context
+    .AddStdioTransport()                         // the transport (required; Build() throws if none)
     .AddNewtonsoftJson()
     .AddConsoleLogger()
     .ConfigureInfo(info =>                        // optional metadata (name/version are already set)
@@ -52,9 +60,9 @@ two surfaces:
 
 - **`Context`** — registered once and **shared by every session**. Put the serializer, logger, and
   any stateless tools here. This is all most servers need.
-- **`ConfigureSession`** — a callback that runs **once per session**. Its `session` argument gives
-  you a per-session `Context` (for tools or state unique to that connection) plus the connection's
-  identity (`SessionId`, `Origin`), so behavior can vary per client.
+- **`ConfigureSession`** — a callback on the transport options that runs **once per session**. Its
+  `session` argument gives you a per-session `Context` (for tools or state unique to that
+  connection) plus the connection's identity (`SessionId`, `Origin`), so behavior can vary per client.
 
 Register tools on `Context` unless a tool must hold per-connection state or be shown to only some
 clients — a tool's definition is identical for every client, and tool handlers are normally stateless.
@@ -63,38 +71,38 @@ clients — a tool's definition is identical for every client, and tool handlers
 > `path` is the endpoint route (`/mcp`). Don't put the path in the base url.
 
 ```csharp
-var httpServerBuilder = StreamableHttpMcpServer.CreateBuilder(
-    "Demo Server", "1.0.0",
-    "http://localhost:3000",                     // baseUrl: host:port to bind
-    "/mcp");                                     // path: endpoint route
+var serverBuilder = McpServer.CreateBuilder("Demo Server", "1.0.0");
 
 // Shared by every session
-httpServerBuilder.Context
+serverBuilder.Context
     .AddNewtonsoftJson()
     .AddConsoleLogger()
     .ConfigureInfo(info => info.Title = "Demo")
     .AddToolsCapability(tools => tools.AddTool(new EchoTool()));
 
-// Runs once per session; session.Context is that session's own registrations
-httpServerBuilder.ConfigureSession(session =>
-{
-    session.Context.AddToolsCapability(tools => tools.AddTool(new CartTool()));   // per-connection state
-    if (session.Origin == "https://admin.example.com")                            // shown only to this origin
-        session.Context.AddToolsCapability(tools => tools.AddTool(new AdminTool()));
-});
+// The transport. Its ConfigureSession callback runs once per session;
+// session.Context is that session's own registrations.
+serverBuilder.Context.AddStreamableHttpTransport(
+    "http://localhost:3000",                     // baseUrl: host:port to bind
+    "/mcp",                                      // path: endpoint route
+    http => http.ConfigureSession(session =>
+    {
+        session.Context.AddToolsCapability(tools => tools.AddTool(new CartTool()));   // per-connection state
+        if (session.Origin == "https://admin.example.com")                            // shown only to this origin
+            session.Context.AddToolsCapability(tools => tools.AddTool(new AdminTool()));
+    }));
 
-var httpServer = httpServerBuilder.Build();
+var httpServer = serverBuilder.Build();
 await httpServer.Start();                         // accepts connections; one McpServer per session
 ```
 
 ### Client over stdio
 
 ```csharp
-var clientBuilder = StdioMcpClient.CreateBuilder(
-    "Echo client", "1.0.0",
-    "echo");                                     // command to launch (+ optional arguments)
+var clientBuilder = McpClient.CreateBuilder("Echo client", "1.0.0");
 
 clientBuilder.Context
+    .AddStdioTransport("echo")                   // command to launch (+ optional arguments)
     .AddNewtonsoftJson()
     .AddConsoleLogger()
     .AddSamplingCapability(new MySamplingController())
@@ -109,15 +117,14 @@ await client.Connect();
 The client takes the single, full endpoint url (the address it POSTs to — base url plus path).
 
 ```csharp
-var httpClientBuilder = StreamableHttpMcpClient.CreateBuilder(
-    "Echo client", "1.0.0",
-    "http://localhost:3000/mcp");
+var clientBuilder = McpClient.CreateBuilder("Echo client", "1.0.0");
 
-httpClientBuilder.Context
+clientBuilder.Context
+    .AddStreamableHttpTransport("http://localhost:3000/mcp")
     .AddNewtonsoftJson()
     .AddConsoleLogger();
 
-var httpClient = httpClientBuilder.Build();
+var httpClient = clientBuilder.Build();
 await httpClient.Connect();
 ```
 
@@ -127,41 +134,30 @@ await httpClient.Connect();
 
 ### Entry points
 
-There is one factory per transport, and each takes exactly the arguments that transport requires.
-`StdioMcp*` live in the core libraries (`McpSdk.Server` / `McpSdk.Client`); `StreamableHttp*` live in
-their adapter assemblies, so the core stays free of transport dependencies.
+There is one factory per role. Each lives in the core library and takes only name and version; the
+transport is added afterwards on `Context`.
 
 ```csharp
-public static class StdioMcpServer
+public static class McpServer        // McpSdk.Server
 {
     public static ServerBuilder CreateBuilder(string name, string version);
 }
 
-public static class StreamableHttpMcpServer        // McpSdk.Adapter.StreamableHttpServer
+public static class McpClient        // McpSdk.Client
 {
-    // Returns a StreamableHttpServerBuilder (not ServerBuilder) — it owns ConfigureSession.
-    public static StreamableHttpServerBuilder CreateBuilder(string name, string version, string baseUrl, string path);
-}
-
-public static class StdioMcpClient
-{
-    public static ClientBuilder CreateBuilder(string name, string version, string command, params string[] args);
-}
-
-public static class StreamableHttpMcpClient        // McpSdk.Adapter.StreamableHttpClient
-{
-    public static ClientBuilder CreateBuilder(string name, string version, string endpointUrl);
+    public static ClientBuilder CreateBuilder(string name, string version);
 }
 ```
 
 ### Builders
 
-Builders are thin; all real configuration flows through `Context`.
+Builders are thin; all real configuration — including the transport — flows through `Context`. Every
+transport returns the same builder type, so there is no per-transport builder.
 
 ```csharp
 public sealed class ServerBuilder
 {
-    public IContext Context { get; }               // transport is pre-registered by the factory
+    public IContext Context { get; }
     public IServer Build();
 }
 
@@ -172,19 +168,49 @@ public sealed class ClientBuilder
 }
 ```
 
-The Streamable HTTP server has its own builder type, because only this transport has per-session
-sessions — so `ConfigureSession` lives only here.
+### Transports
+
+A transport is registered on `Context` like any other feature. The address each transport requires
+is a parameter of its registration method. `StdioTransport` lives in the core libraries
+(`McpSdk.Server` / `McpSdk.Client`); the Streamable HTTP transports live in their adapter assemblies,
+so the core stays free of transport dependencies.
 
 ```csharp
-public sealed class StreamableHttpServerBuilder
+// Server — stdio (McpSdk.Server). Binds the process's stdin/stdout.
+public static class StdioServerTransportExtensions
 {
-    public IContext Context { get; }                       // shared by all sessions
+    public static IContext AddStdioTransport(this IContext c);
+}
 
+// Server — Streamable HTTP (McpSdk.Adapter.StreamableHttpServer)
+public static class StreamableHttpServerTransportExtensions
+{
+    public static IContext AddStreamableHttpTransport(
+        this IContext c, string baseUrl, string path, Action<IStreamableHttpServerOptions> configure = null);
+}
+
+// Client — stdio (McpSdk.Client). Launches the server as a subprocess.
+public static class StdioClientTransportExtensions
+{
+    public static IContext AddStdioTransport(this IContext c, string command, params string[] args);
+}
+
+// Client — Streamable HTTP (McpSdk.Adapter.StreamableHttpClient)
+public static class StreamableHttpClientTransportExtensions
+{
+    public static IContext AddStreamableHttpTransport(this IContext c, string endpointUrl);
+}
+```
+
+`ConfigureSession` is HTTP-server-only, so it lives on that transport's options — the one place it is
+valid — rather than on the builder.
+
+```csharp
+public interface IStreamableHttpServerOptions
+{
     /// Runs once per session. session.Context is that session's own registration surface;
     /// whatever you add there exists only for that session.
-    public StreamableHttpServerBuilder ConfigureSession(Action<ISession> configure);
-
-    public IServer Build();
+    IStreamableHttpServerOptions ConfigureSession(Action<ISession> configure);
 }
 
 /// One live client connection.
@@ -284,10 +310,33 @@ public sealed class ClientInfoOptions
 
 ---
 
-## Implementation note
+## Implementation note — how `Build()` selects the transport
 
-This document is about the desired API, not how it is built. One thing the API implies, though: to
-support `ConfigureSession`, the `IContext` / container implementation will probably need to support
-**child (scoped) containers** — a per-session container that resolves its own registrations and
-falls back to the shared root container for everything else. The container today is a single flat
-one, so this is the main capability the per-session model adds.
+This is about how the API is built, not part of the public surface, but it explains why one
+`CreateBuilder` and one builder type can produce structurally different servers.
+
+`AddStdioTransport()` / `AddStreamableHttpTransport(...)` don't register a leaf service — they
+register the **server host**: the object that owns the lifecycle. Internally:
+
+- `AddStdioTransport()` registers an `IServerHost` (via `AddStdioServerHost()`) whose job is "bind
+  stdin/stdout as one transport, create one `McpServer`, pump messages."
+- `AddStreamableHttpTransport(...)` registers an `IServerHost` (via `AddStreamableHttpServerHost(...)`)
+  whose job is "open the `HttpListener`, and for each connection create a session + transport +
+  `McpServer`."
+
+`ServerBuilder.Build()` resolves the single registered `IServerHost` and returns it as `IServer`. It
+does **not** branch on transport type — the `HttpListener`-vs-stdio difference lives entirely inside
+the resolved host. If no host is registered, `Build()` throws; that is the build-time transport
+validation. This mirrors how ASP.NET Core picks Kestrel vs HTTP.sys: `UseKestrel()` / `UseHttpSys()`
+swap the registered `IServer`, and the host just resolves it — same builder, same `Build()`,
+different network stack.
+
+To support `ConfigureSession`, the Streamable HTTP host creates a per-session **child (scoped)
+container** off the shared root: it resolves each session's `McpServer` from that child, applies the
+`ConfigureSession` callback to it, and falls back to the root for everything else. The shared
+`Context` is the root container; `session.Context` is the child. The container today is a single flat
+one, so this child/scoped-container support is the main capability the per-session model adds.
+
+Clients are simpler: there is no listener and no per-connection fan-out, so the client transport
+registration registers the connection `ITransport` directly (the stdio subprocess or the HTTP
+endpoint), and `ClientBuilder.Build()` wires that single transport into the `IClient`.
