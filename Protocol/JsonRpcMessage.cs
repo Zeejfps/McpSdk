@@ -10,8 +10,8 @@ namespace McpSdk.Protocol
     ///
     /// The base contributes the shared envelope: <see cref="WriteMembers"/> emits the
     /// <c>"jsonrpc":"2.0"</c> header and defers the rest to <see cref="WriteBody"/>. Because a message both
-    /// encodes and decodes, the same model flows in both directions across an <c>IMessageChannel</c>
-    /// — there is no separate "frame to send" vs "message to dispatch".
+    /// encodes and decodes, the same model flows in both directions across a transport — there is no
+    /// separate "frame to send" vs "message to dispatch".
     /// </summary>
     public abstract class JsonRpcMessage : IJsonObjectWriter
     {

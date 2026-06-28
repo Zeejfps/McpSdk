@@ -17,11 +17,11 @@ namespace McpSdk.Adapter.StreamableHttpServer
     /// <c>Mcp-Session-Id</c> on initialize, requires the <c>MCP-Protocol-Version</c> header thereafter,
     /// and rejects disallowed <c>Origin</c>s with <c>403</c> (DNS-rebinding guard).
     ///
-    /// Each session is an <see cref="HttpServerChannel"/> wrapped in a shared <see cref="JsonRpcPeer"/>;
-    /// the <c>onSession</c> callback builds and starts an <c>McpServer</c> over that peer (mirroring the
-    /// old SSE adapter's per-connection callback) and is awaited before the first frame is dispatched, so
-    /// the server is subscribed in time to answer <c>initialize</c>. <c>GET</c> opens the server→client
-    /// SSE stream (with <c>Last-Event-ID</c> resumption); <c>DELETE</c> terminates the session.
+    /// Each session is an <see cref="HttpServerTransport"/>; the <c>onSession</c> callback builds and
+    /// starts an <c>McpServer</c> over that transport (mirroring the old SSE adapter's per-connection
+    /// callback) and is awaited before the first frame is dispatched, so the server is subscribed in time
+    /// to answer <c>initialize</c>. <c>GET</c> opens the server→client SSE stream (with
+    /// <c>Last-Event-ID</c> resumption); <c>DELETE</c> terminates the session.
     /// </summary>
     public sealed class StreamableHttpListener
     {
@@ -171,19 +171,18 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 body = await reader.ReadToEndAsync().ConfigureAwait(false);
 
             var sessionId = request.Headers[SessionIdHeader];
-            HttpServerChannel channel;
+            HttpServerTransport transport;
 
             if (string.IsNullOrEmpty(sessionId))
             {
-                // No session yet: this is the initialize request. Create the session channel + peer, let
-                // the consumer build & start its McpServer (subscribing before we dispatch), echo the id.
-                channel = new HttpServerChannel(_json, _loggerFactory, Guid.NewGuid().ToString("N"));
-                var peer = new JsonRpcPeer(channel, _loggerFactory);
+                // No session yet: this is the initialize request. Create the session transport, let the
+                // consumer build & start its McpServer (subscribing before we dispatch), echo the id.
+                transport = new HttpServerTransport(_json, _loggerFactory, Guid.NewGuid().ToString("N"));
                 lock (_sessionsGate)
-                    _sessions[channel.SessionId] = new Session(channel, peer);
+                    _sessions[transport.SessionId] = new Session(transport);
 
-                await _onSession(peer).ConfigureAwait(false);
-                response.Headers[SessionIdHeader] = channel.SessionId;
+                await _onSession(transport).ConfigureAwait(false);
+                response.Headers[SessionIdHeader] = transport.SessionId;
             }
             else
             {
@@ -204,10 +203,10 @@ namespace McpSdk.Adapter.StreamableHttpServer
                     WriteStatus(response, 404);
                     return;
                 }
-                channel = session.Channel;
+                transport = session.Transport;
             }
 
-            var responseBody = await channel.HandleInboundPost(body).ConfigureAwait(false);
+            var responseBody = await transport.HandleInboundPost(body).ConfigureAwait(false);
             if (responseBody == null)
             {
                 WriteStatus(response, 202); // notification/response acknowledged, no body
@@ -241,7 +240,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 return;
             }
 
-            var channel = session.Channel;
+            var transport = session.Transport;
 
             response.StatusCode = 200;
             response.ContentType = "text/event-stream";
@@ -269,11 +268,11 @@ namespace McpSdk.Adapter.StreamableHttpServer
             // The channel pushes server→client frames through here as SSE `id:`/`data:` events,
             // resuming after the client's Last-Event-ID when present.
             var lastEventId = request.Headers["Last-Event-ID"];
-            using var handle = channel.AttachStream(lastEventId, (eventId, json) => WriteRaw($"id: {eventId}\ndata: {json}\n\n"));
+            using var handle = transport.AttachStream(lastEventId, (eventId, json) => WriteRaw($"id: {eventId}\ndata: {json}\n\n"));
 
             // Close the stream when the listener stops or this session is terminated (DELETE). Captured
             // up front so we never touch _cts after Stop disposes it.
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, channel.Lifetime);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, transport.Lifetime);
             var cancellationToken = linkedCts.Token;
             try
             {
@@ -317,9 +316,9 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 return;
             }
 
-            // Stopping the peer cancels in-flight requests and stops the channel, which releases any open
-            // POSTs and signals the GET loop to close.
-            await session.Peer.Stop().ConfigureAwait(false);
+            // Stopping the transport cancels in-flight requests, releases any open POSTs, and signals the
+            // GET loop to close.
+            await session.Transport.Stop().ConfigureAwait(false);
             WriteStatus(response, 200);
         }
 
@@ -339,17 +338,15 @@ namespace McpSdk.Adapter.StreamableHttpServer
             response.Close();
         }
 
-        // One MCP session: the HTTP/SSE delivery channel and the JSON-RPC peer the McpServer runs over.
+        // One MCP session: the HTTP/SSE transport the McpServer runs over.
         private sealed class Session
         {
-            public Session(HttpServerChannel channel, JsonRpcPeer peer)
+            public Session(HttpServerTransport transport)
             {
-                Channel = channel;
-                Peer = peer;
+                Transport = transport;
             }
 
-            public HttpServerChannel Channel { get; }
-            public JsonRpcPeer Peer { get; }
+            public HttpServerTransport Transport { get; }
         }
     }
 }

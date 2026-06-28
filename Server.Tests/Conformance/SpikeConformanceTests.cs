@@ -9,20 +9,17 @@ using McpSdk.Shared;
 namespace McpSdk.Server.Tests.Conformance
 {
     /// <summary>
-    /// Architecture spike: prove the three-layer seam — <see cref="IMessageChannel"/> (dumb pipe) →
-    /// <see cref="JsonRpcPeer"/> (one shared correlation/dispatch engine) → <c>McpServer</c>/<c>McpClient</c>
-    /// (unchanged protocol). The same <c>McpServer</c>/<c>McpClient</c> that run over the old transports
-    /// run unmodified over <c>JsonRpcPeer</c>, both in-process and over a real OS stdio pipe.
+    /// Architecture spike: prove that <c>McpServer</c>/<c>McpClient</c> run unmodified over the shared
+    /// <see cref="JsonRpcTransport"/> engine — its correlation/dispatch is identical across transports —
+    /// both in-process (the loopback <see cref="InMemoryTransport"/>) and over a real OS stdio pipe.
     /// </summary>
     public static partial class ConformanceTests
     {
-        // Test A — the layering itself: McpServer <-> McpClient entirely over JsonRpcPeer + a dumb
-        // in-memory channel. Proves both sides of the protocol core are happy on the new seam.
+        // Test A — the engine itself: McpServer <-> McpClient entirely over a loopback InMemoryTransport.
+        // Proves both sides of the protocol core are happy on the shared transport base.
         private static async Task PeerOverInMemoryChannel()
         {
-            var (serverChannel, clientChannel) = InMemoryChannel.CreatePair(Json);
-            var serverPeer = new JsonRpcPeer(serverChannel, Loggers);
-            var clientPeer = new JsonRpcPeer(clientChannel, Loggers);
+            var (clientPeer, serverPeer) = InMemoryTransport.CreatePair(Json, Loggers);
 
             var server = new ServerBuilder()
                 .WithName("Spike Server")
@@ -39,7 +36,7 @@ namespace McpSdk.Server.Tests.Conformance
                 .Build();
             await client.Connect();
 
-            Assert(client.IsConnected, "client connected over JsonRpcPeer + in-memory channel");
+            Assert(client.IsConnected, "client connected over the loopback InMemoryTransport");
 
             var tools = await client.ListTools();
             Assert(tools.Tools.Any(t => t.Name == "get-forecast"), "tools/list round-trips over the channel/peer stack");
@@ -56,14 +53,12 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(text != null && text.Contains("47.6062"), $"tools/call result round-trips over the channel/peer stack (got '{text}')");
         }
 
-        // Test B — a real OS pipe: a new-stack client (JsonRpcPeer + StdioClientChannel) drives the
-        // existing stdio-server child (old stack). Proves the dumb stdio channel is wire-compatible and
-        // works over a genuine process boundary, not just an in-memory toy.
+        // Test B — a real OS pipe: a client StdioTransport drives the stdio-server child over a genuine
+        // process boundary, not just an in-memory toy.
         private static async Task PeerOverRealStdio()
         {
             var (command, arguments) = ResolveStdioServerCommand();
-            var channel = new StdioClientChannel(command, arguments, new NewtonsoftJson(), Loggers);
-            var clientPeer = new JsonRpcPeer(channel, Loggers);
+            var clientPeer = new McpSdk.Client.StdioTransport(command, arguments, new NewtonsoftJson(), Loggers);
 
             var client = new ClientBuilder()
                 .WithName("Spike Stdio Client")

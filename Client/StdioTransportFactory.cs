@@ -18,7 +18,7 @@ namespace McpSdk.Client
 
         public ITransport Create(ILoggerFactory loggerFactory)
         {
-            return new JsonRpcPeer(new StdioClientChannel(_command, _arguments, _json, loggerFactory), loggerFactory);
+            return new StdioTransport(_command, _arguments, _json, loggerFactory);
         }
     }
 }

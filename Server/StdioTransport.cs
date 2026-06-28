@@ -9,12 +9,11 @@ using McpSdk.Shared;
 namespace McpSdk.Server
 {
     /// <summary>
-    /// The stdio half of the transport seam: the wire boundary over the process's std handles. It frames
-    /// JSON-RPC messages as newline-delimited UTF-8 (no BOM), rendering outbound messages and parsing
-    /// inbound ones — and does nothing else (no ids, no correlation). Wrap it in a
-    /// <see cref="JsonRpcPeer"/> to get an <c>ITransport</c>.
+    /// The server stdio transport: the wire boundary over the process's std handles, framing JSON-RPC
+    /// messages as newline-delimited UTF-8 (no BOM). Correlation and dispatch are inherited from
+    /// <see cref="JsonRpcTransport"/>.
     /// </summary>
-    public sealed class StdioServerChannel : IMessageChannel
+    public sealed class StdioTransport : JsonRpcTransport
     {
         // UTF-8 with no BOM: the stdio spec mandates UTF-8, and a BOM would corrupt the first frame.
         private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -25,14 +24,12 @@ namespace McpSdk.Server
         private TextReader _standardIn;
         private CancellationTokenSource _cts;
 
-        public StdioServerChannel(IJson json)
+        public StdioTransport(IJson json, ILoggerFactory loggerFactory) : base(loggerFactory)
         {
             _json = json;
         }
 
-        public event Action<JsonRpcMessage> MessageReceived;
-
-        public Task Start(CancellationToken cancellationToken = default)
+        protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             _cts = new CancellationTokenSource();
 
@@ -53,13 +50,13 @@ namespace McpSdk.Server
             return Task.CompletedTask;
         }
 
-        public Task Stop()
+        protected override Task OnStop()
         {
             _cts?.Cancel();
             return Task.CompletedTask;
         }
 
-        public async Task Send(JsonRpcMessage message, CancellationToken cancellationToken = default)
+        protected override async Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
             await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
         }
@@ -73,8 +70,18 @@ namespace McpSdk.Server
                     break;
 
                 if (JsonRpcMessage.TryParse(_json, line, out var message))
-                    MessageReceived?.Invoke(message);
+                    OnMessageReceived(message);
             }
+        }
+    }
+
+    public static class StdioTransportServerBuilderExtensions
+    {
+        public static ServerBuilder WithStdioTransport(this ServerBuilder builder, IJson json)
+        {
+            var factory = new StdioTransportFactory(json);
+            builder.WithTransport(factory);
+            return builder;
         }
     }
 }
