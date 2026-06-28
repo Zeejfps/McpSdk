@@ -63,7 +63,7 @@ namespace McpSdk.Server.Tests.Conformance
 
         private sealed class StubCompletionController : ICompletionController
         {
-            public Task<CompletionResult> Complete(CompletionRequest request)
+            public Task<CompletionResult> Complete(CompletionRequest request, McpRequestContext context)
             {
                 var prefix = request.Arguments?["value"]?.AsString() ?? "";
                 return Task.FromResult(new CompletionResult(new[] { prefix + "_one", prefix + "_two" }, total: 2));
@@ -192,17 +192,17 @@ namespace McpSdk.Server.Tests.Conformance
 
             public List<string> Subscribed { get; } = new();
 
-            public Task<ListTemplatesResult> ListTemplates(ListTemplatesRequest request)
+            public Task<ListTemplatesResult> ListTemplates(ListTemplatesRequest request, McpRequestContext context)
                 => Task.FromResult(new ListTemplatesResult(System.Array.Empty<ResourceTemplate>()));
 
-            public Task<ListResourcesResult> ListResources(ListResourcesRequest request)
+            public Task<ListResourcesResult> ListResources(ListResourcesRequest request, McpRequestContext context)
                 => Task.FromResult(new ListResourcesResult(System.Array.Empty<Resource>()));
 
-            public Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest)
+            public Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest, McpRequestContext context)
                 => Task.FromResult<ReadResourceResult>(null);
 
-            public Task Subscribe(string uri) { lock (Subscribed) Subscribed.Add(uri); return Task.CompletedTask; }
-            public Task Unsubscribe(string uri) { lock (Subscribed) Subscribed.Remove(uri); return Task.CompletedTask; }
+            public Task Subscribe(string uri, McpRequestContext context) { lock (Subscribed) Subscribed.Add(uri); return Task.CompletedTask; }
+            public Task Unsubscribe(string uri, McpRequestContext context) { lock (Subscribed) Subscribed.Remove(uri); return Task.CompletedTask; }
 
             public void RaiseUpdated(string uri) => ResourceUpdated?.Invoke(uri);
             public void RaiseListChanged() => ListChanged?.Invoke();
@@ -275,9 +275,9 @@ namespace McpSdk.Server.Tests.Conformance
             public volatile bool Started;
             public volatile bool Cancelled;
 
-            public async Task<CallToolResult> Call(IJsonObject arguments)
+            public async Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context)
             {
-                var token = McpRequestContext.Current?.CancellationToken ?? CancellationToken.None;
+                var token = context?.CancellationToken ?? CancellationToken.None;
                 Started = true;
                 try
                 {
@@ -332,11 +332,10 @@ namespace McpSdk.Server.Tests.Conformance
         {
             public Tool Tool { get; } = new Tool("progress-tool", "reports progress", new ObjectSchema());
 
-            public async Task<CallToolResult> Call(IJsonObject arguments)
+            public async Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context)
             {
-                var ctx = McpRequestContext.Current;
-                if (ctx != null)
-                    await ctx.ReportProgress(0.5, 1.0, "halfway");
+                if (context != null)
+                    await context.Progress.Report(0.5, 1.0, "halfway");
                 return new CallToolResult(new Content[] { new TextContent("done") }, false);
             }
         }

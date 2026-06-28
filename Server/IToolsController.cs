@@ -8,7 +8,7 @@ namespace McpSdk.Server
     {
         event Action ListChanged;
         bool IsListChangedNotificationSupported { get; }
-        Task<ListToolsResult> ListTools(ListToolsRequest request);
-        Task<CallToolResult> CallTool(CallToolRequest request);
+        Task<ListToolsResult> ListTools(ListToolsRequest request, McpRequestContext context);
+        Task<CallToolResult> CallTool(CallToolRequest request, McpRequestContext context);
     }
 }

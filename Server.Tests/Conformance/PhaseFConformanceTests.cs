@@ -251,17 +251,17 @@ namespace McpSdk.Server.Tests.Conformance
             public bool? IsResourceChangedNotificationSupported { get; }
             public bool? IsListChangedNotificationSupported { get; }
 
-            public Task<ListTemplatesResult> ListTemplates(ListTemplatesRequest request)
+            public Task<ListTemplatesResult> ListTemplates(ListTemplatesRequest request, McpRequestContext context)
                 => Task.FromResult(new ListTemplatesResult(System.Array.Empty<ResourceTemplate>()));
 
-            public Task<ListResourcesResult> ListResources(ListResourcesRequest request)
+            public Task<ListResourcesResult> ListResources(ListResourcesRequest request, McpRequestContext context)
                 => Task.FromResult(new ListResourcesResult(System.Array.Empty<Resource>()));
 
-            public Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest)
+            public Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest, McpRequestContext context)
                 => Task.FromResult<ReadResourceResult>(null);
 
-            public Task Subscribe(string uri) => Task.CompletedTask;
-            public Task Unsubscribe(string uri) => Task.CompletedTask;
+            public Task Subscribe(string uri, McpRequestContext context) => Task.CompletedTask;
+            public Task Unsubscribe(string uri, McpRequestContext context) => Task.CompletedTask;
         }
     }
 }

@@ -19,13 +19,13 @@ public interface IResourcesController
     bool? IsResourceChangedNotificationSupported { get; }
     bool? IsListChangedNotificationSupported { get; }
 
-    Task<ListTemplatesResult> ListTemplates(ListTemplatesRequest request);
-    Task<ListResourcesResult> ListResources(ListResourcesRequest request);
-    Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest);
+    Task<ListTemplatesResult> ListTemplates(ListTemplatesRequest request, McpRequestContext context);
+    Task<ListResourcesResult> ListResources(ListResourcesRequest request, McpRequestContext context);
+    Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest, McpRequestContext context);
 
     /// <summary>Registers interest in a resource so the client receives <c>resources/updated</c> for it.</summary>
-    Task Subscribe(string uri);
+    Task Subscribe(string uri, McpRequestContext context);
 
     /// <summary>Cancels a prior <see cref="Subscribe"/> for the given URI.</summary>
-    Task Unsubscribe(string uri);
+    Task Unsubscribe(string uri, McpRequestContext context);
 }

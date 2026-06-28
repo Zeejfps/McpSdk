@@ -7,5 +7,5 @@ namespace McpSdk.Server;
 public interface IToolHandler
 {
     Tool Tool { get; }
-    Task<CallToolResult> Call(IJsonObject arguments);
+    Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context);
 }

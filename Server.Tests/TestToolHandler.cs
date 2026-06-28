@@ -56,7 +56,7 @@ public sealed class TestToolHandler : IToolHandler
         };
     }
     
-    public Task<CallToolResult> Call(IJsonObject args)
+    public Task<CallToolResult> Call(IJsonObject args, McpRequestContext context)
     {
         var latitude = args["latitude"].AsDouble();
         var longitude = args["longitude"].AsDouble();

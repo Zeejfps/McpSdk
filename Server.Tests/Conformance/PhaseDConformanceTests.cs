@@ -117,7 +117,7 @@ namespace McpSdk.Server.Tests.Conformance
                 Tool = new Tool(name, "no-op", new ObjectSchema());
             }
 
-            public Task<CallToolResult> Call(IJsonObject arguments)
+            public Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context)
             {
                 return Task.FromResult(new CallToolResult(new Content[] { new TextContent("ok") }, false));
             }

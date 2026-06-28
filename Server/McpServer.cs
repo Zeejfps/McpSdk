@@ -10,7 +10,7 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
-    internal delegate Task RequestHandler(RequestId requestId, IJsonObject arguments);
+    internal delegate Task RequestHandler(RequestId requestId, IJsonObject arguments, McpRequestContext context);
     
     internal sealed class McpServer : IServer
     {
@@ -225,16 +225,18 @@ namespace McpSdk.Server
             var payload = request.Parameters;
 
             // Make the request cancellable (via notifications/cancelled) and progress-reportable (via the
-            // request's _meta.progressToken) through the ambient McpRequestContext a handler can read.
+            // request's _meta.progressToken) through an McpRequestContext passed explicitly to the handler.
             var cts = new CancellationTokenSource();
             _inFlightRequests[requestId] = cts;
-            McpRequestContext.SetCurrent(new McpRequestContext(cts.Token, ReadProgressToken(payload), _transport));
+            var context = new McpRequestContext(
+                cts.Token,
+                new TransportProgressReporter(_transport, ReadProgressToken(payload)));
             try
             {
                 _logger.LogDebug($"Received Request: Id: {requestId}, Method: {path}, Payload: {payload}");
                 if (_requestHandlersByPathLookup.TryGetValue(path, out var requestHandler))
                 {
-                    await requestHandler.Invoke(requestId, payload);
+                    await requestHandler.Invoke(requestId, payload, context);
                 }
                 else
                 {
@@ -264,7 +266,6 @@ namespace McpSdk.Server
             {
                 _inFlightRequests.TryRemove(requestId, out _);
                 cts.Dispose();
-                McpRequestContext.SetCurrent(null);
             }
         }
 
@@ -275,16 +276,16 @@ namespace McpSdk.Server
             return token == null ? (RequestId?)null : RequestId.FromJson(token);
         }
 
-        private Task HandlePingRequest(RequestId requestId, IJsonObject reqPayload)
+        private Task HandlePingRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
             => _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
 
-        private Task HandleSetLevelRequest(RequestId requestId, IJsonObject reqPayload)
+        private Task HandleSetLevelRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
         {
             _minLogLevel = new SetLevelRequest(reqPayload).Level;
             return _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
-        private async Task HandleInitializeRequest(RequestId requestId, IJsonObject reqPayload)
+        private async Task HandleInitializeRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
         {
             var request = new InitializeRequest(reqPayload);
 
@@ -298,63 +299,63 @@ namespace McpSdk.Server
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleListToolsRequest(RequestId requestId, IJsonObject reqPayload)
+        private async Task HandleListToolsRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
         {
-            var result = await _toolsController.ListTools(new ListToolsRequest(reqPayload));
+            var result = await _toolsController.ListTools(new ListToolsRequest(reqPayload), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleCallToolRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleCallToolRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            var result = await _toolsController.CallTool(new CallToolRequest(arguments));
+            var result = await _toolsController.CallTool(new CallToolRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleListPromptsRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleListPromptsRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            var result = await _promptController.ListPrompts(new ListPromptsRequest(arguments));
+            var result = await _promptController.ListPrompts(new ListPromptsRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleGetPromptRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleGetPromptRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            var result = await _promptController.GetPrompt(new GetPromptRequest(arguments));
-            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
-        }
-        
-        private async Task HandleListResourceTemplatesRequest(RequestId requestId, IJsonObject arguments)
-        {
-            var result = await _resourcesController.ListTemplates(new ListTemplatesRequest(arguments));
+            var result = await _promptController.GetPrompt(new GetPromptRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleReadResourceRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleListResourceTemplatesRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments));
+            var result = await _resourcesController.ListTemplates(new ListTemplatesRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleListResourcesRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleReadResourceRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments));
+            var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
-        private async Task HandleSubscribeRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleListResourcesRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            await _resourcesController.Subscribe(arguments["uri"].AsString());
+            var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments), context);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
+        }
+
+        private async Task HandleSubscribeRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
+        {
+            await _resourcesController.Subscribe(arguments["uri"].AsString(), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
-        private async Task HandleUnsubscribeRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleUnsubscribeRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            await _resourcesController.Unsubscribe(arguments["uri"].AsString());
+            await _resourcesController.Unsubscribe(arguments["uri"].AsString(), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
-        private async Task HandleCompleteRequest(RequestId requestId, IJsonObject arguments)
+        private async Task HandleCompleteRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            var result = await _completionController.Complete(new CompletionRequest(arguments));
+            var result = await _completionController.Complete(new CompletionRequest(arguments), context);
             // The CompleteResult nests the suggestions under a "completion" object, per spec.
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, w => w.Write("completion", result)));
         }

@@ -34,7 +34,7 @@ public sealed class StructuredToolHandler : IToolHandler
         };
     }
 
-    public Task<CallToolResult> Call(IJsonObject args)
+    public Task<CallToolResult> Call(IJsonObject args, McpRequestContext context)
     {
         var a = args["a"].AsDouble();
         var b = args["b"].AsDouble();

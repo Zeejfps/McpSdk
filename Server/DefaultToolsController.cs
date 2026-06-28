@@ -50,7 +50,7 @@ namespace McpSdk.Server
             return true;
         }
 
-        public Task<ListToolsResult> ListTools(ListToolsRequest request)
+        public Task<ListToolsResult> ListTools(ListToolsRequest request, McpRequestContext context)
         {
             var toolCount = _toolsInOrder.Count;
 
@@ -80,7 +80,7 @@ namespace McpSdk.Server
             return Task.FromResult(new ListToolsResult(page, nextCursor));
         }
 
-        public async Task<CallToolResult> CallTool(CallToolRequest request)
+        public async Task<CallToolResult> CallTool(CallToolRequest request, McpRequestContext context)
         {
             var toolName = request.ToolName;
             if (!_toolByNameLookup.TryGetValue(toolName, out var toolHandler))
@@ -105,7 +105,7 @@ namespace McpSdk.Server
                 return CallToolResult.Error(content);
             }
 
-            return await toolHandler.Call(toolArguments);
+            return await toolHandler.Call(toolArguments, context);
         }
     }
 
