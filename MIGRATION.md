@@ -462,6 +462,45 @@ fine to defer for stdio / trusted-network use, but a conscious choice, not an om
   then **G.2 builds** Streamable HTTP. **H** closes the base-protocol/utility gaps and its
   sub-phases (H.1–H.6) are independent of one another — each is shippable on its own.
 
+---
+
+## Known gaps — missing implementations
+
+What's *not* done. Surfaced while reorganizing the conformance suite from phase-named to
+feature-named classes and adding end-to-end coverage for roots, resources, and prompts (the suite is
+now **317 assertions**). Every MCP method has a working handler and round-trips end-to-end **except**
+the items below.
+
+### Resources — `resources/read` cannot carry contents
+
+The method is routed and reaches `IResourcesController.ReadResource`, but the request and result
+models are stubs, so neither the requested URI nor the returned contents survive the wire.
+
+- [ ] **`ReadResourceResult`** (`Protocol/Models/ReadResourceResult.cs`) — `WriteMembers` writes
+  nothing; no `Contents` property, no parse ctor. Add `ResourceContents[] Contents`, write a
+  `contents` array, parse it back via the existing `ResourceContents.FromJsonObject` (already handles
+  `TextResourceContents` / `BlobResourceContents`), and add a `(ResourceContents[])` ctor.
+- [ ] **`ReadResourceRequest`** (`Protocol/Models/ReadResourceRequest.cs`) — the `IJsonObject` ctor
+  parses nothing; no `Uri`, no `WriteMembers`. Add a `Uri` property (parse + write) and a
+  `(string uri)` ctor; `McpServer.HandleReadResourceRequest` should pass the parsed URI to the
+  controller.
+- [ ] *Test:* tighten `ResourcesTests.ReadResourceIsRouted` (today only asserts the method is
+  reachable + the controller is invoked) to assert the URI reaches the controller and text/blob
+  contents round-trip back to the client.
+
+### Content — `UnknownContent` is lossy
+
+- [ ] **`UnknownContent`** (`Protocol/Models/UnknownContent.cs`) — the catch-all for unmodeled
+  content `type`s discards the source JSON in its ctor and re-emits a hardcoded `{"type":"unknown"}`,
+  so an unrecognized content block does not round-trip (a forward-compat peer silently drops data it
+  received intact). Retain the source `IJsonObject` and re-emit it verbatim. *Test:* add a
+  `ContentTests` case round-tripping a content block with an unmodeled `type`.
+
+*Not gaps (verified): marker capabilities (`CompletionCapabilityModel`, `LoggingCapabilityModel`)
+that serialize as `{}`, `NullLogger` no-ops, delegating/`: base(...)` constructors, parameterless
+object-initializer constructors, and `catch (OperationCanceledException)` blocks are all correct
+as-is.*
+
 ## References
 
 - Spec: <https://modelcontextprotocol.io/specification/2025-11-25>
