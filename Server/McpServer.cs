@@ -129,7 +129,7 @@ namespace McpSdk.Server
         {
             try
             {
-                await _transport.SendNotification("notifications/tools/list_changed");
+                await _transport.SendNotification(new JsonRpcNotification("notifications/tools/list_changed", (Json)null));
             }
             catch (Exception ex)
             {
@@ -137,8 +137,11 @@ namespace McpSdk.Server
             }
         }
 
-        private async void OnRequestReceived(RequestId requestId, string path, IJsonObject payload)
+        private async void OnRequestReceived(JsonRpcRequest request)
         {
+            var requestId = request.Id;
+            var path = request.Method;
+            var payload = request.Parameters;
             try
             {
                 _logger.LogDebug($"Received Request: Id: {requestId}, Method: {path}, Payload: {payload}");
@@ -148,21 +151,21 @@ namespace McpSdk.Server
                 }
                 else
                 {
-                    await _transport.SendErrorResponse(
+                    await _transport.SendResponse(JsonRpcResponse.Failure(
                         requestId,
                         new Error(
                             code: ErrorCode.MethodNotFound,
                             message: $"Method '{path}' is not supported")
-                        );
+                        ));
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
+                await _transport.SendResponse(JsonRpcResponse.Failure(
                     requestId,
                     new Error(code: ErrorCode.InternalError, message: "Internal server error")
-                );
+                ));
             }
         }
 
@@ -177,61 +180,61 @@ namespace McpSdk.Server
                 : ProtocolVersion.Latest;
 
             var result = new InitializeResult(negotiatedVersion, _capabilities, _serverInfo);
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
         private async Task HandleListToolsRequest(RequestId requestId, IJsonObject reqPayload)
         {
             var result = await _toolsController.ListTools(new ListToolsRequest(reqPayload));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
         private async Task HandleCallToolRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _toolsController.CallTool(new CallToolRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
         private async Task HandleListPromptsRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _promptController.ListPrompts(new ListPromptsRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
         private async Task HandleGetPromptRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _promptController.GetPrompt(new GetPromptRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
         
         private async Task HandleListResourceTemplatesRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ListTemplates(new ListTemplatesRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
         private async Task HandleReadResourceRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 
         private async Task HandleListResourcesRequest(RequestId requestId, IJsonObject arguments)
         {
             var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments));
-            await _transport.SendOkResponse(requestId, result.WriteMembers);
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
         
-        private void OnNotificationReceived(string notification, IJsonObject arguments)
+        private void OnNotificationReceived(JsonRpcNotification notification)
         {
-            _logger.LogDebug($"Received Notification: {notification}, {arguments}");
+            _logger.LogDebug($"Received Notification: {notification.Method}, {notification.Parameters}");
         }
 
         private async void SendNotification(string notification, Json arguments = null)
         {
             try
             {
-                await _transport.SendNotification(notification, arguments);
+                await _transport.SendNotification(new JsonRpcNotification(notification, arguments));
             }
             catch (Exception ex)
             {

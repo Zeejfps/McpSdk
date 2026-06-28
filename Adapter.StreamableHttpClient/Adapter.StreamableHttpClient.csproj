@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
-        <AssemblyName>McpSdk.Adapter.SseClient</AssemblyName>
-        <RootNamespace>McpSdk.Adapter.SseClient</RootNamespace>
+        <AssemblyName>McpSdk.Adapter.StreamableHttpClient</AssemblyName>
+        <RootNamespace>McpSdk.Adapter.StreamableHttpClient</RootNamespace>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
 

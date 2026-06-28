@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -16,6 +17,8 @@ namespace McpSdk.Client
         private readonly IElicitationController _elicitation;
         private readonly ILogger _logger;
 
+        private long _nextRequestId;
+
         public bool IsConnected { get; private set; }
 
         public McpClient(ITransport transport, ILoggerFactory loggerFactory, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling, IElicitationController elicitation)
@@ -30,11 +33,26 @@ namespace McpSdk.Client
 
         private void OnRootsListChanged()
         {
-            _transport.SendNotification("notifications/roots/list_changed");
+            SendNotification("notifications/roots/list_changed");
         }
 
-        private void OnRequestReceived(RequestId requestId, string method, IJsonObject args)
+        private RequestId NextRequestId() => new RequestId(Interlocked.Increment(ref _nextRequestId));
+
+        /// <summary>
+        /// Stamps a fresh sender-owned id, wraps the call as a <see cref="JsonRpcRequest"/>, and hands it to
+        /// the transport for sending + response correlation.
+        /// </summary>
+        private Task<JsonRpcResponse> SendRequest(string method, IJsonObjectWriter parameters, CancellationToken cancellationToken = default)
+            => _transport.SendRequest(new JsonRpcRequest(NextRequestId(), method, parameters.WriteMembers), cancellationToken);
+
+        private Task SendNotification(string method, Json arguments = null, CancellationToken cancellationToken = default)
+            => _transport.SendNotification(new JsonRpcNotification(method, arguments), cancellationToken);
+
+        private void OnRequestReceived(JsonRpcRequest request)
         {
+            var requestId = request.Id;
+            var method = request.Method;
+            var args = request.Parameters;
             if (method == "roots/list")
             {
                 OnListRootsRequestReceived(requestId, args);
@@ -56,10 +74,10 @@ namespace McpSdk.Client
                 var elicitation = _elicitation;
                 if (elicitation == null)
                 {
-                    await _transport.SendErrorResponse(
+                    await _transport.SendResponse(JsonRpcResponse.Failure(
                         requestId,
                         new Error(ErrorCode.MethodNotFound, "Elicitation is not supported by this client")
-                    );
+                    ));
                     return;
                 }
 
@@ -71,23 +89,23 @@ namespace McpSdk.Client
                     (!request.IsUrlMode && !elicitation.SupportsFormMode);
                 if (unsupportedMode)
                 {
-                    await _transport.SendErrorResponse(
+                    await _transport.SendResponse(JsonRpcResponse.Failure(
                         requestId,
                         new Error(ErrorCode.InvalidParams, $"Elicitation mode '{request.Mode ?? ElicitRequest.ModeForm}' is not supported")
-                    );
+                    ));
                     return;
                 }
 
                 var result = await elicitation.Elicit(request);
-                await _transport.SendOkResponse(requestId, result.WriteMembers);
+                await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
+                await _transport.SendResponse(JsonRpcResponse.Failure(
                     requestId,
                     new Error(ErrorCode.InternalError, "Internal client error")
-                );
+                ));
             }
         }
 
@@ -101,15 +119,15 @@ namespace McpSdk.Client
                 
                 var request = new CreateMessageRequest(methodParams);
                 var result = await sampling.CreateMessages(request);
-                await _transport.SendOkResponse(requestId, result.WriteMembers);
+                await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
+                await _transport.SendResponse(JsonRpcResponse.Failure(
                     requestId,
                     new Error(ErrorCode.InternalError, "Internal client error")
-                );
+                ));
             }
         }
 
@@ -121,21 +139,21 @@ namespace McpSdk.Client
                     return;
 
                 var result = await _roots.ListRoots().ConfigureAwait(false);
-                await _transport.SendOkResponse(requestId, result.WriteMembers).ConfigureAwait(false);
+                await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendErrorResponse(
-                    requestId, 
+                await _transport.SendResponse(JsonRpcResponse.Failure(
+                    requestId,
                     new Error(ErrorCode.InternalError, "Internal client error")
-                );
+                ));
             }
         }
 
-        private void OnNotificationReceived(string notification, IJsonObject args)
+        private void OnNotificationReceived(JsonRpcNotification notification)
         {
-            _logger.LogDebug($"Notification Received: {notification}, {args}");
+            _logger.LogDebug($"Notification Received: {notification.Method}, {notification.Parameters}");
         }
         
         public async Task Connect()
@@ -160,7 +178,7 @@ namespace McpSdk.Client
                     new ElicitationCapabilityModel(_elicitation.SupportsFormMode, _elicitation.SupportsUrlMode);
 
             var initializeRequest = new InitializeRequest(clientProtocolVersion, capabilities, _clientInfo);
-            var initializeResponse = await _transport.SendRequest("initialize", initializeRequest);
+            var initializeResponse = await SendRequest("initialize", initializeRequest);
             var initializeResult = initializeResponse.Unwrap(
                 result => new InitializeResult(result),
                 error => throw new TransportErrorException(error));
@@ -174,7 +192,7 @@ namespace McpSdk.Client
                     $"Supported versions: {string.Join(", ", ProtocolVersion.Supported)}");
             }
 
-            await _transport.SendNotification("notifications/initialized");
+            await SendNotification("notifications/initialized");
             
             if (_roots != null && _roots.IsListChangedNotificationSupported)
                 _roots.ListChanged += OnRootsListChanged;
@@ -185,7 +203,7 @@ namespace McpSdk.Client
         public async Task<ListToolsResult> ListTools(ListToolsRequest request = null)
         {
             var listRequest = request ?? new ListToolsRequest();
-            var response = await _transport.SendRequest("tools/list", listRequest);
+            var response = await SendRequest("tools/list", listRequest);
             return response.Unwrap(
                 result => new ListToolsResult(result),
                 error => throw new TransportErrorException(error)
@@ -194,7 +212,7 @@ namespace McpSdk.Client
 
         public async Task<CallToolResult> CallTool(CallToolRequest request)
         {
-            var response = await _transport.SendRequest("tools/call", request);
+            var response = await SendRequest("tools/call", request);
             return response.Unwrap(
                 result => new CallToolResult(result),
                 error => throw new TransportErrorException(error)

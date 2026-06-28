@@ -97,6 +97,21 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("server advertises subscribe from resource-changed, not listChanged", ServerAdvertisesSubscribeFromResourceChanged);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase G Conformance (Streamable HTTP) ===");
+
+            await RunTest("Streamable HTTP round-trip: initialize + tools/list + tools/call", StreamableHttpRoundTrip);
+            await RunTest("Streamable HTTP: session id, Origin->403, version header, unknown session", StreamableHttpProtocolChecks);
+            await RunTest("Streamable HTTP server->client: notification + request over the SSE stream", StreamableHttpServerToClient);
+            await RunTest("Streamable HTTP resumability: Last-Event-ID replays only the missed tail", StreamableHttpResumability);
+            await RunTest("Streamable HTTP lifecycle: DELETE terminates the session (then 404)", StreamableHttpDeleteTerminatesSession);
+
+            Console.WriteLine();
+            Console.WriteLine("=== Architecture Spike (shared JsonRpcTransport engine) ===");
+
+            await RunTest("McpServer<->McpClient over the loopback InMemoryTransport", PeerOverInMemoryChannel);
+            await RunTest("Client StdioTransport <-> real stdio-server child", PeerOverRealStdio);
+
+            Console.WriteLine();
             Console.WriteLine($"=== {_passed} passed, {_failed} failed ===");
             return _failed;
         }
@@ -268,13 +283,13 @@ namespace McpSdk.Server.Tests.Conformance
         /// <summary>Wires a bare transport to answer "initialize" with a fixed protocol version.</summary>
         private static void ActAsRawServer(InMemoryTransport serverEnd, string versionToReturn)
         {
-            serverEnd.RequestReceived += (id, method, arguments) =>
+            serverEnd.RequestReceived += request =>
             {
-                if (method != "initialize")
+                if (request.Method != "initialize")
                     return;
 
                 var result = new InitializeResult(versionToReturn, new ServerCapabilitiesModel(), new ServerInfo("Raw Server", "1.0.0"));
-                _ = serverEnd.SendOkResponse(id, result.WriteMembers);
+                _ = serverEnd.SendResponse(JsonRpcResponse.Ok(request.Id, result.WriteMembers));
             };
         }
 

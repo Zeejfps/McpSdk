@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -8,25 +8,33 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
+    /// <summary>
+    /// The server stdio transport: the wire boundary over the process's std handles, framing JSON-RPC
+    /// messages as newline-delimited UTF-8 (no BOM). Correlation and dispatch are inherited from
+    /// <see cref="JsonRpcTransport"/>.
+    /// </summary>
     public sealed class StdioTransport : JsonRpcTransport
     {
         // UTF-8 with no BOM: the stdio spec mandates UTF-8, and a BOM would corrupt the first frame.
-        private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+        private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
+        private readonly IJson _json;
 
         private TextWriter _standardOut;
         private TextReader _standardIn;
         private CancellationTokenSource _cts;
 
-        public StdioTransport(IJson json, ILoggerFactory loggerFactory) : base(json, loggerFactory)
+        public StdioTransport(IJson json, ILoggerFactory loggerFactory) : base(loggerFactory)
         {
+            _json = json;
         }
 
         protected override Task OnStart(CancellationToken cancellationToken = default)
         {
             _cts = new CancellationTokenSource();
 
-            // Bind directly to the raw stdout/stdin handles so framing is independent of the console
-            // locale: UTF-8 (no BOM), LF line endings, flushed per message so the peer never stalls.
+            // Bind directly to the raw stdout/stdin handles: UTF-8 (no BOM), LF line endings, flushed
+            // per message so the peer never stalls.
             _standardOut = new StreamWriter(Console.OpenStandardOutput(), Utf8NoBom)
             {
                 AutoFlush = true,
@@ -34,43 +42,35 @@ namespace McpSdk.Server
             };
             _standardIn = new StreamReader(Console.OpenStandardInput(), Utf8NoBom);
 
-            // stdout is reserved exclusively for MCP messages. Redirect Console.Out to stderr so any
-            // stray Console.Write (e.g. from tool code) can never corrupt the protocol stream.
+            // stdout is reserved for MCP frames; redirect Console.Out to stderr so stray writes (e.g.
+            // from tool code) can never corrupt the protocol stream.
             Console.SetOut(Console.Error);
 
-            // Fire and forget
-            _ = ReadStdIn(_standardIn, _cts.Token);
-            
+            _ = ReadLoop(_standardIn, _cts.Token);
             return Task.CompletedTask;
         }
 
-        protected override Task OnStop(CancellationToken cancellationToken = default)
+        protected override Task OnStop()
         {
-            // ReadLineAsync cannot be cancelled mid-read; flipping the token stops the loop from
-            // dispatching any further messages and unwinds it on the next EOF/line.
             _cts?.Cancel();
             return Task.CompletedTask;
         }
 
-        protected override async Task Send(string requestAsJson, CancellationToken cancellationToken = default)
+        protected override async Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
-            var line = JsonRpcFraming.ToSingleLine(requestAsJson);
-            await _standardOut.WriteLineAsync(line).ConfigureAwait(false);
+            await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
         }
 
-        private async Task ReadStdIn(TextReader standardIn, CancellationToken cancellationToken = default)
+        private async Task ReadLoop(TextReader standardIn, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                Logger.LogDebug("Reading stdin...");
-                var messageAsJson = await standardIn
-                    .ReadLineAsync()
-                    .ConfigureAwait(false);
-                
-                if (messageAsJson == null)
+                var line = await standardIn.ReadLineAsync().ConfigureAwait(false);
+                if (line == null)
                     break;
-                
-                OnMessageReceived(messageAsJson);
+
+                if (JsonRpcMessage.TryParse(_json, line, out var message))
+                    OnMessageReceived(message);
             }
         }
     }

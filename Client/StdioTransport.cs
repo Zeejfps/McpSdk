@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -9,24 +9,32 @@ using McpSdk.Shared;
 
 namespace McpSdk.Client
 {
+    /// <summary>
+    /// The client stdio transport: spawns the server process and uses its stdin/stdout as the wire,
+    /// rendering outbound JSON-RPC messages and parsing inbound ones as newline-delimited UTF-8 (no BOM).
+    /// Correlation and dispatch are inherited from <see cref="JsonRpcTransport"/>.
+    /// </summary>
     public sealed class StdioTransport : JsonRpcTransport
     {
         // UTF-8 with no BOM: the stdio spec mandates UTF-8, and a BOM would corrupt the first frame.
-        private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+        private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         private readonly string _command;
         private readonly string _arguments;
+        private readonly IJson _json;
 
         private StreamWriter _standardIn;
         private Process _process;
         private CancellationTokenSource _cts;
         private Task _readStdOutTask;
         private Task _readStdErrTask;
-        
-        public StdioTransport(IJson json, ILoggerFactory loggerFactory, string command, string arguments) : base(json, loggerFactory)
+
+        public StdioTransport(string command, string arguments, IJson json, ILoggerFactory loggerFactory)
+            : base(loggerFactory)
         {
             _command = command;
             _arguments = arguments;
+            _json = json;
         }
 
         protected override Task OnStart(CancellationToken cancellationToken = default)
@@ -44,21 +52,17 @@ namespace McpSdk.Client
 
             _process = Process.Start(processStartInfo);
             if (_process == null)
-                throw new ClientException("Failed to connect to the server.");
+                throw new ClientException("Failed to start the server process.");
 
             _cts = new CancellationTokenSource();
 
-            // Force UTF-8 (no BOM) + LF on the redirected streams by wrapping the raw base streams
-            // ourselves. UTF8Encoding(false) has an empty preamble, so the writer never emits a BOM —
-            // and unlike ProcessStartInfo.Standard*Encoding (absent on netstandard2.0) this works on
-            // every target framework. AutoFlush is required so each frame reaches the child promptly.
+            // Force UTF-8 (no BOM) + LF on the redirected streams. AutoFlush so each frame reaches the
+            // child promptly. StreamReader strips a leading BOM by default.
             _standardIn = new StreamWriter(_process.StandardInput.BaseStream, Utf8NoBom)
             {
                 AutoFlush = true,
                 NewLine = JsonRpcFraming.LineDelimiter.ToString(),
             };
-            // StreamReader detects and skips a leading BOM by default, so any BOM the child emits is
-            // stripped rather than parsed as part of the first frame.
             var standardOut = new StreamReader(_process.StandardOutput.BaseStream, Utf8NoBom);
             var standardErr = new StreamReader(_process.StandardError.BaseStream, Utf8NoBom);
 
@@ -68,43 +72,37 @@ namespace McpSdk.Client
             return Task.CompletedTask;
         }
 
-        protected override async Task OnStop(CancellationToken cancellationToken = default)
+        protected override async Task OnStop()
         {
             try
             {
-                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 _process?.Kill();
                 _cts?.Cancel();
-                var waitForReadersTask = Task.WhenAll(_readStdOutTask, _readStdErrTask);
-                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5), timeoutCts.Token);
-                await Task.WhenAny(waitForReadersTask, timeoutTask).ConfigureAwait(false);
-                timeoutCts.Cancel();
+                var readers = Task.WhenAll(_readStdOutTask ?? Task.CompletedTask, _readStdErrTask ?? Task.CompletedTask);
+                await Task.WhenAny(readers, Task.Delay(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                
+                Logger.LogError(ex);
             }
         }
 
-        protected override async Task Send(string requestAsJson, CancellationToken cancellationToken)
+        protected override async Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
-            var line = JsonRpcFraming.ToSingleLine(requestAsJson);
-            await _standardIn.WriteLineAsync(line).ConfigureAwait(false);
+            await _standardIn.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
         }
 
         private async Task ReadStdOut(StreamReader standardOut, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var messageAsJson = await standardOut
-                    .ReadLineAsync()
-                    .ConfigureAwait(false);
-                
-                if (messageAsJson == null)
+                var line = await standardOut.ReadLineAsync().ConfigureAwait(false);
+                if (line == null)
                     break;
-                
-                Logger.LogDebug($"[SERVER-OUT] {messageAsJson}");
-                OnMessageReceived(messageAsJson);
+
+                Logger.LogDebug($"[SERVER-OUT] {line}");
+                if (JsonRpcMessage.TryParse(_json, line, out var message))
+                    OnMessageReceived(message);
             }
         }
 
@@ -112,14 +110,11 @@ namespace McpSdk.Client
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var message = await standardErr
-                    .ReadLineAsync()
-                    .ConfigureAwait(false);
-                
+                var message = await standardErr.ReadLineAsync().ConfigureAwait(false);
                 if (message == null)
                     break;
 
-                Logger.LogDebug($"[SERVER-ERR]: {message}");
+                Logger.LogDebug($"[SERVER-ERR] {message}");
             }
         }
     }

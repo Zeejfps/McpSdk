@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
+using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Shared;
 
@@ -87,7 +88,7 @@ namespace McpSdk.Server.Tests.Conformance
         {
             var (command, arguments) = ResolveStdioServerCommand();
             var json = new NewtonsoftJson();
-            var transport = new McpSdk.Client.StdioTransport(json, Loggers, command, arguments);
+            var transport = new McpSdk.Client.StdioTransport(command, arguments, json, Loggers);
             var client = new ClientBuilder()
                 .WithName("Stdio Conf Client")
                 .WithVersion("1.0.0")
