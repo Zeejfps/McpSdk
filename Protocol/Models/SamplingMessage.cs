@@ -13,7 +13,7 @@ namespace McpSdk.Protocol.Models
         public SamplingMessage(IJsonObject jsonObject)
         {
             Role = jsonObject["role"].AsString();
-            Content = Models.Content.CreateMany(jsonObject["content"]);
+            Content = jsonObject["content"].AsArrayOrSingle(Models.Content.FromJsonObject);
         }
 
         public SamplingMessage(string role, params Content[] content)
