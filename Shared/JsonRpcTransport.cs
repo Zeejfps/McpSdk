@@ -9,18 +9,16 @@ namespace McpSdk.Shared
 {
     public abstract class JsonRpcTransport : ITransport
     {
-        private const string JsonRpcVersion = "2.0";
-
-        private readonly IJson _json;
+        private readonly JsonRpcCodec _codec;
         private readonly Dictionary<RequestId, TaskCompletionSource<IJsonObject>> _tscByMessageId = new();
 
         private long _nextMessageId;
-        
+
         protected ILogger Logger { get; }
 
         protected JsonRpcTransport(IJson json, ILoggerFactory loggerFactory)
         {
-            _json = json;
+            _codec = new JsonRpcCodec(json);
             Logger = loggerFactory.Create(GetType());
         }
         
@@ -40,15 +38,7 @@ namespace McpSdk.Shared
 
         public async Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
         {
-            var requestAsJson = _json.Stringify(request =>
-            {
-                JsonRpcVersion.WriteTo(request, "jsonrpc");
-                notification.WriteTo(request, "method");
-                if (arguments != null)
-                {
-                    arguments.WriteTo(request, "params");
-                }
-            });
+            var requestAsJson = _codec.EncodeNotification(notification, arguments);
             Logger.LogDebug($"Sending notification: {requestAsJson}");
             await Send(requestAsJson, cancellationToken);
         }
@@ -64,40 +54,24 @@ namespace McpSdk.Shared
         public async Task<IResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
         {
             var id = NextRequestId();
-            var request = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                id.WriteTo(req, "id");
-                method.WriteTo(req, "method");
-                payload.WriteTo(req, "params");
-            });
-            
+            var request = _codec.EncodeRequest(id, method, payload);
+
             Logger.LogDebug($"Sending request: {request}");
             await Send(request, cancellationToken);
             var response = await WaitForResponse(id, cancellationToken);
-            return ParseResponse(response);        
+            return _codec.ParseResponse(response);
         }
 
         public async Task SendOkResponse(RequestId requestId, Json writeResult, CancellationToken cancellationToken = default)
         {
-            var response = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                requestId.WriteTo(req, "id");
-                writeResult.WriteTo(req, "result");
-            });
+            var response = _codec.EncodeResult(requestId, writeResult);
             Logger.LogDebug($"Sending OK response: {response}");
             await Send(response, cancellationToken);
         }
 
         public async Task SendErrorResponse(RequestId requestId, Error error, CancellationToken cancellationToken = default)
         {
-            var response = _json.Stringify(req =>
-            {
-                JsonRpcVersion.WriteTo(req, "jsonrpc");
-                requestId.WriteTo(req, "id");
-                error.WriteTo(req, "error");
-            });
+            var response = _codec.EncodeError(requestId, error);
             Logger.LogDebug($"Sending Error response: {response}");
             await Send(response, cancellationToken);
         }
@@ -116,36 +90,24 @@ namespace McpSdk.Shared
                     return;
                 }
 
-                var response = _json.Parse(messageAsJson);
-                var idProp = response["id"];
-                var method = response["method"]?.AsString();
-                var methodParams = response["params"]?.AsObject();
+                if (!_codec.TryDecode(messageAsJson, out var message))
+                    return;
 
-                if (method != null)
+                switch (message.Kind)
                 {
-                    if (idProp == null)
-                    {
-                        OnNotificationReceived(method, methodParams);
-                    }
-                    else
-                    {
-                        var id = RequestId.FromJson(idProp);
-                        OnRequestReceived(id, method, methodParams);
-                    }
-                }
-                else
-                {
-                    if (idProp == null)
-                    {
-                        return;
-                    }
-
-                    var id = RequestId.FromJson(idProp);
-                    if (!_tscByMessageId.TryGetValue(id, out var tsc))
-                        return;
-
-                    _tscByMessageId.Remove(id);
-                    tsc.TrySetResult(response);
+                    case JsonRpcMessageKind.Notification:
+                        OnNotificationReceived(message.Method, message.Parameters);
+                        break;
+                    case JsonRpcMessageKind.Request:
+                        OnRequestReceived(message.Id, message.Method, message.Parameters);
+                        break;
+                    case JsonRpcMessageKind.Response:
+                        if (_tscByMessageId.TryGetValue(message.Id, out var tsc))
+                        {
+                            _tscByMessageId.Remove(message.Id);
+                            tsc.TrySetResult(message.Raw);
+                        }
+                        break;
                 }
             }
             catch (Exception e)
@@ -173,16 +135,6 @@ namespace McpSdk.Shared
             var tsc = new TaskCompletionSource<IJsonObject>(cancellationToken);
             _tscByMessageId[messageId] = tsc;
             return tsc.Task;
-        }
-        
-        private Response ParseResponse(IJsonObject response)
-        {
-            var errorProp = response["error"];
-            if (errorProp == null)
-                return Response.FromResult(response["result"].AsObject());
-            
-            var errorObj = errorProp.AsObject();
-            return Response.FromError(new Error(errorObj));
         }
         
         private RequestId NextRequestId()
