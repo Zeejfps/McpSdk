@@ -1,15 +1,22 @@
 # MCP SDK — Target Public API
 
-The intended construction API for the DI/`IContext` migration. **Part 1** is how it's used;
-**Part 2** is the surface that backs it. This is a design target, not yet implemented.
+This describes the **desired** construction API for the SDK: how an application builds an MCP server
+or client. It is a design goal, not yet implemented, and it documents *what* the API should look
+like — not how it will be built internally.
 
-## Design rules this encodes
+The SDK uses a small dependency-injection container behind an `IContext` registration surface
+(modeled on `Microsoft.Extensions.DependencyInjection`). Every builder exposes that `Context`, and
+adapters contribute features as `Context.AddX(...)` extension methods.
 
-- **Required** (name, version, transport args) → factory params. Can't forget them.
-- **Optional** (title, description) → `ConfigureInfo(...)`. Grouped, discoverable.
-- **Everything else** → `Context.AddX(...)`. One mental model: learn `AddTools`, guess the rest.
-- **Tools** use a fluent `IToolsBuilder` — instance *or* container-activated (`<T>`) tools.
-- `Build()` = sync wiring (fails fast). `Start()`/`Connect()` = async I/O.
+## Design rules
+
+- **Required values** (name, version, transport address) are **factory parameters** — you can't
+  forget them, the code won't compile without them.
+- **Optional metadata** (title, description) goes through `ConfigureInfo(...)`.
+- **Everything else** — serializer, logger, capabilities — is registered on `Context.AddX(...)`.
+  Every capability follows the same `Add<Name>Capability(...)` shape, so learning one teaches the rest.
+- `Build()` is synchronous and validates the wiring (a missing serializer throws here, not later).
+  `Start()` / `Connect()` are asynchronous (they do I/O).
 
 ---
 
@@ -23,54 +30,61 @@ var serverBuilder = StdioMcpServer.CreateBuilder("Demo Server", "1.0.0");
 serverBuilder.Context
     .AddNewtonsoftJson()
     .AddConsoleLogger()
-    .ConfigureInfo(info =>                       // optional metadata lives here, NOT in CreateBuilder
+    .ConfigureInfo(info =>                        // optional metadata (name/version are already set)
     {
         info.Title       = "Demo";
         info.Description = "A demo MCP server";
     })
     .AddToolsCapability(tools => tools
-        .AddTool(new TestTool())                 // bring your own instance
-        .AddTool<WeatherTool>()                  // container-activated: ctor deps injected
-        .WithPageSize(50));                      // tools/list pagination (omit = single page)
+        .AddTool(new TestTool())                 // a tool instance you constructed
+        .AddTool<WeatherTool>()                  // a tool the container constructs (ctor deps injected)
+        .WithPageSize(50));                      // tools/list page size (omit for a single page)
 
-var mcpServer = serverBuilder.Build();           // sync: all wiring validated here
+var mcpServer = serverBuilder.Build();           // validates wiring
 await mcpServer.Start();
 ```
 
 ### Server over Streamable HTTP
 
-Base URL and path are **separate** — no `/mcp` duplication. `baseUrl` = host:port to bind,
-`path` = route.
+A Streamable HTTP server listens on one endpoint and serves many clients at once. Each client
+connection is a **session**, and every session gets its own `McpServer`. Configuration therefore has
+two surfaces:
 
-An HTTP server is 1 listener = many sessions = one `McpServer` **per session**. Globals go on the
-root `Context` (Singletons, shared by all sessions); per-session services go in `ConfigureSession`,
-where `session.Context` is *that session's own* registration surface and `session` also carries its
-identity. See [§ Streamable HTTP server — per-session model](#streamable-http-server--per-session-model-configuresession)
-for the full rationale.
+- **`Context`** — registered once and **shared by every session**. Put the serializer, logger, and
+  any stateless tools here. This is all most servers need.
+- **`ConfigureSession`** — a callback that runs **once per session**. Its `session` argument gives
+  you a per-session `Context` (for tools or state unique to that connection) plus the connection's
+  identity (`SessionId`, `Origin`), so behavior can vary per client.
+
+Register tools on `Context` unless a tool must hold per-connection state or be shown to only some
+clients — a tool's definition is identical for every client, and tool handlers are normally stateless.
+
+> `baseUrl` and `path` are separate. `baseUrl` is the host:port to bind (`http://localhost:3000`);
+> `path` is the endpoint route (`/mcp`). Don't put the path in the base url.
 
 ```csharp
 var httpServerBuilder = StreamableHttpMcpServer.CreateBuilder(
     "Demo Server", "1.0.0",
-    "http://localhost:3000",                     // baseUrl (host:port to bind, NOT ".../mcp")
-    "/mcp");                                     // path
+    "http://localhost:3000",                     // baseUrl: host:port to bind
+    "/mcp");                                     // path: endpoint route
 
-// GLOBAL — Singletons on the root context, shared by every session
+// Shared by every session
 httpServerBuilder.Context
     .AddNewtonsoftJson()
     .AddConsoleLogger()
     .ConfigureInfo(info => info.Title = "Demo")
-    .AddToolsCapability(tools => tools.AddTool(new EchoTool()));   // shared, stateless tool
+    .AddToolsCapability(tools => tools.AddTool(new EchoTool()));
 
-// PER SESSION — runs for each new session; session.Context is that session's own registrations
+// Runs once per session; session.Context is that session's own registrations
 httpServerBuilder.ConfigureSession(session =>
 {
-    session.Context.AddToolsCapability(tools => tools.AddTool(new CartTool()));   // per-session state
-    if (session.Origin == "https://admin.example.com")                            // auth-gated visibility
+    session.Context.AddToolsCapability(tools => tools.AddTool(new CartTool()));   // per-connection state
+    if (session.Origin == "https://admin.example.com")                            // shown only to this origin
         session.Context.AddToolsCapability(tools => tools.AddTool(new AdminTool()));
 });
 
-var httpServer = httpServerBuilder.Build();      // the listener, surfaced as an IServer
-await httpServer.Start();                         // accepts connections; builds one McpServer per session
+var httpServer = httpServerBuilder.Build();
+await httpServer.Start();                         // accepts connections; one McpServer per session
 ```
 
 ### Client over stdio
@@ -78,7 +92,7 @@ await httpServer.Start();                         // accepts connections; builds
 ```csharp
 var clientBuilder = StdioMcpClient.CreateBuilder(
     "Echo client", "1.0.0",
-    "echo");                                     // command (+ params string[] args)
+    "echo");                                     // command to launch (+ optional arguments)
 
 clientBuilder.Context
     .AddNewtonsoftJson()
@@ -92,7 +106,7 @@ await client.Connect();
 
 ### Client over Streamable HTTP
 
-Client takes the single **full** endpoint url (it POSTs to it) — this one keeps the path.
+The client takes the single, full endpoint url (the address it POSTs to — base url plus path).
 
 ```csharp
 var httpClientBuilder = StreamableHttpMcpClient.CreateBuilder(
@@ -113,9 +127,9 @@ await httpClient.Connect();
 
 ### Entry points
 
-One per transport; each demands exactly its required args.
-`StdioMcp*` live in core (`McpSdk.Server` / `McpSdk.Client`); `StreamableHttp*` live in their
-adapter assemblies, so core stays transport-dependency-free.
+There is one factory per transport, and each takes exactly the arguments that transport requires.
+`StdioMcp*` live in the core libraries (`McpSdk.Server` / `McpSdk.Client`); `StreamableHttp*` live in
+their adapter assemblies, so the core stays free of transport dependencies.
 
 ```csharp
 public static class StdioMcpServer
@@ -125,7 +139,7 @@ public static class StdioMcpServer
 
 public static class StreamableHttpMcpServer        // McpSdk.Adapter.StreamableHttpServer
 {
-    // NOTE: returns a StreamableHttpServerBuilder (not ServerBuilder) — it owns ConfigureSession.
+    // Returns a StreamableHttpServerBuilder (not ServerBuilder) — it owns ConfigureSession.
     public static StreamableHttpServerBuilder CreateBuilder(string name, string version, string baseUrl, string path);
 }
 
@@ -142,13 +156,13 @@ public static class StreamableHttpMcpClient        // McpSdk.Adapter.StreamableH
 
 ### Builders
 
-Thin; all real config flows through `Context`.
+Builders are thin; all real configuration flows through `Context`.
 
 ```csharp
 public sealed class ServerBuilder
 {
-    public IContext Context { get; }               // the only knob; transport is pre-registered by the factory
-    public IServer Build();                         // sync, validates wiring (missing IJson etc. throws here)
+    public IContext Context { get; }               // transport is pre-registered by the factory
+    public IServer Build();
 }
 
 public sealed class ClientBuilder
@@ -158,32 +172,32 @@ public sealed class ClientBuilder
 }
 ```
 
-The Streamable HTTP server gets its **own** builder — `ConfigureSession` lives only here, because
-only this transport has a per-session lifecycle.
+The Streamable HTTP server has its own builder type, because only this transport has per-session
+sessions — so `ConfigureSession` lives only here.
 
 ```csharp
 public sealed class StreamableHttpServerBuilder
 {
-    public IContext Context { get; }                       // root — Singletons, shared by all sessions
+    public IContext Context { get; }                       // shared by all sessions
 
-    /// Runs for each new session. session.Context is that session's own registration surface;
-    /// anything added there lives for the session and is disposed when it ends.
+    /// Runs once per session. session.Context is that session's own registration surface;
+    /// whatever you add there exists only for that session.
     public StreamableHttpServerBuilder ConfigureSession(Action<ISession> configure);
 
-    public IServer Build();                                 // the listener, surfaced as an IServer
+    public IServer Build();
 }
 
-/// A live MCP session: its own DI scope plus the connection's identity.
+/// One live client connection.
 public interface ISession
 {
-    IContext Context { get; }       // per-session registrations (resolve against root for Singletons)
+    IContext Context { get; }       // this session's own registrations
     string SessionId { get; }       // the Mcp-Session-Id issued on initialize
-    string Origin { get; }          // request Origin (null for non-browser clients) — for auth gating
-    ITransport Transport { get; }   // this session's HttpServerTransport (auto-wired into Context)
+    string Origin { get; }          // the request Origin (null for non-browser clients)
+    ITransport Transport { get; }   // this session's transport (wired up for you)
 }
 ```
 
-### `IContext` — shared registrations (both sides)
+### `IContext` — shared registrations (both server and client)
 
 ```csharp
 public static class SharedContextExtensions
@@ -197,8 +211,8 @@ public static class SharedContextExtensions
 
 ### `IContext` — server side
 
-Only in scope with `using McpSdk.Server`, so it can't leak to clients. Every capability is the
-**same shape** — `Add<Name>Capability(...)`.
+These are only in scope with `using McpSdk.Server`, so a client app never sees them. Every
+capability has the same `Add<Name>Capability(...)` shape.
 
 ```csharp
 public static class ServerContextExtensions
@@ -206,17 +220,17 @@ public static class ServerContextExtensions
     public static IContext ConfigureInfo(this IContext c, Action<ServerInfoOptions> configure);
 
     public static IContext AddToolsCapability(this IContext c, Action<IToolsBuilder> configure);
-    public static IContext AddToolsCapability(this IContext c, IToolsController controller);   // BYO controller
+    public static IContext AddToolsCapability(this IContext c, IToolsController controller);   // bring your own
 
     public static IContext AddPromptsCapability(this IContext c, IPromptController controller);
     public static IContext AddResourcesCapability(this IContext c, IResourcesController controller);
     public static IContext AddCompletionCapability(this IContext c, ICompletionController controller);
-    public static IContext AddLoggingCapability(this IContext c);   // marker: advertises `logging`
+    public static IContext AddLoggingCapability(this IContext c);   // advertises the `logging` capability
 }
 ```
 
-> Prompts/Resources can grow an `Action<IPromptsBuilder>` lambda form later, mirroring tools, once
-> they have a `Default*Controller`. Keeping the BYO form now keeps the surface honest.
+> Prompts and resources currently take a controller instance. They can gain a builder-lambda form
+> (like tools) later, once they have a default controller to configure.
 
 ### `IContext` — client side
 
@@ -238,22 +252,21 @@ public static class ClientContextExtensions
 ```csharp
 public interface IToolsBuilder
 {
-    /// Register a tool you constructed yourself. Lives as a process-wide singleton.
+    /// Register a tool instance you constructed yourself.
     IToolsBuilder AddTool(IToolHandler handler);
 
-    /// Register a tool the container activates — its constructor deps (IJson, your services)
-    /// are injected. Use this when a tool has dependencies, or when you want a fresh instance
-    /// per session under the HTTP per-session lifetime.
+    /// Register a tool the container constructs, injecting its constructor dependencies.
+    /// Use this when a tool has dependencies of its own.
     IToolsBuilder AddTool<THandler>() where THandler : class, IToolHandler;
 
-    /// tools/list page size. Omit -> a single page with no cursor.
+    /// tools/list page size. Omit for a single page with no pagination.
     IToolsBuilder WithPageSize(int pageSize);
 }
 ```
 
 ### Options shapes
 
-No `Name`/`Version` here — those are required `CreateBuilder` params.
+`Name` and `Version` are not here — they are required `CreateBuilder` parameters.
 
 ```csharp
 public sealed class ServerInfoOptions
@@ -271,82 +284,10 @@ public sealed class ClientInfoOptions
 
 ---
 
-## Streamable HTTP server — per-session model (`ConfigureSession`)
+## Implementation note
 
-Streamable HTTP is 1 listener = many sessions, one `McpServer` per session. We make that split
-**two registration surfaces** on `StreamableHttpServerBuilder`:
-
-- **`Context`** — the root. Registered once, shared by every session (json, logger, stateless tools).
-- **`ConfigureSession(session => …)`** — runs for each new session. `session.Context` is *that
-  session's own* registration surface; what you add there lives for the session and is disposed when
-  it ends. `session` also carries the connection's identity (`SessionId`, `Origin`, `Transport`).
-
-This *dissolves* the old "should tools be global or per-session?" question — it's no longer one
-policy for the whole server. Shared tool? Register it on `Context`. Per-session tool/state? Register
-it inside `ConfigureSession`. Same mechanism for any service. **Default to `Context` (global):** a
-tool's *definition* is the server's advertised capability — identical for every session — and a
-well-written handler is stateless (args in, result out), so one shared thread-safe instance is
-simplest and cheapest, exactly like ASP.NET endpoints. Reach for `ConfigureSession` only when a
-handler genuinely needs per-connection state or identity (e.g. auth-gated tool visibility).
-
-### What this maps onto (grounded in `StreamableHttpListener`)
-
-`IJson` and `ILoggerFactory` are *already* shared today (ctor args reused for every transport); only
-`HttpServerTransport` and the `McpServer` are per-session. The model just makes that configurable:
-
-| Service | Where you register it | Lifetime |
-|---|---|---|
-| `IJson`, `ILoggerFactory` | `Context` | shared by all sessions |
-| stateless tools (the usual case) | `Context` | shared by all sessions |
-| `HttpServerTransport` | (auto-wired into `session.Context`) | per session |
-| `McpServer` | (built from `session.Context`) | per session |
-| per-session tools / state | `ConfigureSession` | per session |
-
-### The shape
-
-```csharp
-var http = StreamableHttpMcpServer.CreateBuilder(
-    "Demo Server", "1.0.0", "http://localhost:3000", "/mcp");
-
-// GLOBAL — registered once on the root context, shared by every session
-http.Context
-    .AddNewtonsoftJson()
-    .AddConsoleLogger()
-    .AddToolsCapability(tools => tools.AddTool(new EchoTool()));   // shared, stateless tool
-
-// PER SESSION — runs for each new session; session.Context is that session's own registrations,
-// session carries its identity, so per-session tool visibility is a plain `if`.
-http.ConfigureSession(session =>
-{
-    session.Context.AddToolsCapability(tools => tools.AddTool(new CartTool()));   // per-session state
-    if (session.Origin == "https://admin.example.com")
-        session.Context.AddToolsCapability(tools => tools.AddTool(new AdminTool()));
-});
-
-var server = http.Build();
-await server.Start();
-```
-
-- ➕ Per-session is **visible** — a lambda that clearly runs per session — without exposing a lifetime enum.
-- ➕ One rule to learn: *global → `Context`, per-session → `ConfigureSession`.*
-- ➕ `session.Context` reuses the whole `AddXxxCapability` surface; nothing new to learn there.
-- ➕ `session` exposes identity (`Origin` / `SessionId`) → clean auth-gated tools.
-- `ConfigureSession` exists **only** on `StreamableHttpServerBuilder` — stdio has no sessions, so it
-  never sees this surface.
-
-### Backing implementation
-
-`StreamableHttpMcpServer` wraps `StreamableHttpListener` and owns the **root provider** built from
-`Context` (Singletons: json, logger, shared tools). For each new session, in the listener's
-`onSession` callback it:
-
-1. creates the session's child container/scope (inheriting the root's singletons),
-2. seeds the session's `HttpServerTransport` into `session.Context`,
-3. runs the `ConfigureSession` callback to add that session's registrations,
-4. resolves + starts the per-session `McpServer` from `session.Context`,
-5. disposes the scope (and its per-session services) when the session ends (`DELETE` / drop).
-
-> **One required change to `DiContainer`:** it must support a **child/scoped container** — a session
-> container that resolves its own registrations but falls back to the root for Singletons, and
-> disposes its own instances on close. Today it's a single flat Singleton/Transient container.
-> Standard, well-trodden DI machinery, but it's the prerequisite that makes `ConfigureSession` work.
+This document is about the desired API, not how it is built. One thing the API implies, though: to
+support `ConfigureSession`, the `IContext` / container implementation will probably need to support
+**child (scoped) containers** — a per-session container that resolves its own registrations and
+falls back to the shared root container for everything else. The container today is a single flat
+one, so this is the main capability the per-session model adds.
