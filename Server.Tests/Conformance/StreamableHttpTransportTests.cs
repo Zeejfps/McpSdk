@@ -19,15 +19,29 @@ using McpSdk.Shared;
 namespace McpSdk.Server.Tests.Conformance
 {
     /// <summary>
-    /// Phase G conformance: the Streamable HTTP transport. A real <see cref="StreamableHttpListener"/>
-    /// and a real <see cref="StreamableHttpClientAdapter"/> run in-process over loopback, exercising the
-    /// full initialize + tools/list + tools/call round-trip on a single endpoint, plus the protocol
-    /// mechanics raw HTTP makes visible: the <c>Mcp-Session-Id</c> issued on initialize, the
-    /// <c>MCP-Protocol-Version</c> header required thereafter, <c>Origin</c>→403, and unknown-session→404.
+    /// The Streamable HTTP transport: a real <see cref="StreamableHttpListener"/> and
+    /// <see cref="StreamableHttpClientAdapter"/> run in-process over loopback, exercising the full
+    /// initialize + tools/list + tools/call round-trip on a single endpoint plus the protocol mechanics
+    /// raw HTTP makes visible — the <c>Mcp-Session-Id</c>, the required <c>MCP-Protocol-Version</c> header,
+    /// Origin→403, unknown-session→404, server→client traffic over the SSE stream, Last-Event-ID
+    /// resumability, and DELETE session termination.
     /// </summary>
-    public static partial class ConformanceTests
+    public sealed class StreamableHttpTransportTests : ConformanceSuite
     {
-        private static async Task StreamableHttpRoundTrip()
+        public StreamableHttpTransportTests(TestReport report) : base(report) { }
+
+        public override string Title => "Streamable HTTP transport";
+
+        public override async Task Run()
+        {
+            await Test("Streamable HTTP round-trip: initialize + tools/list + tools/call", StreamableHttpRoundTrip);
+            await Test("Streamable HTTP: session id, Origin->403, version header, unknown session", StreamableHttpProtocolChecks);
+            await Test("Streamable HTTP server->client: notification + request over the SSE stream", StreamableHttpServerToClient);
+            await Test("Streamable HTTP resumability: Last-Event-ID replays only the missed tail", StreamableHttpResumability);
+            await Test("Streamable HTTP lifecycle: DELETE terminates the session (then 404)", StreamableHttpDeleteTerminatesSession);
+        }
+
+        private async Task StreamableHttpRoundTrip()
         {
             const string baseUrl = "http://localhost:17453";
             const string endpointPath = "/mcp";
@@ -85,7 +99,7 @@ namespace McpSdk.Server.Tests.Conformance
             }
         }
 
-        private static async Task StreamableHttpProtocolChecks()
+        private async Task StreamableHttpProtocolChecks()
         {
             const string baseUrl = "http://localhost:17454";
             const string endpointPath = "/mcp";
@@ -154,7 +168,7 @@ namespace McpSdk.Server.Tests.Conformance
             }
         }
 
-        private static async Task StreamableHttpServerToClient()
+        private async Task StreamableHttpServerToClient()
         {
             const string baseUrl = "http://localhost:17455";
             const string endpointPath = "/mcp";
@@ -178,7 +192,7 @@ namespace McpSdk.Server.Tests.Conformance
                         {
                             var result = new InitializeResult(
                                 ProtocolVersion.Latest, new ServerCapabilitiesModel(), new ServerInfo("S2C Server", "1.0.0"));
-                            _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id,result.WriteMembers));
+                            _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id, result.WriteMembers));
                         }
                     };
                     // Start the transport so it dispatches inbound frames (what McpServer.Start would do
@@ -194,7 +208,7 @@ namespace McpSdk.Server.Tests.Conformance
             clientTransport.NotificationReceived += notification => receivedNotification = notification.Method;
             // Answer a server→client request by echoing back an ok flag.
             clientTransport.RequestReceived += async request =>
-                await clientTransport.SendResponse(JsonRpcResponse.Ok(request.Id,w => w.Write("ok", true)));
+                await clientTransport.SendResponse(JsonRpcResponse.Ok(request.Id, w => w.Write("ok", true)));
 
             try
             {
@@ -224,7 +238,7 @@ namespace McpSdk.Server.Tests.Conformance
             }
         }
 
-        private static async Task StreamableHttpResumability()
+        private async Task StreamableHttpResumability()
         {
             const string baseUrl = "http://localhost:17456";
             const string endpointPath = "/mcp";
@@ -246,7 +260,7 @@ namespace McpSdk.Server.Tests.Conformance
                         {
                             var result = new InitializeResult(
                                 ProtocolVersion.Latest, new ServerCapabilitiesModel(), new ServerInfo("Resume Server", "1.0.0"));
-                            _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id,result.WriteMembers));
+                            _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id, result.WriteMembers));
                         }
                     };
                     return serverTransport.Start();
@@ -292,7 +306,7 @@ namespace McpSdk.Server.Tests.Conformance
             }
         }
 
-        private static async Task StreamableHttpDeleteTerminatesSession()
+        private async Task StreamableHttpDeleteTerminatesSession()
         {
             const string baseUrl = "http://localhost:17457";
             const string endpointPath = "/mcp";
@@ -345,7 +359,7 @@ namespace McpSdk.Server.Tests.Conformance
 
         // -- Helpers -------------------------------------------------------------------------
 
-        private static async Task<List<(string Id, string Data)>> ReadSseEvents(Stream stream, int count)
+        private async Task<List<(string Id, string Data)>> ReadSseEvents(Stream stream, int count)
         {
             var events = new List<(string, string)>();
             using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -388,7 +402,7 @@ namespace McpSdk.Server.Tests.Conformance
             return events;
         }
 
-        private static async Task<HttpResponseMessage> Post(HttpClient http, string url, string body, params (string Name, string Value)[] headers)
+        private async Task<HttpResponseMessage> Post(HttpClient http, string url, string body, params (string Name, string Value)[] headers)
         {
             var message = new HttpRequestMessage(HttpMethod.Post, url)
             {
@@ -399,7 +413,7 @@ namespace McpSdk.Server.Tests.Conformance
             return await http.SendAsync(message);
         }
 
-        private static string InitializeBody(int id)
+        private string InitializeBody(int id)
         {
             return Json.Stringify(w =>
             {
@@ -410,7 +424,7 @@ namespace McpSdk.Server.Tests.Conformance
             });
         }
 
-        private static string ListToolsBody(int id)
+        private string ListToolsBody(int id)
         {
             return Json.Stringify(w =>
             {

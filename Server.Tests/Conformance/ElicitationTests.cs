@@ -1,6 +1,5 @@
 #nullable disable
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Client;
@@ -10,19 +9,31 @@ using McpSdk.Protocol.Models;
 namespace McpSdk.Server.Tests.Conformance
 {
     /// <summary>
-    /// Phase E conformance: elicitation + richer sampling (2025-11-25). Verifies that a client
-    /// advertises the <c>elicitation</c> and <c>sampling.tools</c> capabilities it supports, that
-    /// server→client <c>elicitation/create</c> requests round-trip through the three-action model in
-    /// both form and URL modes (and that an undeclared mode is rejected), that the restricted
-    /// <c>requestedSchema</c> — including all four enum shapes and primitive defaults — survives a
-    /// round-trip, and that tool-enabled <c>sampling/createMessage</c> requests carry
-    /// <c>tools</c>/<c>toolChoice</c> and return <c>tool_use</c> / <c>tool_result</c> content.
+    /// Elicitation (server→client <c>elicitation/create</c>, 2025-11-25): the client advertises the
+    /// <c>elicitation</c> form/url modes it supports, the three-action model (accept / decline / cancel)
+    /// round-trips in both form and URL modes, an undeclared mode is rejected with InvalidParams, a
+    /// request without a controller errors with MethodNotFound, and the restricted <c>requestedSchema</c>
+    /// — every enum shape plus primitive defaults — survives a round-trip.
     /// </summary>
-    public static partial class ConformanceTests
+    public sealed class ElicitationTests : ConformanceSuite
     {
-        // -- capability declaration ----------------------------------------------------------
+        public ElicitationTests(TestReport report) : base(report) { }
 
-        private static async Task ElicitationCapabilityDeclared()
+        public override string Title => "Elicitation";
+
+        public override async Task Run()
+        {
+            await Test("client advertises elicitation (form + url) capability", ElicitationCapabilityDeclared);
+            await Test("a form-only client omits the url mode from its capability", ElicitationFormOnlyOmitsUrl);
+            await Test("form-mode elicitation accept round-trips content + schema", ElicitationFormAccept);
+            await Test("elicitation decline and cancel round-trip", ElicitationDeclineAndCancel);
+            await Test("url-mode elicitation consent round-trips (no content)", ElicitationUrlMode);
+            await Test("an undeclared elicitation mode is rejected (InvalidParams)", ElicitationUnsupportedModeRejected);
+            await Test("elicitation without a controller errors (MethodNotFound)", ElicitationWithoutControllerErrors);
+            await Test("requestedSchema enum forms + primitive defaults round-trip", EnumSchemaAllFormsRoundTrip);
+        }
+
+        private async Task ElicitationCapabilityDeclared()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -39,7 +50,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(elicitation?["url"] != null, "url mode is declared");
         }
 
-        private static async Task ElicitationFormOnlyOmitsUrl()
+        private async Task ElicitationFormOnlyOmitsUrl()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -54,9 +65,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(elicitation?["url"] == null, "a form-only client does not declare url mode");
         }
 
-        // -- form mode round-trip ------------------------------------------------------------
-
-        private static async Task ElicitationFormAccept()
+        private async Task ElicitationFormAccept()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -85,7 +94,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(seen?.IsRequired("name") == true, "the 'name' property round-trips as required");
         }
 
-        private static async Task ElicitationDeclineAndCancel()
+        private async Task ElicitationDeclineAndCancel()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -105,9 +114,7 @@ namespace McpSdk.Server.Tests.Conformance
             AssertEqual(ElicitResult.ActionCancel, new ElicitResult(cancelResp.Result).Action, "dismissal round-trips as cancel");
         }
 
-        // -- URL mode ------------------------------------------------------------------------
-
-        private static async Task ElicitationUrlMode()
+        private async Task ElicitationUrlMode()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -134,7 +141,7 @@ namespace McpSdk.Server.Tests.Conformance
             AssertEqual("550e8400-e29b-41d4-a716-446655440000", controller.LastRequest?.ElicitationId, "the elicitationId round-trips");
         }
 
-        private static async Task ElicitationUnsupportedModeRejected()
+        private async Task ElicitationUnsupportedModeRejected()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -153,7 +160,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(controller.LastRequest == null, "the controller is never invoked for an unsupported mode");
         }
 
-        private static async Task ElicitationWithoutControllerErrors()
+        private async Task ElicitationWithoutControllerErrors()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             ActAsRawServer(serverEnd, ProtocolVersion.Latest);
@@ -172,9 +179,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(response.Error?.Code == ErrorCode.MethodNotFound, "the rejection uses MethodNotFound (-32601)");
         }
 
-        // -- restricted schema (enum forms + defaults) ---------------------------------------
-
-        private static Task EnumSchemaAllFormsRoundTrip()
+        private Task EnumSchemaAllFormsRoundTrip()
         {
             var schema = new RequestedSchema()
                 .Add("color", new EnumSchema
@@ -252,165 +257,6 @@ namespace McpSdk.Server.Tests.Conformance
             return Task.CompletedTask;
         }
 
-        // -- sampling with tools -------------------------------------------------------------
-
-        private static async Task SamplingToolsCapabilityDeclared()
-        {
-            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            ActAsRawServer(serverEnd, ProtocolVersion.Latest);
-            await serverEnd.Start();
-
-            var controller = new TestSamplingController(supportsTools: true,
-                _ => new CreateMessagesResult("assistant", "m", new TextContent("hi"), "endTurn"));
-            var client = ConnectClientWith(clientEnd, sampling: new TestSamplingFactory(controller));
-            await client.Connect();
-
-            var sampling = FindInitializeCapabilities(clientEnd.Sent)?["sampling"]?.AsObject();
-            Assert(sampling != null, "client advertises the sampling capability");
-            Assert(sampling?["tools"] != null, "a tool-capable client declares sampling.tools");
-        }
-
-        private static Task SamplingRequestWithToolsRoundTrip()
-        {
-            var tool = new Tool("get_weather", "Get current weather for a city",
-                new ObjectSchema { { "city", new StringSchema() } });
-            var message = new SamplingMessage("user", new TextContent("What's the weather in Paris?"));
-
-            var request = new CreateMessageRequest(
-                new[] { message }, maxTokens: 1000, tools: new[] { tool }, toolChoice: ToolChoice.Auto);
-
-            var raw = Json.Object(request.WriteMembers);
-            var parsed = new CreateMessageRequest(raw);
-
-            Assert(parsed.Tools != null && parsed.Tools.Length == 1, "tools round-trip on the request");
-            AssertEqual("get_weather", parsed.Tools?[0].Name, "tool name round-trips");
-            Assert(parsed.Tools?[0].InputSchema != null, "tool inputSchema round-trips");
-            Assert(parsed.ToolChoice != null, "toolChoice round-trips");
-            AssertEqual(ToolChoice.ModeAuto, parsed.ToolChoice?.Mode, "toolChoice mode round-trips");
-            Assert(parsed.MaxTokens == 1000, "maxTokens round-trips alongside tools");
-            Assert(parsed.Messages.Length == 1 && parsed.Messages[0].Content.Length == 1
-                   && parsed.Messages[0].Content[0] is TextContent, "a plain message keeps a single text block");
-
-            return Task.CompletedTask;
-        }
-
-        private static async Task SamplingResultToolUseRoundTrip()
-        {
-            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            ActAsRawServer(serverEnd, ProtocolVersion.Latest);
-            await serverEnd.Start();
-
-            var controller = new TestSamplingController(supportsTools: true, request =>
-            {
-                // When tools are offered, answer with a tool_use turn.
-                if (request.Tools is { Length: > 0 })
-                {
-                    var toolUse = new ToolUseContent("call_abc123", "get_weather",
-                        Json.Object(w => w.Write("city", "Paris")));
-                    return new CreateMessagesResult("assistant", "test-model", new Content[] { toolUse }, "toolUse");
-                }
-
-                return new CreateMessagesResult("assistant", "test-model", new TextContent("no tools"), "endTurn");
-            });
-            var client = ConnectClientWith(clientEnd, sampling: new TestSamplingFactory(controller));
-            await client.Connect();
-
-            var tool = new Tool("get_weather", "Get current weather for a city",
-                new ObjectSchema { { "city", new StringSchema() } });
-            var request = new CreateMessageRequest(
-                new[] { new SamplingMessage("user", new TextContent("Weather in Paris?")) },
-                maxTokens: 1000, tools: new[] { tool }, toolChoice: ToolChoice.Auto);
-
-            var response = await serverEnd.SendRequest("sampling/createMessage", request.WriteMembers);
-            Assert(response.IsOk, "the tool-enabled sampling request succeeded");
-
-            var result = new CreateMessagesResult(response.Result);
-            AssertEqual("toolUse", result.StopReason, "the result reports a toolUse stop reason");
-            AssertEqual("test-model", result.Model, "the result model round-trips");
-            Assert(result.Content.Length == 1, "the result carries one content block");
-
-            var toolUseContent = result.Content[0] as ToolUseContent;
-            Assert(toolUseContent != null, "the content block is tool_use content");
-            AssertEqual("call_abc123", toolUseContent?.Id, "tool_use id round-trips");
-            AssertEqual("get_weather", toolUseContent?.Name, "tool_use name round-trips");
-            AssertEqual("Paris", toolUseContent?.Input?["city"]?.AsString(), "tool_use input round-trips");
-
-            // The client parsed the tools + toolChoice the server offered.
-            Assert(controller.LastRequest?.Tools?.Length == 1, "the client received the offered tools");
-            AssertEqual(ToolChoice.ModeAuto, controller.LastRequest?.ToolChoice?.Mode, "the client received the toolChoice");
-        }
-
-        private static Task SamplingToolResultContentRoundTrip()
-        {
-            var message = new SamplingMessage("user",
-                new ToolResultContent("call_abc123", new TextContent("Weather in Paris: 18C, partly cloudy")),
-                new ToolResultContent("call_def456", new TextContent("Weather in London: 15C, rainy")));
-
-            var raw = Json.Object(message.WriteMembers);
-            Assert(raw["content"].IsArray, "a multi-block message serialises content as an array");
-
-            var parsed = new SamplingMessage(raw);
-            Assert(parsed.Content.Length == 2, "both tool_result blocks round-trip");
-
-            var first = parsed.Content[0] as ToolResultContent;
-            Assert(first != null, "the first block parses as tool_result content");
-            AssertEqual("call_abc123", first?.ToolUseId, "tool_result toolUseId round-trips");
-            Assert(first?.Content.Length == 1 && first.Content[0] is TextContent, "tool_result nested content round-trips");
-            AssertEqual("Weather in Paris: 18C, partly cloudy",
-                (first?.Content[0] as TextContent)?.Text, "tool_result nested text round-trips");
-
-            return Task.CompletedTask;
-        }
-
-        private static Task ContentSingleOrArrayParsing()
-        {
-            var single = Json.Object(w => w.Write("content", new TextContent("hi")));
-            var one = single["content"].AsArrayOrSingle(Content.FromJsonObject);
-            Assert(one.Length == 1 && one[0] is TextContent, "a single content object parses to one block");
-
-            var array = Json.Object(w => w.Write("content", new Content[] { new TextContent("a"), new TextContent("b") }));
-            var many = array["content"].AsArrayOrSingle(Content.FromJsonObject);
-            Assert(many.Length == 2, "a content array parses to many blocks");
-
-            var none = Json.Object(w => w.Write("role", "user"));
-            var empty = none["content"].AsArrayOrSingle(Content.FromJsonObject);
-            Assert(empty.Length == 0, "an absent content property parses to an empty array");
-
-            return Task.CompletedTask;
-        }
-
-        // -- helpers -------------------------------------------------------------------------
-
-        private static IClient ConnectClientWith(
-            InMemoryTransport clientEnd,
-            IElicitationCapabilityFactory elicitation = null,
-            ISamplingCapabilityFactory sampling = null)
-        {
-            var builder = new ClientBuilder()
-                .WithName("Phase E Client")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd));
-
-            if (elicitation != null)
-                builder.WithElicitationCapability(elicitation);
-            if (sampling != null)
-                builder.WithSamplingCapability(sampling);
-
-            return builder.Build();
-        }
-
-        /// <summary>Pulls the <c>capabilities</c> object out of the client's sent <c>initialize</c> request.</summary>
-        private static IJsonObject FindInitializeCapabilities(List<string> sent)
-        {
-            foreach (var message in Snapshot(sent))
-            {
-                var parsed = Json.Parse(message);
-                if (parsed["method"]?.AsString() == "initialize")
-                    return parsed["params"]?.AsObject()["capabilities"]?.AsObject();
-            }
-            return null;
-        }
-
         private sealed class TestElicitationController : IElicitationController
         {
             private readonly Func<ElicitRequest, ElicitResult> _respond;
@@ -438,33 +284,6 @@ namespace McpSdk.Server.Tests.Conformance
             private readonly IElicitationController _controller;
             public TestElicitationFactory(IElicitationController controller) => _controller = controller;
             public IElicitationController Create() => _controller;
-        }
-
-        private sealed class TestSamplingController : ISamplingController
-        {
-            private readonly Func<CreateMessageRequest, CreateMessagesResult> _respond;
-
-            public TestSamplingController(bool supportsTools, Func<CreateMessageRequest, CreateMessagesResult> respond)
-            {
-                SupportsTools = supportsTools;
-                _respond = respond;
-            }
-
-            public bool SupportsTools { get; }
-            public CreateMessageRequest LastRequest { get; private set; }
-
-            public Task<CreateMessagesResult> CreateMessages(CreateMessageRequest request)
-            {
-                LastRequest = request;
-                return Task.FromResult(_respond(request));
-            }
-        }
-
-        private sealed class TestSamplingFactory : ISamplingCapabilityFactory
-        {
-            private readonly ISamplingController _controller;
-            public TestSamplingFactory(ISamplingController controller) => _controller = controller;
-            public ISamplingController Create() => _controller;
         }
     }
 }

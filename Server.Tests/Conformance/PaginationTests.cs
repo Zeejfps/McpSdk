@@ -8,16 +8,25 @@ using McpSdk.Protocol.Models;
 namespace McpSdk.Server.Tests.Conformance
 {
     /// <summary>
-    /// Phase D conformance: cursor-based pagination. Verifies that the opaque-cursor helper
-    /// round-trips offsets (and rejects junk), that a paginating <c>tools/list</c> walks every page
-    /// via <c>nextCursor</c> returning each tool exactly once and a null cursor on the final page,
-    /// and that a non-paginating controller returns everything in one page with no cursor.
+    /// Cursor-based pagination: the opaque-cursor helper round-trips offsets (and rejects junk), a
+    /// paginating <c>tools/list</c> walks every page via <c>nextCursor</c> returning each tool exactly
+    /// once and a null cursor on the final page, and a non-paginating controller returns everything in one
+    /// page with no cursor.
     /// </summary>
-    public static partial class ConformanceTests
+    public sealed class PaginationTests : ConformanceSuite
     {
-        // -- opaque cursor primitive ---------------------------------------------------------
+        public PaginationTests(TestReport report) : base(report) { }
 
-        private static Task CursorRoundTrips()
+        public override string Title => "Pagination (opaque cursors)";
+
+        public override async Task Run()
+        {
+            await Test("opaque cursor round-trips an offset and rejects junk", CursorRoundTrips);
+            await Test("tools/list walks every page via nextCursor (each tool once)", ToolsListPaginates);
+            await Test("non-paginating tools/list returns one page with no cursor", ToolsListSinglePageHasNoCursor);
+        }
+
+        private Task CursorRoundTrips()
         {
             foreach (var offset in new[] { 0, 1, 7, 42, 100000 })
             {
@@ -34,9 +43,7 @@ namespace McpSdk.Server.Tests.Conformance
             return Task.CompletedTask;
         }
 
-        // -- multi-page tools/list -----------------------------------------------------------
-
-        private static async Task ToolsListPaginates()
+        private async Task ToolsListPaginates()
         {
             const int toolCount = 5;
             const int pageSize = 2;
@@ -72,9 +79,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(pageLengths.Last() <= pageSize, "the final page is no larger than the page size");
         }
 
-        // -- non-paginating default ----------------------------------------------------------
-
-        private static async Task ToolsListSinglePageHasNoCursor()
+        private async Task ToolsListSinglePageHasNoCursor()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             // BuildServer leaves PageSize null, so all tools come back in one page.
@@ -90,9 +95,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(page.Tools.Length >= 2, "the single page carries all registered tools");
         }
 
-        // -- helpers -------------------------------------------------------------------------
-
-        private static IServer BuildPaginatingServer(InMemoryTransport serverEnd, int pageSize, int toolCount)
+        private IServer BuildPaginatingServer(InMemoryTransport serverEnd, int pageSize, int toolCount)
         {
             return new ServerBuilder()
                 .WithName("Page Server")

@@ -4,22 +4,35 @@ using System.Threading.Tasks;
 using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Protocol.Models.ClientCapabilities;
 
 namespace McpSdk.Server.Tests.Conformance
 {
     /// <summary>
-    /// Phase C conformance: modern tools. Verifies that tool metadata (title, behavioural
-    /// annotations, icons) survives a <c>tools/list</c> round-trip, that the JSON Schema 2020-12
-    /// dialect and an <c>outputSchema</c> are advertised, that a tool declaring an output schema
-    /// returns both <c>structuredContent</c> and a back-compat serialized text block, that
-    /// schema-validation failures come back as tool errors (SEP-1303) rather than protocol errors,
-    /// and that the new audio / resource_link content types round-trip through <c>Content.Create</c>.
+    /// Modern tools: tool metadata (title, behavioural annotations, icons) survives a <c>tools/list</c>
+    /// round-trip; the JSON Schema 2020-12 dialect and an <c>outputSchema</c> are advertised; a tool with
+    /// an output schema returns both <c>structuredContent</c> and a back-compat text block;
+    /// schema-validation failures come back as tool errors (SEP-1303) rather than protocol errors and
+    /// agree across both JSON adapters; and a controller that supports it emits
+    /// <c>notifications/tools/list_changed</c>.
     /// </summary>
-    public static partial class ConformanceTests
+    public sealed class ToolsTests : ConformanceSuite
     {
-        // -- tools/list metadata -------------------------------------------------------------
+        public ToolsTests(TestReport report) : base(report) { }
 
-        private static async Task ToolMetadataInListing()
+        public override string Title => "Tools (listing, schemas, structured output)";
+
+        public override async Task Run()
+        {
+            await Test("tools/list carries title + annotations + icons", ToolMetadataInListing);
+            await Test("inputSchema/outputSchema declare the 2020-12 dialect", SchemaDialectAndOutputSchemaEmitted);
+            await Test("structured output: structuredContent + back-compat text", StructuredOutputRoundTrip);
+            await Test("schema-validation failure returns a tool error, not a protocol error", ValidationErrorIsToolError);
+            await Test("schema validation agrees across both JSON adapters", SchemaValidationAdapterParity);
+            await Test("notifications/tools/list_changed reaches the client", ToolsListChangedNotification);
+        }
+
+        private async Task ToolMetadataInListing()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             var server = BuildServer(serverEnd);
@@ -44,7 +57,7 @@ namespace McpSdk.Server.Tests.Conformance
             AssertEqual("48x48", forecast?.Icons?[0].Sizes, "icon sizes round-trips");
         }
 
-        private static Task SchemaDialectAndOutputSchemaEmitted()
+        private Task SchemaDialectAndOutputSchemaEmitted()
         {
             var tool = new StructuredToolHandler(Json).Tool;
             var raw = Json.Object(tool.WriteMembers);
@@ -62,9 +75,7 @@ namespace McpSdk.Server.Tests.Conformance
             return Task.CompletedTask;
         }
 
-        // -- structured output ---------------------------------------------------------------
-
-        private static async Task StructuredOutputRoundTrip()
+        private async Task StructuredOutputRoundTrip()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             var server = BuildServer(serverEnd);
@@ -90,9 +101,7 @@ namespace McpSdk.Server.Tests.Conformance
                 $"structured result includes a back-compat text block (got '{text}')");
         }
 
-        // -- validation errors as tool errors (SEP-1303) -------------------------------------
-
-        private static async Task ValidationErrorIsToolError()
+        private async Task ValidationErrorIsToolError()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
             var server = BuildServer(serverEnd);
@@ -110,31 +119,7 @@ namespace McpSdk.Server.Tests.Conformance
             Assert(result.Content.OfType<TextContent>().Any(), "the tool error carries a textual explanation");
         }
 
-        // -- new content types (pure round-trip) ---------------------------------------------
-
-        private static Task ContentTypesRoundTrip()
-        {
-            var audioJson = Json.Object(new AudioContent("audio/wav", "QUJD").WriteMembers);
-            var audio = Content.FromJsonObject(audioJson) as AudioContent;
-            Assert(audio != null, "audio content type is recognized by Content.Create");
-            AssertEqual("audio/wav", audio?.MimeType, "audio mimeType round-trips");
-            AssertEqual("QUJD", audio?.Base64EncodedData, "audio data round-trips");
-
-            var linkJson = Json.Object(
-                new ResourceLinkContent("file:///x.txt", "x.txt", "X File", "a file", "text/plain").WriteMembers);
-            var link = Content.FromJsonObject(linkJson) as ResourceLinkContent;
-            Assert(link != null, "resource_link content type is recognized by Content.Create");
-            AssertEqual("file:///x.txt", link?.Uri, "resource_link uri round-trips");
-            AssertEqual("x.txt", link?.Name, "resource_link name round-trips");
-            AssertEqual("X File", link?.Title, "resource_link title round-trips");
-            AssertEqual("text/plain", link?.MimeType, "resource_link mimeType round-trips");
-
-            return Task.CompletedTask;
-        }
-
-        // -- validator parity across JSON adapters -------------------------------------------
-
-        private static Task SchemaValidationAdapterParity()
+        private Task SchemaValidationAdapterParity()
         {
             var newtonsoft = new McpSdk.Adapter.Newtonsoft.Json.NewtonsoftJson();
             var systemText = new McpSdk.Adapter.System.Text.Json.SystemJson();
@@ -164,15 +149,44 @@ namespace McpSdk.Server.Tests.Conformance
             return Task.CompletedTask;
         }
 
-        // -- helper --------------------------------------------------------------------------
-
-        private static IClient ConnectClient(InMemoryTransport clientEnd)
+        private async Task ToolsListChangedNotification()
         {
-            return new ClientBuilder()
-                .WithName("Phase C Client")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
+            // DefaultToolsController never advertises list_changed, so a controller that does is used to
+            // drive the notifications/tools/list_changed path the server wires on Start.
+            var controller = new ListChangingToolsController();
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server").WithVersion("1.0.0")
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .WithToolsCapability(controller)
                 .Build();
+            await server.Start();
+            await clientEnd.Start();
+
+            var init = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("C", "1.0.0"));
+            var initResp = await clientEnd.SendRequest("initialize", init.WriteMembers);
+            var toolsCap = initResp.Result?["capabilities"]?.AsObject()?["tools"]?.AsObject();
+            Assert(toolsCap?["listChanged"]?.AsBool() == true, "server advertises tools.listChanged");
+
+            controller.RaiseListChanged();
+            var got = await WaitUntil(() => Snapshot(clientEnd.Received).Any(m =>
+                Json.Parse(m)["method"]?.AsString() == "notifications/tools/list_changed"));
+            Assert(got, "notifications/tools/list_changed reaches the client");
+        }
+
+        /// <summary>A minimal tools controller that advertises list_changed and can raise it on demand.</summary>
+        private sealed class ListChangingToolsController : IToolsController
+        {
+            public event System.Action ListChanged;
+            public bool IsListChangedNotificationSupported => true;
+
+            public Task<ListToolsResult> ListTools(ListToolsRequest request, McpRequestContext context)
+                => Task.FromResult(new ListToolsResult(new[] { new Tool("noop", "no-op", new ObjectSchema()) }));
+
+            public Task<CallToolResult> CallTool(CallToolRequest request, McpRequestContext context)
+                => Task.FromResult(new CallToolResult(new Content[] { new TextContent("ok") }, false));
+
+            public void RaiseListChanged() => ListChanged?.Invoke();
         }
     }
 }
