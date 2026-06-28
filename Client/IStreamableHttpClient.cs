@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,6 +28,25 @@ namespace McpSdk.Client
     {
         Task<StreamableHttpResponse> PostMessage(
             string jsonBody,
+            string sessionId,
+            string protocolVersion,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Opens the standalone server→client SSE stream (an HTTP <c>GET</c> to the endpoint), resuming
+        /// after <paramref name="lastEventId"/> when supplied, and pumps each event's
+        /// <c>(eventId, json)</c> to <paramref name="onEvent"/> (<c>eventId</c> may be <c>null</c>). The
+        /// returned task completes when the stream closes or <paramref name="cancellationToken"/> fires.
+        /// </summary>
+        Task OpenStream(
+            string sessionId,
+            string protocolVersion,
+            string lastEventId,
+            Action<string, string> onEvent,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>Terminates the session with an HTTP <c>DELETE</c> (best effort).</summary>
+        Task DeleteSession(
             string sessionId,
             string protocolVersion,
             CancellationToken cancellationToken = default);

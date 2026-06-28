@@ -1,5 +1,6 @@
 ﻿using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
+using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
 using McpSdk.Server.Tests.Conformance;
@@ -29,5 +30,36 @@ if (args.Length > 0 && args[0] == "stdio-server")
     return;
 }
 
-Console.Error.WriteLine("usage: McpSdk.Server.Tests <conformance|stdio-server>");
+// Streamable HTTP demo server: a single endpoint serving the test tool, one McpServer per session.
+if (args.Length > 0 && args[0] == "streamable-http-server")
+{
+    var httpJson = new NewtonsoftJson();
+    var httpLoggerFactory = new ServerConsoleLoggerFactory();
+    var baseUrl = args.Length > 1 ? args[1] : "http://localhost:3000";
+    const string endpointPath = "/mcp";
+
+    var listener = new StreamableHttpListener(
+        baseUrl,
+        endpointPath,
+        httpJson,
+        httpLoggerFactory,
+        onSession: async transport =>
+        {
+            var server = new ServerBuilder()
+                .WithName("Streamable HTTP Demo Server")
+                .WithVersion("1.0.0")
+                .WithLogger(httpLoggerFactory)
+                .WithStreamableHttpTransport(transport)
+                .WithDefaultToolsCapability(httpJson, tools => tools.AddTool(new TestToolHandler()))
+                .Build();
+            await server.Start();
+        });
+
+    await listener.Start();
+    Console.Error.WriteLine($"Streamable HTTP server listening on {baseUrl}{endpointPath}");
+    await Task.Delay(Timeout.Infinite);
+    return;
+}
+
+Console.Error.WriteLine("usage: McpSdk.Server.Tests <conformance|stdio-server|streamable-http-server [baseUrl]>");
 Environment.Exit(1);

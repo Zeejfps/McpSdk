@@ -148,8 +148,12 @@ namespace McpSdk.Adapter.StreamableHttpServer
                     case "POST":
                         await HandlePost(request, response).ConfigureAwait(false);
                         break;
-                    case "GET":     // standalone server→client SSE stream: Phase G increment 2
-                    case "DELETE":  // client-initiated session termination: Phase G increment 3
+                    case "GET":
+                        await HandleGet(request, response).ConfigureAwait(false);
+                        break;
+                    case "DELETE":
+                        HandleDelete(request, response);
+                        break;
                     default:
                         WriteStatus(response, 405);
                         break;
@@ -215,6 +219,103 @@ namespace McpSdk.Adapter.StreamableHttpServer
             response.ContentLength64 = bytes.Length;
             await response.OutputStream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
             response.Close();
+        }
+
+        private async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            var sessionId = request.Headers[SessionIdHeader];
+            if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(request.Headers[ProtocolVersionHeader]))
+            {
+                WriteStatus(response, 400);
+                return;
+            }
+
+            StreamableHttpServerTransport transport;
+            lock (_sessionsGate)
+                _sessions.TryGetValue(sessionId, out transport);
+
+            if (transport == null)
+            {
+                WriteStatus(response, 404);
+                return;
+            }
+
+            response.StatusCode = 200;
+            response.ContentType = "text/event-stream";
+            response.Headers["Cache-Control"] = "no-cache";
+            response.SendChunked = true;
+
+            var output = response.OutputStream;
+            var writeLock = new SemaphoreSlim(1, 1);
+
+            async Task WriteRaw(string text)
+            {
+                var bytes = Utf8NoBom.GetBytes(text);
+                await writeLock.WaitAsync().ConfigureAwait(false);
+                try
+                {
+                    await output.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
+                    await output.FlushAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    writeLock.Release();
+                }
+            }
+
+            // The transport pushes server→client frames through here as SSE `id:`/`data:` events,
+            // resuming after the client's Last-Event-ID when present.
+            var lastEventId = request.Headers["Last-Event-ID"];
+            using var handle = transport.AttachStream(lastEventId, (eventId, json) => WriteRaw($"id: {eventId}\ndata: {json}\n\n"));
+
+            // Close the stream when the listener stops or this session is terminated (DELETE). Captured
+            // up front so we never touch _cts after Stop disposes it.
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, transport.Lifetime);
+            var cancellationToken = linkedCts.Token;
+            try
+            {
+                // Hold the stream open, sending SSE comment heartbeats so a dropped client surfaces as a
+                // write failure. Unblocks when the listener stops.
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
+                    await WriteRaw(": ping\n\n").ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug($"SSE stream ended: {ex.Message}");
+            }
+            finally
+            {
+                try { response.Close(); } catch { /* connection already torn down */ }
+            }
+        }
+
+        private void HandleDelete(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            var sessionId = request.Headers[SessionIdHeader];
+            StreamableHttpServerTransport transport = null;
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                lock (_sessionsGate)
+                {
+                    if (_sessions.TryGetValue(sessionId, out transport))
+                        _sessions.Remove(sessionId);
+                }
+            }
+
+            if (transport == null)
+            {
+                WriteStatus(response, 404);
+                return;
+            }
+
+            transport.Terminate();
+            WriteStatus(response, 200);
         }
 
         private bool IsOriginAllowed(HttpListenerRequest request)
