@@ -255,39 +255,46 @@ HTTP** transport. We do this in two movements — **first delete the legacy tran
 (no compatibility flag, no parallel path), **then build Streamable HTTP** on the cleared deck.
 stdio is untouched throughout; it is not legacy and stays.
 
-### G.1 — Remove the legacy HTTP+SSE transport
+### G.1 — Remove the legacy HTTP+SSE transport ✅
 
 Delete it wholesale — there are no production consumers, only the two `*.Tests` demo entry points,
 which move to stdio (and later Streamable HTTP).
 
-- [ ] **Delete whole projects** (4): `Adapter.SseClient/`, `Adapter.SseServer/`,
+> The bulk of this was carried out in tandem with G.2 ("delete the legacy transport, then build
+> Streamable HTTP on the cleared deck"), so by the time G.1 was revisited the code was already gone.
+> A verification pass confirmed zero SSE/bridge code remains (no source files, no `.sln`/`.csproj`
+> references, no GUIDs) and removed the last artifact — a stale, git-untracked `Adapter.SseServer/obj/`
+> left on disk after its sources/`.csproj` were deleted.
+
+- [x] **Deleted whole projects** (4): `Adapter.SseClient/`, `Adapter.SseServer/`,
   `StdioToSseBridge/`, `TransportBridge/`. The two bridges existed only to tunnel stdio↔legacy-SSE;
-  `McpTransportBridge` has no other consumer once `StdioToSseBridge` is gone.
-- [ ] **Delete SSE files from the core libs** (self-contained — the builders, `McpClient`, and
-  `McpServer` never reference them):
+  `McpTransportBridge` had no other consumer once `StdioToSseBridge` was gone.
+- [x] **Deleted SSE files from the core libs** (self-contained — the builders, `McpClient`, and
+  `McpServer` never referenced them):
   - `Client/`: `SseTransport.cs`, `SseTransportFactory.cs`, `SseTransportClientBuilderExtensions.cs`,
     `ISseClient.cs`, `ISseClientFactory.cs`
   - `Server/`: `SseTransport.cs`, `SseTransportFactory.cs`, `SseEvent.cs`, `ISseServer.cs`,
     `ISseSession.cs`
-- [ ] **Update references:**
-  - `MCPSharp.sln` — remove the 4 `Project(...)` declarations **and** their 4 `GlobalSection`
-    config blocks (GUIDs `B0C6F17D…` SseClient, `386DEDC5…` SseServer, `73A33E46…` StdioToSseBridge,
-    `14D62640…` TransportBridge).
-  - `Client.Tests/Client.Tests.csproj` — drop the `Adapter.SseClient` `ProjectReference`.
-  - `Server.Tests/Server.Tests.csproj` — drop the `Adapter.SseServer` `ProjectReference`.
-  - `Client.Tests/Program.cs` — currently a pure SSE demo client; rewrite to drive the server over
-    **stdio** (spawn the `stdio-server` child, as `StdioConformanceTests` already does) until the
-    Streamable HTTP client lands.
-  - `Server.Tests/Program.cs` — delete the default `HttpListenerSseServer` demo block; keep the
-    `conformance` and `stdio-server` modes.
-  - `README.md` — remove the stray `using McpSdk.Adapter.SseServer;` from the Server example (it is
-    imported but unused; the example is already stdio).
-- [ ] **Stays put** (transport-neutral infra, not legacy): stdio (`Client|Server/StdioTransport*.cs`),
+- [x] **Updated references:**
+  - `MCPSharp.sln` — the 4 `Project(...)` declarations and their `GlobalSection` config blocks
+    (GUIDs `B0C6F17D…` SseClient, `386DEDC5…` SseServer, `73A33E46…` StdioToSseBridge,
+    `14D62640…` TransportBridge) are gone.
+  - `Client.Tests/Client.Tests.csproj` — no longer references `Adapter.SseClient`; references
+    `Adapter.StreamableHttpClient` instead.
+  - `Server.Tests/Server.Tests.csproj` — no longer references `Adapter.SseServer`; references the
+    `Adapter.StreamableHttp{Server,Client}` projects instead.
+  - `Client.Tests/Program.cs` — drives an `http(s)` URL over Streamable HTTP, or a stdio command
+    otherwise (superseded the original "rewrite to stdio" interim plan once the G.2c client landed).
+  - `Server.Tests/Program.cs` — the `HttpListenerSseServer` demo block is gone; it exposes
+    `conformance`, `stdio-server`, and `streamable-http-server` modes.
+  - `README.md` — carries no `using McpSdk.Adapter.SseServer;`.
+- [x] **Stays put** (transport-neutral infra, not legacy): stdio (`Client|Server/StdioTransport*.cs`),
   `Protocol/ITransport.cs`, `Protocol/TransportExtensions.cs`, `Shared/JsonRpcTransport.cs`,
   `Shared/ITransportFactory.cs`, `Shared/TransportErrorException.cs`, and the in-memory test
-  transport (`Server.Tests/Conformance/InMemoryTransport.cs`, `FixedTransportFactory.cs`).
-- [ ] **Gate:** solution builds clean and `Server.Tests -- conformance` still passes (218 assertions)
-  with zero SSE code remaining.
+  transport (`Server.Tests/Conformance/InMemoryTransport.cs`, `FixedTransportFactory.cs`) — all present.
+- [x] **Gate:** `dotnet build MCPSharp.sln` is clean and `Server.Tests -- conformance` passes (now
+  331 assertions, up from the 218 baseline noted when this phase was drafted) with zero SSE code
+  remaining.
 
 ### G.2 — Streamable HTTP transport (the rebuild)
 
