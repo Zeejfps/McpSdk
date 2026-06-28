@@ -23,7 +23,7 @@ namespace McpSdk.Shared
     {
         private readonly IMessageChannel _channel;
         private readonly ILogger _logger;
-        private readonly object _gate = new object();
+        private readonly object _lock = new();
         private readonly Dictionary<RequestId, TaskCompletionSource<JsonRpcResponse>> _pending = new();
 
         public JsonRpcPeer(IMessageChannel channel, ILoggerFactory loggerFactory)
@@ -47,7 +47,7 @@ namespace McpSdk.Shared
 
             // The connection is closing; fail any in-flight requests rather than letting them hang.
             List<TaskCompletionSource<JsonRpcResponse>> pending;
-            lock (_gate)
+            lock (_lock)
             {
                 pending = new List<TaskCompletionSource<JsonRpcResponse>>(_pending.Values);
                 _pending.Clear();
@@ -63,7 +63,7 @@ namespace McpSdk.Shared
             // Register the pending response BEFORE sending, so a channel that delivers the reply
             // synchronously (e.g. an in-memory loopback) can never complete it before we are listening.
             var tcs = new TaskCompletionSource<JsonRpcResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
-            lock (_gate)
+            lock (_lock)
                 _pending[request.Id] = tcs;
 
             await _channel.Send(request, cancellationToken).ConfigureAwait(false);
@@ -92,7 +92,7 @@ namespace McpSdk.Shared
                         break;
                     case JsonRpcResponse response:
                         TaskCompletionSource<JsonRpcResponse> tcs;
-                        lock (_gate)
+                        lock (_lock)
                         {
                             if (_pending.TryGetValue(response.Id, out tcs))
                                 _pending.Remove(response.Id);
