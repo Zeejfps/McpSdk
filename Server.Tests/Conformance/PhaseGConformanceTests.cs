@@ -188,7 +188,7 @@ namespace McpSdk.Server.Tests.Conformance
             await listener.Start();
 
             var clientTransport = new JsonRpcPeer(
-                new HttpClientChannel(new StreamableHttpClientAdapter(url, Loggers), Json, Loggers), Json, Loggers);
+                new HttpClientChannel(new StreamableHttpClientAdapter(url, Loggers), Json, Loggers), Loggers);
 
             string receivedNotification = null;
             clientTransport.NotificationReceived += (method, args) => receivedNotification = method;

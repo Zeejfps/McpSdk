@@ -178,7 +178,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 // No session yet: this is the initialize request. Create the session channel + peer, let
                 // the consumer build & start its McpServer (subscribing before we dispatch), echo the id.
                 channel = new HttpServerChannel(_json, _loggerFactory, Guid.NewGuid().ToString("N"));
-                var peer = new JsonRpcPeer(channel, _json, _loggerFactory);
+                var peer = new JsonRpcPeer(channel, _loggerFactory);
                 lock (_sessionsGate)
                     _sessions[channel.SessionId] = new Session(channel, peer);
 

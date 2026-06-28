@@ -24,7 +24,7 @@ namespace McpSdk.Server
     {
         private const int MaxBufferedEvents = 256;
 
-        private readonly JsonRpcCodec _codec;
+        private readonly IJson _json;
         private readonly ILogger _logger;
         private readonly object _gate = new object();
 
@@ -41,12 +41,12 @@ namespace McpSdk.Server
 
         public HttpServerChannel(IJson json, ILoggerFactory loggerFactory, string sessionId)
         {
-            _codec = new JsonRpcCodec(json);
+            _json = json;
             _logger = loggerFactory.Create<HttpServerChannel>();
             SessionId = sessionId;
         }
 
-        public event Action<string> FrameReceived;
+        public event Action<JsonRpcMessage> MessageReceived;
 
         /// <summary>The <c>Mcp-Session-Id</c> this channel is bound to.</summary>
         public string SessionId { get; }
@@ -76,28 +76,29 @@ namespace McpSdk.Server
 
         // -- Outbound (peer -> wire) ---------------------------------------------------------
 
-        public Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
+        public Task Send(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
+            var payload = _json.Stringify(message.WriteMembers);
+
             // A response goes back on the POST that carried its request; everything else (a
-            // server-initiated request or a notification) goes onto the SSE stream. The frame already
-            // carries its kind and id, so there is nothing to re-parse here.
-            if (frame.Kind == JsonRpcMessageKind.Response)
+            // server-initiated request or a notification) goes onto the SSE stream.
+            if (message is JsonRpcResponse response)
             {
                 TaskCompletionSource<string> tcs = null;
                 lock (_gate)
                 {
-                    if (_pendingPostById.TryGetValue(frame.Id, out tcs))
-                        _pendingPostById.Remove(frame.Id);
+                    if (_pendingPostById.TryGetValue(response.Id, out tcs))
+                        _pendingPostById.Remove(response.Id);
                 }
                 if (tcs != null)
                 {
-                    tcs.TrySetResult(frame.Payload);
+                    tcs.TrySetResult(payload);
                     return Task.CompletedTask;
                 }
                 // No POST is waiting (it already closed) — fall through to the stream.
             }
 
-            return EmitEvent(frame.Payload);
+            return EmitEvent(payload);
         }
 
         // -- Inbound (HTTP listener -> peer) -------------------------------------------------
@@ -114,26 +115,26 @@ namespace McpSdk.Server
                 return Task.FromResult<string>(null);
             }
 
-            if (!_codec.TryDecode(body, out var message))
+            if (!JsonRpcMessage.TryParse(_json, body, out var message))
             {
                 _logger.LogDebug("Ignored an unparseable or non-dispatchable frame.");
                 return Task.FromResult<string>(null);
             }
 
-            if (message.Kind == JsonRpcMessageKind.Request)
+            if (message is JsonRpcRequest request)
             {
                 // Hold the POST open until the peer answers — its SendOkResponse/SendErrorResponse routes
                 // the response back here via Send. Register before dispatch so a synchronous reply lands.
                 var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
                 lock (_gate)
-                    _pendingPostById[message.Id] = tcs;
+                    _pendingPostById[request.Id] = tcs;
 
-                FrameReceived?.Invoke(body);
+                MessageReceived?.Invoke(message);
                 return tcs.Task;
             }
 
             // A notification, or the client's reply to a server-initiated request: dispatch, answer 202.
-            FrameReceived?.Invoke(body);
+            MessageReceived?.Invoke(message);
             return Task.FromResult<string>(null);
         }
 

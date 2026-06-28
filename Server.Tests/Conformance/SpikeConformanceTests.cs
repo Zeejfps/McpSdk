@@ -20,9 +20,9 @@ namespace McpSdk.Server.Tests.Conformance
         // in-memory channel. Proves both sides of the protocol core are happy on the new seam.
         private static async Task PeerOverInMemoryChannel()
         {
-            var (serverChannel, clientChannel) = InMemoryChannel.CreatePair();
-            var serverPeer = new JsonRpcPeer(serverChannel, Json, Loggers);
-            var clientPeer = new JsonRpcPeer(clientChannel, Json, Loggers);
+            var (serverChannel, clientChannel) = InMemoryChannel.CreatePair(Json);
+            var serverPeer = new JsonRpcPeer(serverChannel, Loggers);
+            var clientPeer = new JsonRpcPeer(clientChannel, Loggers);
 
             var server = new ServerBuilder()
                 .WithName("Spike Server")
@@ -62,8 +62,8 @@ namespace McpSdk.Server.Tests.Conformance
         private static async Task PeerOverRealStdio()
         {
             var (command, arguments) = ResolveStdioServerCommand();
-            var channel = new StdioClientChannel(command, arguments, Loggers);
-            var clientPeer = new JsonRpcPeer(channel, new NewtonsoftJson(), Loggers);
+            var channel = new StdioClientChannel(command, arguments, new NewtonsoftJson(), Loggers);
+            var clientPeer = new JsonRpcPeer(channel, Loggers);
 
             var client = new ClientBuilder()
                 .WithName("Spike Stdio Client")

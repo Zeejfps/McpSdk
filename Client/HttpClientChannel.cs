@@ -7,13 +7,13 @@ using McpSdk.Shared;
 namespace McpSdk.Client
 {
     /// <summary>
-    /// The Streamable HTTP client channel: the HTTP/SSE delivery layer, exposed as a dumb
-    /// <see cref="IMessageChannel"/> so a shared <see cref="JsonRpcPeer"/> sits on top. Outbound frames
-    /// are POSTed; because HTTP couples a request's response to its POST, a request's reply body is fed
-    /// straight back through <see cref="FrameReceived"/> for the peer to correlate — race-free, because
-    /// the peer registers the pending reply before calling <see cref="Send"/>. Server-initiated frames
-    /// arrive on the standalone GET stream. The session id and negotiated protocol version are captured
-    /// here and replayed as headers.
+    /// The Streamable HTTP client channel: the HTTP/SSE wire boundary, exposed as an
+    /// <see cref="IMessageChannel"/> so a shared <see cref="JsonRpcPeer"/> sits on top. Outbound messages
+    /// are rendered and POSTed; because HTTP couples a request's response to its POST, a request's reply is
+    /// parsed and surfaced through <see cref="MessageReceived"/> for the peer to correlate — race-free,
+    /// because the peer registers the pending reply before calling <see cref="Send"/>. Server-initiated
+    /// messages arrive on the standalone GET stream. The session id and negotiated protocol version are
+    /// captured here and replayed as headers.
     /// </summary>
     public sealed class HttpClientChannel : IMessageChannel
     {
@@ -34,7 +34,7 @@ namespace McpSdk.Client
             _logger = loggerFactory.Create<HttpClientChannel>();
         }
 
-        public event Action<string> FrameReceived;
+        public event Action<JsonRpcMessage> MessageReceived;
 
         public Task Start(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
@@ -47,13 +47,14 @@ namespace McpSdk.Client
                 : _http.DeleteSession(sessionId, _protocolVersion);
         }
 
-        public async Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
+        public async Task Send(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
             // Only a request expects a reply on its own POST; notifications and our responses to
             // server-initiated requests are acknowledged with 202 and carry no body to feed back.
-            var isRequest = frame.Kind == JsonRpcMessageKind.Request;
+            var isRequest = message is JsonRpcRequest;
+            var payload = _json.Stringify(message.WriteMembers);
 
-            var reply = await _http.PostMessage(frame.Payload, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
+            var reply = await _http.PostMessage(payload, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(reply.SessionId))
                 _sessionId = reply.SessionId;
 
@@ -71,7 +72,8 @@ namespace McpSdk.Client
             MaybeOpenStream();
 
             // Hand the reply to the peer, which correlates it to the awaiting request.
-            FrameReceived?.Invoke(reply.Body);
+            if (JsonRpcMessage.TryParse(_json, reply.Body, out var replyMessage))
+                MessageReceived?.Invoke(replyMessage);
         }
 
         // The negotiated protocol version is echoed in the initialize result; capture it once so it can
@@ -117,13 +119,14 @@ namespace McpSdk.Client
             }
         }
 
-        // Server→client frames from the SSE stream: just hand them to the peer, which classifies them
-        // into RequestReceived / NotificationReceived.
+        // Server→client frames from the SSE stream: parse and hand them to the peer, which classifies
+        // them into RequestReceived / NotificationReceived.
         private void OnStreamEvent(string eventId, string json)
         {
             if (!string.IsNullOrEmpty(eventId))
                 _lastEventId = eventId;
-            FrameReceived?.Invoke(json);
+            if (JsonRpcMessage.TryParse(_json, json, out var message))
+                MessageReceived?.Invoke(message);
         }
     }
 
@@ -139,7 +142,7 @@ namespace McpSdk.Client
         }
 
         public ITransport Create(ILoggerFactory loggerFactory)
-            => new JsonRpcPeer(new HttpClientChannel(_http, _json, loggerFactory), _json, loggerFactory);
+            => new JsonRpcPeer(new HttpClientChannel(_http, _json, loggerFactory), loggerFactory);
     }
 
     public static class StreamableHttpClientBuilderExtensions

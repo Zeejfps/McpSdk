@@ -3,25 +3,34 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using McpSdk.Protocol;
 using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
     /// <summary>
-    /// The stdio half of the new transport seam: a dumb duplex pipe over the process's std handles. It
-    /// frames JSON-RPC messages as newline-delimited UTF-8 (no BOM) and does nothing else — no ids, no
-    /// correlation. Wrap it in a <see cref="JsonRpcPeer"/> to get an <c>ITransport</c>.
+    /// The stdio half of the transport seam: the wire boundary over the process's std handles. It frames
+    /// JSON-RPC messages as newline-delimited UTF-8 (no BOM), rendering outbound messages and parsing
+    /// inbound ones — and does nothing else (no ids, no correlation). Wrap it in a
+    /// <see cref="JsonRpcPeer"/> to get an <c>ITransport</c>.
     /// </summary>
     public sealed class StdioServerChannel : IMessageChannel
     {
         // UTF-8 with no BOM: the stdio spec mandates UTF-8, and a BOM would corrupt the first frame.
         private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
+        private readonly IJson _json;
+
         private TextWriter _standardOut;
         private TextReader _standardIn;
         private CancellationTokenSource _cts;
 
-        public event Action<string> FrameReceived;
+        public StdioServerChannel(IJson json)
+        {
+            _json = json;
+        }
+
+        public event Action<JsonRpcMessage> MessageReceived;
 
         public Task Start(CancellationToken cancellationToken = default)
         {
@@ -50,9 +59,9 @@ namespace McpSdk.Server
             return Task.CompletedTask;
         }
 
-        public async Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
+        public async Task Send(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
-            await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(frame.Payload)).ConfigureAwait(false);
+            await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
         }
 
         private async Task ReadLoop(TextReader standardIn, CancellationToken cancellationToken)
@@ -63,7 +72,8 @@ namespace McpSdk.Server
                 if (line == null)
                     break;
 
-                FrameReceived?.Invoke(line);
+                if (JsonRpcMessage.TryParse(_json, line, out var message))
+                    MessageReceived?.Invoke(message);
             }
         }
     }
