@@ -29,7 +29,7 @@ namespace McpSdk.Protocol.Models
 
             var contentObj = jsonObject["content"]?.AsObject();
             if (contentObj != null)
-                Content = Content.Create(contentObj);
+                Content = Content.FromJsonObject(contentObj);
 
             var metaObj = jsonObject["_meta"]?.AsObject();
             if (metaObj != null)

@@ -6,7 +6,7 @@ namespace McpSdk.Protocol.Models
     {
         public abstract void WriteMembers(IJsonWriter writer);
 
-        public static Content Create(IJsonObject jsonObject)
+        public static Content FromJsonObject(IJsonObject jsonObject)
         {
             var type = jsonObject["type"].AsString();
             if (type == "text")
@@ -58,15 +58,9 @@ namespace McpSdk.Protocol.Models
                 return Array.Empty<Content>();
 
             if (contentProperty.IsArray)
-            {
-                var objects = contentProperty.AsObjectArray();
-                var contents = new Content[objects.Length];
-                for (var i = 0; i < objects.Length; i++)
-                    contents[i] = Create(objects[i]);
-                return contents;
-            }
+                return contentProperty.AsArray(FromJsonObject);
 
-            return new[] { Create(contentProperty.AsObject()) };
+            return new[] { FromJsonObject(contentProperty.AsObject()) };
         }
     }
 }
