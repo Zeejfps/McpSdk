@@ -378,65 +378,73 @@ Two cross-cutting bugs motivate doing it now:
 
 ### H.1 — Ping + unknown-method correctness (base protocol)
 
-- [ ] **`ping` responder on both sides.** Either party MAY send `ping`; the receiver MUST reply
-  promptly with an empty result `{}`. Register `ping` in `McpServer` and `McpClient`.
-- [ ] **Client unknown-method → `MethodNotFound`.** `McpClient.OnRequestReceived` returns a
+- [x] **`ping` responder on both sides.** Either party MAY send `ping`; the receiver MUST reply
+  promptly with an empty result `{}`. Registered `ping` in `McpServer` and `McpClient`.
+- [x] **Client unknown-method → `MethodNotFound`.** `McpClient.OnRequestReceived` returns a
   `-32601` error for any method it doesn't handle, instead of dropping it (fixes the hang).
-- [ ] **`IClient.Ping()`** convenience to actively ping the server (the responder is the compliance
+- [x] **`IClient.Ping()`** convenience to actively ping the server (the responder is the compliance
   requirement; this makes it usable + testable).
 
 ### H.2 — Cancellation (`notifications/cancelled`)
 
-- [ ] **Canceller side.** When a `CancellationToken` passed to an outbound request fires, the sender
-  emits `notifications/cancelled` (`requestId` + optional `reason`) before unwinding. Wired in
-  `McpClient.SendRequest`.
-- [ ] **Receiver side.** `McpServer` tracks in-flight requests; an inbound `notifications/cancelled`
-  cancels the matching request and **suppresses its response** (spec permits dropping it). Never
-  errors on the notification, and ignores an unknown/already-finished id.
-- [ ] **Cooperative cancellation.** A per-request ambient `McpRequestContext` (carrying the
-  `CancellationToken`) lets long-running controllers observe cancellation without a breaking
-  signature change to the controller interfaces.
+- [x] **Canceller side.** When a `CancellationToken` passed to an outbound request fires, the sender
+  emits `notifications/cancelled` (`requestId`) before unwinding. Wired in `McpClient.SendRequest`;
+  `CallTool` / `ListTools` now take an optional `CancellationToken`.
+- [x] **Receiver side.** `McpServer` tracks in-flight requests in a `ConcurrentDictionary`; an inbound
+  `notifications/cancelled` cancels the matching request and **suppresses its response** (spec permits
+  dropping it). Never errors on the notification, and ignores an unknown/already-finished id.
+- [x] **Cooperative cancellation.** A per-request ambient `McpRequestContext` (an `AsyncLocal`
+  carrying the `CancellationToken`) lets long-running controllers observe cancellation without a
+  breaking signature change to the controller interfaces.
 
 ### H.3 — Progress (`notifications/progress`)
 
-- [ ] **Token capture.** `McpServer` reads `_meta.progressToken` (string or number) off an inbound
-  request and exposes it on `McpRequestContext`.
-- [ ] **Emit.** `McpRequestContext.ReportProgress(progress, total?, message?)` sends
+- [x] **Token capture.** `McpServer` reads `_meta.progressToken` (string or number) off an inbound
+  request and exposes it on `McpRequestContext` (reusing the `RequestId` string-or-number type).
+- [x] **Emit.** `McpRequestContext.ReportProgress(progress, total?, message?)` sends
   `notifications/progress` keyed to that token; a no-op when the caller supplied none.
-- [ ] **Inbound dispatch.** Both peers route an inbound `notifications/progress` to an optional
-  handler (default: log) instead of dropping it. New `Protocol/Models/ProgressNotification.cs`.
+- [x] **Inbound dispatch.** The client surfaces an inbound `notifications/progress` via an
+  `IClient.ProgressReceived` event (the server logs it); neither side drops it. New
+  `Protocol/Models/ProgressNotification.cs`.
 
 ### H.4 — Logging utility
 
-- [ ] **`LoggingLevel`** model (the eight RFC-5424 levels: `debug`…`emergency`).
-- [ ] **`logging/setLevel` handler** in `McpServer`, gated on a new
-  `ServerBuilder.WithLoggingCapability(...)`; advertises the `logging` capability only when enabled.
-- [ ] **Emit `notifications/message`.** Server-side API to send a structured log
-  (`level` / `logger` / `data`), filtered by the client's last-set level.
-- [ ] **Client inbound dispatch.** `McpClient` routes `notifications/message` to an optional handler.
+- [x] **`LoggingLevel`** model (the eight RFC-5424 levels: `debug`…`emergency`), ordered so a
+  single `(int)` compare filters by severity. New `Protocol/Models/LogMessage.cs` + `SetLevelRequest.cs`.
+- [x] **`logging/setLevel` handler** in `McpServer`, gated on a new
+  `ServerBuilder.WithLoggingCapability()`; advertises the `logging` capability only when enabled.
+- [x] **Emit `notifications/message`.** `IServer.Log(level, data, logger?)` sends a structured log,
+  filtered by the client's last-set level (a no-op below it, or when logging is disabled).
+- [x] **Client inbound dispatch.** `McpClient` routes `notifications/message` to the
+  `IClient.LogMessageReceived` event; `IClient.SetLoggingLevel(...)` sends `logging/setLevel`.
 
 ### H.5 — Completion wiring
 
-- [ ] **Register `completion/complete`** in `McpServer`, consuming the existing `ICompletionController`
-  / `CompletionRequest` / `CompletionResult` models (previously dead code).
-- [ ] **`ServerBuilder.WithCompletionCapability(...)`** advertises the `completion` capability and
+- [x] **Register `completion/complete`** in `McpServer`, consuming the existing `ICompletionController`
+  / `CompletionRequest` / `CompletionResult` models (previously dead code). Fixed their non-spec wire
+  names while wiring: the request's single `argument` (was `arguments`), the result's `total` / `hasMore`
+  (were `totalMatches` / `hasMoreMatches`), and nesting the result under `completion`.
+- [x] **`ServerBuilder.WithCompletionCapability(...)`** advertises the `completion` capability and
   installs the controller. `completion/complete` returns `MethodNotFound` only when not configured.
 
 ### H.6 — Resource subscriptions + notifications
 
-- [ ] **`resources/subscribe` / `resources/unsubscribe` handlers** in `McpServer`, gated on the
+- [x] **`resources/subscribe` / `resources/unsubscribe` handlers** in `McpServer`, gated on the
   `resources.subscribe` capability (so advertise ⇒ serve).
-- [ ] **`notifications/resources/updated`** emitted (per-URI) and **`notifications/resources/list_changed`**
+- [x] **`notifications/resources/updated`** emitted (per-URI) and **`notifications/resources/list_changed`**
   emitted — the two resource notifications the server never sent (it only sent tools/prompts variants).
-- [ ] **Controller surface.** `IResourcesController` gains the subscribe/unsubscribe + per-URI
-  `ResourceUpdated` plumbing alongside its existing `ListChanged` / `ResourceChanged` events.
+- [x] **Controller surface.** `IResourcesController` gains `Subscribe`/`Unsubscribe` + a per-URI
+  `event Action<string> ResourceUpdated` (replacing the unused parameterless `ResourceChanged`),
+  alongside its existing `ListChanged` event.
 
-**Exit:** every method the server advertises is actually served; `ping` round-trips both directions
+**Exit:** ✅ every method the server advertises is actually served; `ping` round-trips both directions
 and an unknown server→client method returns `MethodNotFound`; `notifications/cancelled` cancels an
 in-flight request; `notifications/progress` round-trips against a captured `progressToken`;
-`logging/setLevel` + `notifications/message` work end-to-end; `completion/complete` returns
-suggestions; and `resources/subscribe`/`unsubscribe` + the `updated`/`list_changed` notifications
-round-trip. Verified by a new `PhaseHConformanceTests` suite.
+`logging/setLevel` + `notifications/message` work end-to-end (with severity filtering);
+`completion/complete` returns suggestions; and `resources/subscribe`/`unsubscribe` + the
+`updated`/`list_changed` notifications round-trip. Verified by the new
+`Server.Tests/Conformance/PhaseHConformanceTests.cs` suite (full conformance run now **284
+assertions**, up from 252; run via `dotnet run --project Server.Tests -- conformance`).
 
 *Still out of scope (unchanged): OAuth 2.1 authorization, experimental Tasks. Note: "fully
 spec-compliant" for a **public** Streamable HTTP server normally implies the Authorization spec —

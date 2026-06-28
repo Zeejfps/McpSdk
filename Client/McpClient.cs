@@ -21,6 +21,9 @@ namespace McpSdk.Client
 
         public bool IsConnected { get; private set; }
 
+        public event Action<LogMessage> LogMessageReceived;
+        public event Action<ProgressNotification> ProgressReceived;
+
         public McpClient(ITransport transport, ILoggerFactory loggerFactory, ClientInfo clientInfo, IRootsController roots, ISamplingController sampling, IElicitationController elicitation)
         {
             _transport = transport;
@@ -42,8 +45,26 @@ namespace McpSdk.Client
         /// Stamps a fresh sender-owned id, wraps the call as a <see cref="JsonRpcRequest"/>, and hands it to
         /// the transport for sending + response correlation.
         /// </summary>
-        private Task<JsonRpcResponse> SendRequest(string method, IJsonObjectWriter parameters, CancellationToken cancellationToken = default)
-            => _transport.SendRequest(new JsonRpcRequest(NextRequestId(), method, parameters.WriteMembers), cancellationToken);
+        private async Task<JsonRpcResponse> SendRequest(string method, IJsonObjectWriter parameters, CancellationToken cancellationToken = default)
+        {
+            var id = NextRequestId();
+            var request = new JsonRpcRequest(id, method, parameters.WriteMembers);
+            // When the caller cancels, tell the server so it can stop processing (the canceller's duty).
+            using (cancellationToken.Register(() => SendCancelled(id)))
+                return await _transport.SendRequest(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        private void SendCancelled(RequestId id)
+        {
+            try
+            {
+                _ = SendNotification("notifications/cancelled", w => id.WriteTo(w, "requestId"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
+        }
 
         private Task SendNotification(string method, Json arguments = null, CancellationToken cancellationToken = default)
             => _transport.SendNotification(new JsonRpcNotification(method, arguments), cancellationToken);
@@ -53,7 +74,12 @@ namespace McpSdk.Client
             var requestId = request.Id;
             var method = request.Method;
             var args = request.Parameters;
-            if (method == "roots/list")
+            if (method == "ping")
+            {
+                // Base-protocol utility: reply promptly with an empty result.
+                _ = _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
+            }
+            else if (method == "roots/list")
             {
                 OnListRootsRequestReceived(requestId, args);
             }
@@ -64,6 +90,15 @@ namespace McpSdk.Client
             else if (method == "elicitation/create")
             {
                 OnElicitationRequestReceived(requestId, args);
+            }
+            else
+            {
+                // Every other server->client request must get a JSON-RPC error, not be dropped:
+                // a silently-ignored request would leave the server awaiting a reply forever.
+                _ = _transport.SendResponse(JsonRpcResponse.Failure(
+                    requestId,
+                    new Error(ErrorCode.MethodNotFound, $"Method '{method}' is not supported by this client")
+                ));
             }
         }
 
@@ -154,6 +189,20 @@ namespace McpSdk.Client
         private void OnNotificationReceived(JsonRpcNotification notification)
         {
             _logger.LogDebug($"Notification Received: {notification.Method}, {notification.Parameters}");
+
+            // Route server->client notifications to their handlers instead of dropping them.
+            if (notification.Parameters == null)
+                return;
+
+            switch (notification.Method)
+            {
+                case "notifications/message":
+                    LogMessageReceived?.Invoke(new LogMessage(notification.Parameters));
+                    break;
+                case "notifications/progress":
+                    ProgressReceived?.Invoke(new ProgressNotification(notification.Parameters));
+                    break;
+            }
         }
         
         public async Task Connect()
@@ -200,19 +249,36 @@ namespace McpSdk.Client
             IsConnected = true;
         }
 
-        public async Task<ListToolsResult> ListTools(ListToolsRequest request = null)
+        public async Task Ping(CancellationToken cancellationToken = default)
+        {
+            var response = await _transport
+                .SendRequest(new JsonRpcRequest(NextRequestId(), "ping", (Json)(_ => { })), cancellationToken)
+                .ConfigureAwait(false);
+            if (response.IsError)
+                throw new TransportErrorException(response.Error);
+        }
+
+        public async Task SetLoggingLevel(LoggingLevel level, CancellationToken cancellationToken = default)
+        {
+            var response = await SendRequest("logging/setLevel", new SetLevelRequest(level), cancellationToken)
+                .ConfigureAwait(false);
+            if (response.IsError)
+                throw new TransportErrorException(response.Error);
+        }
+
+        public async Task<ListToolsResult> ListTools(ListToolsRequest request = null, CancellationToken cancellationToken = default)
         {
             var listRequest = request ?? new ListToolsRequest();
-            var response = await SendRequest("tools/list", listRequest);
+            var response = await SendRequest("tools/list", listRequest, cancellationToken);
             return response.Unwrap(
                 result => new ListToolsResult(result),
                 error => throw new TransportErrorException(error)
             );
         }
 
-        public async Task<CallToolResult> CallTool(CallToolRequest request)
+        public async Task<CallToolResult> CallTool(CallToolRequest request, CancellationToken cancellationToken = default)
         {
-            var response = await SendRequest("tools/call", request);
+            var response = await SendRequest("tools/call", request, cancellationToken);
             return response.Unwrap(
                 result => new CallToolResult(result),
                 error => throw new TransportErrorException(error)

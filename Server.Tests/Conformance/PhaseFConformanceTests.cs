@@ -246,7 +246,7 @@ namespace McpSdk.Server.Tests.Conformance
             }
 
             public event System.Action ListChanged { add { } remove { } }
-            public event System.Action ResourceChanged { add { } remove { } }
+            public event System.Action<string> ResourceUpdated { add { } remove { } }
 
             public bool? IsResourceChangedNotificationSupported { get; }
             public bool? IsListChangedNotificationSupported { get; }
@@ -259,6 +259,9 @@ namespace McpSdk.Server.Tests.Conformance
 
             public Task<ReadResourceResult> ReadResource(ReadResourceRequest readResourceRequest)
                 => Task.FromResult<ReadResourceResult>(null);
+
+            public Task Subscribe(string uri) => Task.CompletedTask;
+            public Task Unsubscribe(string uri) => Task.CompletedTask;
         }
     }
 }

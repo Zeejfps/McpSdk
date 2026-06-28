@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -17,11 +19,18 @@ namespace McpSdk.Server
         private readonly IToolsController _toolsController;
         private readonly IPromptController _promptController;
         private readonly IResourcesController _resourcesController;
+        private readonly ICompletionController _completionController;
         private readonly ILogger _logger;
         private readonly Dictionary<string, RequestHandler> _requestHandlersByPathLookup = new();
         private readonly ServerCapabilitiesModel _capabilities = new();
-        
+        private readonly ConcurrentDictionary<RequestId, CancellationTokenSource> _inFlightRequests = new();
+        private readonly bool _loggingEnabled;
+
         private bool _isRunning;
+
+        // The minimum severity the client asked for via logging/setLevel; null until set, in which case
+        // the server emits every log (the spec leaves the pre-set behaviour to the server).
+        private LoggingLevel? _minLogLevel;
 
         public McpServer(
             ITransport transport,
@@ -29,17 +38,25 @@ namespace McpSdk.Server
             ILoggerFactory loggerFactory,
             IToolsController toolsController,
             IPromptController promptController,
-            IResourcesController resourcesController)
+            IResourcesController resourcesController,
+            ICompletionController completionController = null,
+            bool loggingEnabled = false)
         {
             _transport = transport ?? throw new ArgumentNullException(nameof(transport));
             _serverInfo = serverInfo ?? throw new ArgumentNullException(nameof(serverInfo));
             _logger = loggerFactory.Create<McpServer>();
-            
+
             _toolsController = toolsController;
             _promptController = promptController;
             _resourcesController = resourcesController;
+            _completionController = completionController;
+            _loggingEnabled = loggingEnabled;
 
             _requestHandlersByPathLookup.Add("initialize", HandleInitializeRequest);
+
+            // ping is a base-protocol utility: either party MAY send it and the receiver MUST reply
+            // promptly with an empty result. Always available, independent of any capability.
+            _requestHandlersByPathLookup.Add("ping", HandlePingRequest);
 
             // NOTE(Zee): Is there a better way to do this?
             if (_promptController != null)
@@ -61,6 +78,14 @@ namespace McpSdk.Server
                 _requestHandlersByPathLookup.Add("resources/list", HandleListResourcesRequest);
                 _requestHandlersByPathLookup.Add("resources/read", HandleReadResourceRequest);
                 _requestHandlersByPathLookup.Add("resources/templates/list", HandleListResourceTemplatesRequest);
+
+                // Only accept subscribe/unsubscribe when we advertise the subscribe capability —
+                // advertise ⇒ serve, and never claim to serve what we don't advertise.
+                if (_resourcesController.IsResourceChangedNotificationSupported == true)
+                {
+                    _requestHandlersByPathLookup.Add("resources/subscribe", HandleSubscribeRequest);
+                    _requestHandlersByPathLookup.Add("resources/unsubscribe", HandleUnsubscribeRequest);
+                }
             }
             
             if (_toolsController != null)
@@ -69,11 +94,51 @@ namespace McpSdk.Server
                 _requestHandlersByPathLookup.Add("tools/list", HandleListToolsRequest);
                 _requestHandlersByPathLookup.Add("tools/call", HandleCallToolRequest);
             }
+
+            if (_completionController != null)
+            {
+                _capabilities.Completion = new CompletionCapabilityModel();
+                _requestHandlersByPathLookup.Add("completion/complete", HandleCompleteRequest);
+            }
+
+            if (_loggingEnabled)
+            {
+                _capabilities.Logging = new LoggingCapabilityModel();
+                _requestHandlersByPathLookup.Add("logging/setLevel", HandleSetLevelRequest);
+            }
+        }
+
+        /// <summary>
+        /// Emits a <c>notifications/message</c> log to the client, filtered by the level the client set via
+        /// <c>logging/setLevel</c>. A no-op when logging was not enabled on the server, or when the message
+        /// is less severe than the client's requested minimum.
+        /// </summary>
+        public Task Log(LoggingLevel level, Json data, string logger = null)
+        {
+            if (!_loggingEnabled)
+                return Task.CompletedTask;
+
+            var min = _minLogLevel;
+            if (min.HasValue && (int)level < (int)min.Value)
+                return Task.CompletedTask;
+
+            var message = new LogMessage(level, data, logger);
+            return _transport.SendNotification(new JsonRpcNotification("notifications/message", message.WriteMembers));
         }
 
         private async void OnPromptsListChanged()
         {
             SendNotification("notifications/prompts/list_changed");
+        }
+
+        private void OnResourcesListChanged()
+        {
+            SendNotification("notifications/resources/list_changed");
+        }
+
+        private void OnResourceUpdated(string uri)
+        {
+            SendNotification("notifications/resources/updated", w => w.Write("uri", uri));
         }
 
         public async Task Start()
@@ -111,7 +176,15 @@ namespace McpSdk.Server
         {
             if (_toolsController != null)
                 _toolsController.ListChanged += ToolsControllerOnListChanged;
-                
+
+            if (_resourcesController != null)
+            {
+                if (_resourcesController.IsListChangedNotificationSupported == true)
+                    _resourcesController.ListChanged += OnResourcesListChanged;
+                if (_resourcesController.IsResourceChangedNotificationSupported == true)
+                    _resourcesController.ResourceUpdated += OnResourceUpdated;
+            }
+
             _transport.RequestReceived += OnRequestReceived;
             _transport.NotificationReceived += OnNotificationReceived;
         }
@@ -120,7 +193,15 @@ namespace McpSdk.Server
         {
             if (_toolsController != null)
                 _toolsController.ListChanged -= ToolsControllerOnListChanged;
-            
+
+            if (_resourcesController != null)
+            {
+                if (_resourcesController.IsListChangedNotificationSupported == true)
+                    _resourcesController.ListChanged -= OnResourcesListChanged;
+                if (_resourcesController.IsResourceChangedNotificationSupported == true)
+                    _resourcesController.ResourceUpdated -= OnResourceUpdated;
+            }
+
             _transport.RequestReceived -= OnRequestReceived;
             _transport.NotificationReceived -= OnNotificationReceived;
         }
@@ -142,6 +223,12 @@ namespace McpSdk.Server
             var requestId = request.Id;
             var path = request.Method;
             var payload = request.Parameters;
+
+            // Make the request cancellable (via notifications/cancelled) and progress-reportable (via the
+            // request's _meta.progressToken) through the ambient McpRequestContext a handler can read.
+            var cts = new CancellationTokenSource();
+            _inFlightRequests[requestId] = cts;
+            McpRequestContext.SetCurrent(new McpRequestContext(cts.Token, ReadProgressToken(payload), _transport));
             try
             {
                 _logger.LogDebug($"Received Request: Id: {requestId}, Method: {path}, Payload: {payload}");
@@ -159,6 +246,12 @@ namespace McpSdk.Server
                         ));
                 }
             }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested)
+            {
+                // Cancelled via notifications/cancelled. The spec permits dropping the response, which is
+                // what we do — the canceller is no longer waiting for it.
+                _logger.LogDebug($"Request {requestId} ({path}) cancelled; response suppressed");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
@@ -167,6 +260,28 @@ namespace McpSdk.Server
                     new Error(code: ErrorCode.InternalError, message: "Internal server error")
                 ));
             }
+            finally
+            {
+                _inFlightRequests.TryRemove(requestId, out _);
+                cts.Dispose();
+                McpRequestContext.SetCurrent(null);
+            }
+        }
+
+        /// <summary>Reads an optional progress token from a request's <c>_meta.progressToken</c>.</summary>
+        private static RequestId? ReadProgressToken(IJsonObject payload)
+        {
+            var token = payload?["_meta"]?.AsObject()?["progressToken"];
+            return token == null ? (RequestId?)null : RequestId.FromJson(token);
+        }
+
+        private Task HandlePingRequest(RequestId requestId, IJsonObject reqPayload)
+            => _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
+
+        private Task HandleSetLevelRequest(RequestId requestId, IJsonObject reqPayload)
+        {
+            _minLogLevel = new SetLevelRequest(reqPayload).Level;
+            return _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
         private async Task HandleInitializeRequest(RequestId requestId, IJsonObject reqPayload)
@@ -224,10 +339,37 @@ namespace McpSdk.Server
             var result = await _resourcesController.ListResources(new ListResourcesRequest(arguments));
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
+
+        private async Task HandleSubscribeRequest(RequestId requestId, IJsonObject arguments)
+        {
+            await _resourcesController.Subscribe(arguments["uri"].AsString());
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
+        }
+
+        private async Task HandleUnsubscribeRequest(RequestId requestId, IJsonObject arguments)
+        {
+            await _resourcesController.Unsubscribe(arguments["uri"].AsString());
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
+        }
+
+        private async Task HandleCompleteRequest(RequestId requestId, IJsonObject arguments)
+        {
+            var result = await _completionController.Complete(new CompletionRequest(arguments));
+            // The CompleteResult nests the suggestions under a "completion" object, per spec.
+            await _transport.SendResponse(JsonRpcResponse.Ok(requestId, w => w.Write("completion", result)));
+        }
         
         private void OnNotificationReceived(JsonRpcNotification notification)
         {
             _logger.LogDebug($"Received Notification: {notification.Method}, {notification.Parameters}");
+
+            // Cancel an in-flight request when the client asks us to stop processing it.
+            if (notification.Method == "notifications/cancelled" && notification.Parameters != null)
+            {
+                var idProperty = notification.Parameters["requestId"];
+                if (idProperty != null && _inFlightRequests.TryGetValue(RequestId.FromJson(idProperty), out var cts))
+                    cts.Cancel();
+            }
         }
 
         private async void SendNotification(string notification, Json arguments = null)

@@ -14,6 +14,8 @@ namespace McpSdk.Server
         private IToolsController _toolsController;
         private IPromptController _promptsController;
         private IResourcesController _resourcesController;
+        private ICompletionController _completionController;
+        private bool _loggingEnabled;
         private ILoggerFactory _loggerFactory;
 
         public ServerBuilder()
@@ -75,6 +77,22 @@ namespace McpSdk.Server
             return this;
         }
 
+        public ServerBuilder WithCompletionCapability(ICompletionController completionController)
+        {
+            _completionController = completionController;
+            return this;
+        }
+
+        /// <summary>
+        /// Advertises the <c>logging</c> capability and accepts <c>logging/setLevel</c>. The server then
+        /// emits logs via <see cref="IServer.Log"/>, filtered by the level the client sets.
+        /// </summary>
+        public ServerBuilder WithLoggingCapability()
+        {
+            _loggingEnabled = true;
+            return this;
+        }
+
         public IServer Build()
         {
             if (_name == null)
@@ -90,14 +108,16 @@ namespace McpSdk.Server
             var tools = _toolsController;
             var prompts = _promptsController;
             var resources = _resourcesController;
-            
+
             var server =  new McpServer(
                 transport,
-                serverInfo, 
+                serverInfo,
                 loggerFactory,
-                tools, 
+                tools,
                 prompts,
-                resources
+                resources,
+                _completionController,
+                _loggingEnabled
             );
 
             return server;

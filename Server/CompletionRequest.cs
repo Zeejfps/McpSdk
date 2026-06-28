@@ -5,6 +5,11 @@ namespace McpSdk.Server;
 public sealed class CompletionRequest : IJsonObjectWriter
 {
     public ReferenceModel Reference { get; }
+
+    /// <summary>
+    /// The single argument being completed, an object <c>{ name, value }</c>. The wire field is the
+    /// spec's singular <c>argument</c> (not <c>arguments</c>) — it describes one argument, not a map.
+    /// </summary>
     public IJsonObject Arguments { get; }
 
     /// <summary>
@@ -23,7 +28,7 @@ public sealed class CompletionRequest : IJsonObjectWriter
     public CompletionRequest(IJsonObject jsonObject)
     {
         Reference = ReferenceModel.FromJsonObject(jsonObject["ref"].AsObject());
-        Arguments = jsonObject["arguments"].AsObject();
+        Arguments = jsonObject["argument"].AsObject();
 
         var contextObj = jsonObject["context"]?.AsObject();
         if (contextObj != null)
@@ -33,7 +38,7 @@ public sealed class CompletionRequest : IJsonObjectWriter
     public void WriteMembers(IJsonWriter jsonWriter)
     {
         jsonWriter.Write("ref", Reference);
-        jsonWriter.Write("arguments", Arguments);
+        jsonWriter.Write("argument", Arguments);
         Context?.WriteTo(jsonWriter, "context");
     }
 }

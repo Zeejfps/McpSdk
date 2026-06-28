@@ -106,6 +106,23 @@ namespace McpSdk.Server.Tests.Conformance
             await RunTest("Streamable HTTP lifecycle: DELETE terminates the session (then 404)", StreamableHttpDeleteTerminatesSession);
 
             Console.WriteLine();
+            Console.WriteLine("=== Phase H Conformance (base-protocol & utility completeness) ===");
+
+            await RunTest("server answers a client ping with an empty result", ServerAnswersClientPing);
+            await RunTest("client answers a server->client ping", ClientAnswersServerPing);
+            await RunTest("client returns MethodNotFound for an unknown request (no hang)", ClientRejectsUnknownRequest);
+            await RunTest("completion/complete round-trips (capability + nested result)", CompletionCompleteRoundTrips);
+            await RunTest("completion/complete -> MethodNotFound when not configured", CompletionNotConfiguredIsMethodNotFound);
+            await RunTest("logging: notifications/message round-trips + setLevel filters by severity", LoggingRoundTripAndFiltering);
+            await RunTest("logging/setLevel -> MethodNotFound when logging not enabled", LoggingNotConfiguredIsMethodNotFound);
+            await RunTest("resources subscribe/unsubscribe + updated/list_changed round-trip", ResourceSubscribeAndNotifications);
+            await RunTest("resources/subscribe -> MethodNotFound when not advertised", ResourceSubscribeNotAdvertisedIsMethodNotFound);
+            await RunTest("cancellation: notifications/cancelled stops in-flight server work", ClientCancellationStopsServerWork);
+            await RunTest("progress: notifications/progress emitted for a request with a progressToken", ProgressEmittedWhenTokenPresent);
+            await RunTest("progress: no notifications/progress without a progressToken", ProgressNotEmittedWithoutToken);
+            await RunTest("progress: client dispatches an inbound notifications/progress", ClientDispatchesProgress);
+
+            Console.WriteLine();
             Console.WriteLine("=== Architecture Spike (shared JsonRpcTransport engine) ===");
 
             await RunTest("McpServer<->McpClient over the loopback InMemoryTransport", PeerOverInMemoryChannel);
