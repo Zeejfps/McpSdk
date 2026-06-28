@@ -22,10 +22,11 @@ namespace McpSdk.Server.Tests.Conformance
 
         public Task Stop() => Task.CompletedTask;
 
-        public Task Send(string frame, CancellationToken cancellationToken = default)
+        public Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
         {
+            // Off the wire a channel only has bytes, so deliver the serialized payload as an inbound frame.
             var peer = _peer;
-            _ = Task.Run(() => peer.FrameReceived?.Invoke(frame));
+            _ = Task.Run(() => peer.FrameReceived?.Invoke(frame.Payload));
             return Task.CompletedTask;
         }
 

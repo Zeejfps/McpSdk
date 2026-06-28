@@ -87,9 +87,9 @@ namespace McpSdk.Client
             }
         }
 
-        public async Task Send(string frame, CancellationToken cancellationToken = default)
+        public async Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
         {
-            await _standardIn.WriteLineAsync(JsonRpcFraming.ToSingleLine(frame)).ConfigureAwait(false);
+            await _standardIn.WriteLineAsync(JsonRpcFraming.ToSingleLine(frame.Payload)).ConfigureAwait(false);
         }
 
         private async Task ReadStdOut(StreamReader standardOut, CancellationToken cancellationToken)

@@ -50,9 +50,9 @@ namespace McpSdk.Server
             return Task.CompletedTask;
         }
 
-        public async Task Send(string frame, CancellationToken cancellationToken = default)
+        public async Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
         {
-            await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(frame)).ConfigureAwait(false);
+            await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(frame.Payload)).ConfigureAwait(false);
         }
 
         private async Task ReadLoop(TextReader standardIn, CancellationToken cancellationToken)

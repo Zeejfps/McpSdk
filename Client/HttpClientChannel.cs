@@ -19,7 +19,6 @@ namespace McpSdk.Client
     {
         private readonly IStreamableHttpClient _http;
         private readonly IJson _json;
-        private readonly JsonRpcCodec _codec;
         private readonly ILogger _logger;
 
         private string _sessionId;
@@ -32,7 +31,6 @@ namespace McpSdk.Client
         {
             _http = http;
             _json = json;
-            _codec = new JsonRpcCodec(json);
             _logger = loggerFactory.Create<HttpClientChannel>();
         }
 
@@ -49,13 +47,13 @@ namespace McpSdk.Client
                 : _http.DeleteSession(sessionId, _protocolVersion);
         }
 
-        public async Task Send(string frame, CancellationToken cancellationToken = default)
+        public async Task Send(JsonRpcFrame frame, CancellationToken cancellationToken = default)
         {
             // Only a request expects a reply on its own POST; notifications and our responses to
             // server-initiated requests are acknowledged with 202 and carry no body to feed back.
-            var isRequest = _codec.TryDecode(frame, out var message) && message.Kind == JsonRpcMessageKind.Request;
+            var isRequest = frame.Kind == JsonRpcMessageKind.Request;
 
-            var reply = await _http.PostMessage(frame, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
+            var reply = await _http.PostMessage(frame.Payload, _sessionId, _protocolVersion, cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(reply.SessionId))
                 _sessionId = reply.SessionId;
 
