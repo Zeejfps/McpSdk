@@ -17,13 +17,11 @@ namespace McpSdk.Adapter.StreamableHttpServer
     /// <c>Mcp-Session-Id</c> on initialize, requires the <c>MCP-Protocol-Version</c> header thereafter,
     /// and rejects disallowed <c>Origin</c>s with <c>403</c> (DNS-rebinding guard).
     ///
-    /// Each session gets its own <see cref="StreamableHttpServerTransport"/>; the
-    /// <c>onSession</c> callback builds and starts an <c>McpServer</c> over it (mirroring the old SSE
-    /// adapter's per-connection session callback), and is awaited before the first frame is dispatched
-    /// so the server is subscribed in time to answer <c>initialize</c>.
-    ///
-    /// The standalone <c>GET</c> SSE stream and <c>DELETE</c> session termination arrive in later Phase G
-    /// increments; for now both are answered with <c>405</c>.
+    /// Each session is an <see cref="HttpServerChannel"/> wrapped in a shared <see cref="JsonRpcPeer"/>;
+    /// the <c>onSession</c> callback builds and starts an <c>McpServer</c> over that peer (mirroring the
+    /// old SSE adapter's per-connection callback) and is awaited before the first frame is dispatched, so
+    /// the server is subscribed in time to answer <c>initialize</c>. <c>GET</c> opens the server→client
+    /// SSE stream (with <c>Last-Event-ID</c> resumption); <c>DELETE</c> terminates the session.
     /// </summary>
     public sealed class StreamableHttpListener
     {
@@ -40,7 +38,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
         private readonly ILogger _logger;
         private readonly Func<ITransport, Task> _onSession;
         private readonly HashSet<string> _allowedOrigins;
-        private readonly Dictionary<string, StreamableHttpServerTransport> _sessions = new Dictionary<string, StreamableHttpServerTransport>();
+        private readonly Dictionary<string, Session> _sessions = new Dictionary<string, Session>();
         private readonly object _sessionsGate = new object();
 
         private CancellationTokenSource _cts;
@@ -152,7 +150,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
                         await HandleGet(request, response).ConfigureAwait(false);
                         break;
                     case "DELETE":
-                        HandleDelete(request, response);
+                        await HandleDelete(request, response).ConfigureAwait(false);
                         break;
                     default:
                         WriteStatus(response, 405);
@@ -173,18 +171,19 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 body = await reader.ReadToEndAsync().ConfigureAwait(false);
 
             var sessionId = request.Headers[SessionIdHeader];
-            StreamableHttpServerTransport transport;
+            HttpServerChannel channel;
 
             if (string.IsNullOrEmpty(sessionId))
             {
-                // No session yet: this is the initialize request. Create the session + transport, let the
-                // consumer build & start its McpServer (subscribing before we dispatch), then echo the id.
-                transport = new StreamableHttpServerTransport(_json, _loggerFactory, Guid.NewGuid().ToString("N"));
+                // No session yet: this is the initialize request. Create the session channel + peer, let
+                // the consumer build & start its McpServer (subscribing before we dispatch), echo the id.
+                channel = new HttpServerChannel(_json, _loggerFactory, Guid.NewGuid().ToString("N"));
+                var peer = new JsonRpcPeer(channel, _json, _loggerFactory);
                 lock (_sessionsGate)
-                    _sessions[transport.SessionId] = transport;
+                    _sessions[channel.SessionId] = new Session(channel, peer);
 
-                await _onSession(transport).ConfigureAwait(false);
-                response.Headers[SessionIdHeader] = transport.SessionId;
+                await _onSession(peer).ConfigureAwait(false);
+                response.Headers[SessionIdHeader] = channel.SessionId;
             }
             else
             {
@@ -195,18 +194,20 @@ namespace McpSdk.Adapter.StreamableHttpServer
                     return;
                 }
 
+                Session session;
                 lock (_sessionsGate)
-                    _sessions.TryGetValue(sessionId, out transport);
+                    _sessions.TryGetValue(sessionId, out session);
 
-                if (transport == null)
+                if (session == null)
                 {
                     // Unknown or expired session: the client must reinitialize.
                     WriteStatus(response, 404);
                     return;
                 }
+                channel = session.Channel;
             }
 
-            var responseBody = await transport.Deliver(body).ConfigureAwait(false);
+            var responseBody = await channel.HandleInboundPost(body).ConfigureAwait(false);
             if (responseBody == null)
             {
                 WriteStatus(response, 202); // notification/response acknowledged, no body
@@ -230,15 +231,17 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 return;
             }
 
-            StreamableHttpServerTransport transport;
+            Session session;
             lock (_sessionsGate)
-                _sessions.TryGetValue(sessionId, out transport);
+                _sessions.TryGetValue(sessionId, out session);
 
-            if (transport == null)
+            if (session == null)
             {
                 WriteStatus(response, 404);
                 return;
             }
+
+            var channel = session.Channel;
 
             response.StatusCode = 200;
             response.ContentType = "text/event-stream";
@@ -263,14 +266,14 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 }
             }
 
-            // The transport pushes server→client frames through here as SSE `id:`/`data:` events,
+            // The channel pushes server→client frames through here as SSE `id:`/`data:` events,
             // resuming after the client's Last-Event-ID when present.
             var lastEventId = request.Headers["Last-Event-ID"];
-            using var handle = transport.AttachStream(lastEventId, (eventId, json) => WriteRaw($"id: {eventId}\ndata: {json}\n\n"));
+            using var handle = channel.AttachStream(lastEventId, (eventId, json) => WriteRaw($"id: {eventId}\ndata: {json}\n\n"));
 
             // Close the stream when the listener stops or this session is terminated (DELETE). Captured
             // up front so we never touch _cts after Stop disposes it.
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, transport.Lifetime);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token, channel.Lifetime);
             var cancellationToken = linkedCts.Token;
             try
             {
@@ -295,26 +298,28 @@ namespace McpSdk.Adapter.StreamableHttpServer
             }
         }
 
-        private void HandleDelete(HttpListenerRequest request, HttpListenerResponse response)
+        private async Task HandleDelete(HttpListenerRequest request, HttpListenerResponse response)
         {
             var sessionId = request.Headers[SessionIdHeader];
-            StreamableHttpServerTransport transport = null;
+            Session session = null;
             if (!string.IsNullOrEmpty(sessionId))
             {
                 lock (_sessionsGate)
                 {
-                    if (_sessions.TryGetValue(sessionId, out transport))
+                    if (_sessions.TryGetValue(sessionId, out session))
                         _sessions.Remove(sessionId);
                 }
             }
 
-            if (transport == null)
+            if (session == null)
             {
                 WriteStatus(response, 404);
                 return;
             }
 
-            transport.Terminate();
+            // Stopping the peer cancels in-flight requests and stops the channel, which releases any open
+            // POSTs and signals the GET loop to close.
+            await session.Peer.Stop().ConfigureAwait(false);
             WriteStatus(response, 200);
         }
 
@@ -332,6 +337,19 @@ namespace McpSdk.Adapter.StreamableHttpServer
         {
             response.StatusCode = statusCode;
             response.Close();
+        }
+
+        // One MCP session: the HTTP/SSE delivery channel and the JSON-RPC peer the McpServer runs over.
+        private sealed class Session
+        {
+            public Session(HttpServerChannel channel, JsonRpcPeer peer)
+            {
+                Channel = channel;
+                Peer = peer;
+            }
+
+            public HttpServerChannel Channel { get; }
+            public JsonRpcPeer Peer { get; }
         }
     }
 }
