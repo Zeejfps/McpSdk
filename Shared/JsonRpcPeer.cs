@@ -27,8 +27,6 @@ namespace McpSdk.Shared
         private readonly object _gate = new object();
         private readonly Dictionary<RequestId, TaskCompletionSource<JsonRpcResponse>> _pending = new();
 
-        private long _nextId;
-
         public JsonRpcPeer(IMessageChannel channel, ILoggerFactory loggerFactory)
         {
             _channel = channel ?? throw new ArgumentNullException(nameof(channel));
@@ -61,24 +59,22 @@ namespace McpSdk.Shared
             await _channel.Stop().ConfigureAwait(false);
         }
 
-        public async Task<JsonRpcResponse> SendRequest(string method, Json payload, CancellationToken cancellationToken = default)
+        public async Task<JsonRpcResponse> SendRequest(JsonRpcRequest request, CancellationToken cancellationToken = default)
         {
-            var id = new RequestId(Interlocked.Increment(ref _nextId));
-
             // Register the pending response BEFORE sending, so a channel that delivers the reply
             // synchronously (e.g. an in-memory loopback) can never complete it before we are listening.
             var tcs = new TaskCompletionSource<JsonRpcResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_gate)
-                _pending[id] = tcs;
+                _pending[request.Id] = tcs;
 
-            await _channel.Send(new JsonRpcRequest(id, method, payload), cancellationToken).ConfigureAwait(false);
+            await _channel.Send(request, cancellationToken).ConfigureAwait(false);
 
             using (cancellationToken.Register(() => tcs.TrySetCanceled()))
                 return await tcs.Task.ConfigureAwait(false);
         }
 
-        public Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default)
-            => _channel.Send(new JsonRpcNotification(notification, arguments), cancellationToken);
+        public Task SendNotification(JsonRpcNotification notification, CancellationToken cancellationToken = default)
+            => _channel.Send(notification, cancellationToken);
 
         public Task SendResponse(JsonRpcResponse response, CancellationToken cancellationToken = default)
             => _channel.Send(response, cancellationToken);

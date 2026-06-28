@@ -12,8 +12,8 @@ namespace McpSdk.Protocol
         event NotificationReceivedCallback NotificationReceived;
         Task Start(CancellationToken cancellationToken = default);
         Task Stop();
-        Task SendNotification(string notification, Json arguments = null, CancellationToken cancellationToken = default);
-        Task<JsonRpcResponse> SendRequest(string method, Json request, CancellationToken cancellationToken = default);
+        Task SendNotification(JsonRpcNotification notification, CancellationToken cancellationToken = default);
+        Task<JsonRpcResponse> SendRequest(JsonRpcRequest request, CancellationToken cancellationToken = default);
         Task SendResponse(JsonRpcResponse response, CancellationToken cancellationToken = default);
     }
 }
