@@ -165,7 +165,7 @@ namespace McpSdk.Server.Tests
                 endpointPath,
                 Json,
                 Loggers,
-                onSession: transport =>
+                onSession: async transport =>
                 {
                     serverTransport = transport;
 
@@ -180,8 +180,9 @@ namespace McpSdk.Server.Tests
                         }
                     };
                     // Start the transport so it dispatches inbound frames (what McpServer.Start would do
-                    // for us in the full-server tests).
-                    return serverTransport.Start();
+                    // for us in the full-server tests). No McpServer here, so nothing extra to stop at teardown.
+                    await serverTransport.Start();
+                    return null;
                 });
             await listener.Start();
 
@@ -235,7 +236,7 @@ namespace McpSdk.Server.Tests
                 endpointPath,
                 Json,
                 Loggers,
-                onSession: transport =>
+                onSession: async transport =>
                 {
                     serverTransport = transport;
                     serverTransport.RequestReceived += request =>
@@ -247,7 +248,8 @@ namespace McpSdk.Server.Tests
                             _ = serverTransport.SendResponse(JsonRpcResponse.Ok(request.Id, result.WriteMembers));
                         }
                     };
-                    return serverTransport.Start();
+                    await serverTransport.Start();
+                    return null;
                 });
             await listener.Start();
 

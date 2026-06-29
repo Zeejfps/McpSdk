@@ -76,9 +76,11 @@ namespace McpSdk.Adapter.StreamableHttpServer
 
         /// <summary>
         /// Per-connection callback: builds a child scope holding this connection's transport, then resolves and
-        /// starts its <c>McpServer</c> from that child.
+        /// starts its <c>McpServer</c> from that child. Returns the started server so the listener can
+        /// <c>Stop()</c> it at session teardown — which unsubscribes it from the (root-scoped, long-lived)
+        /// tools controller it would otherwise stay attached to for the host's lifetime.
         /// </summary>
-        private async Task OnSession(ITransport transport)
+        private async Task<IServer> OnSession(ITransport transport)
         {
             // (1) A fresh child container — this becomes the per-session session.Context.
             var childContext = new DiContainer();
@@ -112,6 +114,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
             // (5) Resolve the McpServer from the CHILD provider and start it.
             var server = childProvider.GetRequiredService<McpServer>();
             await server.Start();
+            return server;
         }
     }
 }

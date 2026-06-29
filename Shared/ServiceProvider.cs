@@ -161,8 +161,10 @@ namespace McpSdk.Shared
             var implementationType = descriptor.ImplementationType;
             // Share the greediest-satisfiable constructor selection with ActivatorUtilities so a registered
             // type and an unregistered one (activated via ActivatorUtilities.CreateInstance) follow the same
-            // rules. Satisfiability is reported from this provider's own descriptors, exactly as before.
-            var constructor = ActivatorUtilities.SelectConstructor(implementationType, _descriptors.ContainsKey);
+            // rules. Satisfiability must walk the parent chain (via CanResolve) so it agrees with how the
+            // arguments are actually resolved below — on a child provider a constructor parameter the parent
+            // supplies is resolvable, so it must count as satisfiable here too.
+            var constructor = ActivatorUtilities.SelectConstructor(implementationType, CanResolve);
             var parameters = constructor.GetParameters();
             var arguments = new object[parameters.Length];
             for (var i = 0; i < parameters.Length; i++)
