@@ -28,6 +28,8 @@ namespace McpSdk.Server
 
         private bool _isRunning;
 
+        private volatile bool _initialized;
+
         // The minimum severity the client asked for via logging/setLevel; null until set, in which case
         // the server emits every log (the spec leaves the pre-set behaviour to the server).
         private LoggingLevel? _minLogLevel;
@@ -244,6 +246,10 @@ namespace McpSdk.Server
                     new TransportProgressReporter(_transport, ReadProgressToken(payload)));
 
                 _logger.LogDebug($"Received Request: Id: {requestId}, Method: {path}, Payload: {payload}");
+
+                if (!_initialized && path != "initialize" && path != "ping")
+                    throw new McpErrorException(ErrorCode.InvalidRequest, "Server not initialized; send 'initialize' first");
+
                 if (_requestHandlersByPathLookup.TryGetValue(path, out var requestHandler))
                 {
                     await requestHandler.Invoke(requestId, payload, context);
@@ -328,6 +334,9 @@ namespace McpSdk.Server
 
         private async Task HandleInitializeRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
         {
+            if (_initialized)
+                throw new McpErrorException(ErrorCode.InvalidRequest, "Server already initialized");
+
             var request = new InitializeRequest(reqPayload);
 
             // Negotiate: honour the client's requested version when we support it,
@@ -335,6 +344,8 @@ namespace McpSdk.Server
             var negotiatedVersion = ProtocolVersion.IsSupported(request.ProtocolVersion)
                 ? request.ProtocolVersion
                 : ProtocolVersion.Latest;
+
+            _initialized = true;
 
             var result = new InitializeResult(negotiatedVersion, _capabilities, _serverInfo);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));

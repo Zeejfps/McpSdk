@@ -66,7 +66,7 @@ namespace McpSdk.Protocol.Models
         {
             writer.Write("name", Name);
             Title?.WriteTo(writer, "title");
-            writer.Write("description", Description);
+            Description?.WriteTo(writer, "description");
             (InputSchema ?? EmptyInputSchema).WriteTo(writer, "inputSchema");
             OutputSchema?.WriteTo(writer, "outputSchema");
             Annotations?.WriteTo(writer, "annotations");

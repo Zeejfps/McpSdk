@@ -31,6 +31,7 @@ namespace McpSdk.Server.Tests
             var server = BuildProgressServer(serverEnd);
             await server.Start();
             await clientEnd.Start();
+            await Handshake(clientEnd);
 
             await clientEnd.SendRequest("tools/call", w =>
             {
@@ -54,6 +55,7 @@ namespace McpSdk.Server.Tests
             var server = BuildProgressServer(serverEnd);
             await server.Start();
             await clientEnd.Start();
+            await Handshake(clientEnd);
 
             await clientEnd.SendRequest("tools/call", w =>
             {
@@ -61,7 +63,9 @@ namespace McpSdk.Server.Tests
                 w.Write("arguments", Json.Object(_ => { }));
             });
 
-            var completed = await WaitUntil(() => Snapshot(clientEnd.Received).Any(m => Json.Parse(m)["result"] != null));
+            // Wait for the tools/call result specifically (it carries "content"), not the initialize result.
+            var completed = await WaitUntil(() => Snapshot(clientEnd.Received).Any(m =>
+                Json.Parse(m)["result"]?.AsObject()?["content"] != null));
             Assert(completed, "tools/call completed");
             Assert(!Snapshot(clientEnd.Received).Any(m => Json.Parse(m)["method"]?.AsString() == "notifications/progress"),
                 "no progress notification is emitted when the request carries no progressToken");
@@ -73,6 +77,7 @@ namespace McpSdk.Server.Tests
             var server = BuildProgressServer(serverEnd);
             await server.Start();
             await clientEnd.Start();
+            await Handshake(clientEnd);
 
             // A progressToken that is neither a string nor an integer (here an object) throws while being
             // read. The request must still complete (progress simply disabled), not hang or error — so the

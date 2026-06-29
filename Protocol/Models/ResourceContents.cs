@@ -16,13 +16,13 @@ namespace McpSdk.Protocol.Models
         public ResourceContents(IJsonObject jsonObject)
         {
             Uri = jsonObject["uri"].AsString();
-            MimeType = jsonObject["mimeType"].AsString();
+            MimeType = jsonObject["mimeType"]?.AsString();
         }
 
         public virtual void WriteMembers(IJsonWriter writer)
         {
             writer.Write("uri", Uri);
-            writer.Write("mimeType", MimeType);
+            MimeType?.WriteTo(writer, "mimeType");
         }
 
         public static ResourceContents FromJsonObject(IJsonObject resourceObj)

@@ -9,6 +9,7 @@ using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Protocol.Models.ClientCapabilities;
 using McpSdk.Protocol.Models.ServerCapabilities;
 using McpSdk.Shared;
 
@@ -161,6 +162,17 @@ namespace McpSdk.Server.Tests
             await client.Connect();
 
             return (client, clientEnd, serverEnd);
+        }
+
+        /// <summary>
+        /// Completes the initialize handshake over a raw loopback client end so the server's lifecycle gate
+        /// lets subsequent requests through. For tests that drive a full <see cref="McpServer"/> with raw
+        /// <c>SendRequest</c> calls rather than a real <see cref="McpClient"/> (which handshakes in Connect).
+        /// </summary>
+        protected Task Handshake(InMemoryTransport clientEnd)
+        {
+            var init = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("Conf", "1.0.0"));
+            return clientEnd.SendRequest("initialize", init.WriteMembers);
         }
 
         /// <summary>Wires a bare transport to answer "initialize" with a fixed protocol version.</summary>

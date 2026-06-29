@@ -28,6 +28,7 @@ namespace McpSdk.Server.Tests
         {
             await Test("resource title + icons + _meta round-trip (omitted when absent)", ResourceMetadataRoundTrips);
             await Test("resource template title + icons + _meta round-trip", ResourceTemplateMetadataRoundTrips);
+            await Test("resource contents with no mimeType omit the field (not null)", ResourceContentsOmitsNullMimeType);
             await Test("resources subscribe + listChanged parse independently", ResourceCapabilitiesAreIndependent);
             await Test("server advertises subscribe from resource-changed, not listChanged", ServerAdvertisesSubscribeFromResourceChanged);
             await Test("resources/list round-trips resources through the server", ListResourcesThroughServer);
@@ -97,6 +98,21 @@ namespace McpSdk.Server.Tests
             return Task.CompletedTask;
         }
 
+        private Task ResourceContentsOmitsNullMimeType()
+        {
+            // mimeType is optional: resource contents without one must omit the field, not emit
+            // "mimeType":null. (And reading back a mimeType-less payload must not throw.)
+            var raw = Json.Object(new TextResourceContents("file:///x", null, "hi").WriteMembers);
+
+            Assert(raw["mimeType"] == null, "resource contents with no mimeType omit the field");
+            AssertEqual("file:///x", raw["uri"]?.AsString(), "the uri is still emitted");
+            AssertEqual("hi", raw["text"]?.AsString(), "the text is still emitted");
+
+            var parsed = new TextResourceContents(raw);
+            Assert(parsed.MimeType == null, "a mimeType-less payload round-trips with a null mimeType");
+            return Task.CompletedTask;
+        }
+
         private Task ResourceCapabilitiesAreIndependent()
         {
             // Reader: 'subscribe' and 'listChanged' are parsed independently of each other.
@@ -137,6 +153,7 @@ namespace McpSdk.Server.Tests
                 },
             };
             var (clientEnd, _) = await StartResourceServer(controller);
+            await Handshake(clientEnd);
 
             var resp = await clientEnd.SendRequest("resources/list", new ListResourcesRequest().WriteMembers);
             Assert(resp.IsOk, "resources/list returns a result");
@@ -151,6 +168,7 @@ namespace McpSdk.Server.Tests
         {
             var controller = new TestResourcesController(resourceChanged: false, listChanged: false);
             var (clientEnd, _) = await StartResourceServer(controller);
+            await Handshake(clientEnd);
 
             var resp = await clientEnd.SendRequest("resources/read", w => w.Write("uri", "file:///a.txt"));
             Assert(resp.IsOk, "resources/read returns a (non-error) result");
@@ -184,6 +202,7 @@ namespace McpSdk.Server.Tests
                 },
             };
             var (clientEnd, _) = await StartResourceServer(controller);
+            await Handshake(clientEnd);
 
             var resp = await clientEnd.SendRequest("resources/templates/list", new ListTemplatesRequest().WriteMembers);
             Assert(resp.IsOk, "resources/templates/list returns a result");
@@ -231,6 +250,7 @@ namespace McpSdk.Server.Tests
         {
             var controller = new TestResourcesController(resourceChanged: false, listChanged: true);
             var (clientEnd, _) = await StartResourceServer(controller);
+            await Handshake(clientEnd);
 
             var resp = await clientEnd.SendRequest("resources/subscribe", w => w.Write("uri", "file://x"));
             Assert(resp.IsError && resp.Error?.Code == ErrorCode.MethodNotFound,
@@ -241,9 +261,10 @@ namespace McpSdk.Server.Tests
 
         /// <summary>
         /// Builds and starts a server exposing the given resources controller over a fresh loopback pair,
-        /// and starts the raw client end. Does not perform the initialize handshake — the server serves
-        /// resource methods regardless — so a test can capture the initialize response itself when it needs
-        /// to assert on advertised capabilities.
+        /// and starts the raw client end. Does not perform the initialize handshake, so a test can capture
+        /// the initialize response itself (to assert on advertised capabilities); a test that just calls
+        /// resource methods must first satisfy the lifecycle gate via <see cref="ConformanceSuite.Handshake"/>
+        /// (or its own initialize).
         /// </summary>
         private async Task<(InMemoryTransport clientEnd, InMemoryTransport serverEnd)> StartResourceServer(
             IResourcesController controller)

@@ -157,6 +157,7 @@ namespace McpSdk.Server.Tests
                     description: "A code-review prompt"),
             };
             var (clientEnd, _) = await StartPromptServer(controller);
+            await Handshake(clientEnd);
 
             var request = new GetPromptRequest("code_review",
                 Json.Object(w => w.Write("pr_url", "https://github.com/x/y/pull/1")));
@@ -174,6 +175,7 @@ namespace McpSdk.Server.Tests
         private async Task GetPromptMissingNameIsInvalidParams()
         {
             var (clientEnd, _) = await StartPromptServer(new TestPromptController(listChangedSupported: false));
+            await Handshake(clientEnd);
 
             // 'name' is required; omitting it must yield InvalidParams (-32602), not a generic -32603.
             var resp = await clientEnd.SendRequest("prompts/get", w => { });

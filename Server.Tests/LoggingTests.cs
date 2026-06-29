@@ -77,6 +77,7 @@ namespace McpSdk.Server.Tests
                 .Build();
             await server.Start();
             await clientEnd.Start();
+            await Handshake(clientEnd);
 
             // A level the spec doesn't define must be rejected as InvalidParams (-32602), not swallowed or
             // collapsed into a generic InternalError.
@@ -91,6 +92,7 @@ namespace McpSdk.Server.Tests
             var server = BuildServer(serverEnd); // no logging capability
             await server.Start();
             await clientEnd.Start();
+            await Handshake(clientEnd);
 
             var resp = await clientEnd.SendRequest("logging/setLevel", new SetLevelRequest(LoggingLevel.Debug).WriteMembers);
             Assert(resp.IsError && resp.Error?.Code == ErrorCode.MethodNotFound,

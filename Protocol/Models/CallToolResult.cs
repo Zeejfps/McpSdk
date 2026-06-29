@@ -42,7 +42,7 @@ namespace McpSdk.Protocol.Models
 
         public CallToolResult(Content[] content, bool? isError = null, IJsonObject structuredContent = null, Meta meta = null)
         {
-            Content = content;
+            Content = content ?? Array.Empty<Content>();
             IsError = isError;
             StructuredContent = structuredContent;
             Meta = meta;

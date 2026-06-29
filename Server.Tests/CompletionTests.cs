@@ -111,6 +111,7 @@ namespace McpSdk.Server.Tests
                 .Build();
             await server.Start();
             await clientEnd.Start();
+            await Handshake(clientEnd);
 
             // 'ref' and 'argument' are required; omitting them must yield InvalidParams (-32602) rather than
             // an NRE that collapses to a generic InternalError (-32603).

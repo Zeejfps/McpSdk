@@ -28,6 +28,8 @@ namespace McpSdk.Server.Tests
             await Test("missing protocolVersion -> server offers Latest, never errors", MissingProtocolVersionNegotiation);
             await Test("modern client -> legacy server (2024-11-05) connects", ModernClientLegacyServer);
             await Test("modern client -> unsupported server disconnects cleanly", ModernClientUnsupportedServer);
+            await Test("requests before initialize are rejected (ping still allowed)", RequestsBeforeInitializeRejected);
+            await Test("a second initialize is rejected", DoubleInitializeRejected);
             await Test("InitializeResult parses capabilities + serverInfo", InitializeResultParsing);
         }
 
@@ -134,6 +136,45 @@ namespace McpSdk.Server.Tests
 
             Assert(threw, "client throws ClientException on an unsupported server version");
             Assert(!client.IsConnected, "client is not connected after a failed negotiation");
+        }
+
+        private async Task RequestsBeforeInitializeRejected()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = BuildServer(serverEnd);
+            await server.Start();
+            await clientEnd.Start();
+
+            // A non-ping request before initialize is refused with InvalidRequest (lifecycle: initialize first).
+            var early = await clientEnd.SendRequest("tools/list", new ListToolsRequest().WriteMembers);
+            Assert(early.IsError && early.Error?.Code == ErrorCode.InvalidRequest,
+                "tools/list before initialize is rejected with InvalidRequest");
+
+            // ping is a base-protocol utility and must still be answered before initialize.
+            var ping = await clientEnd.SendRequest("ping", _ => { });
+            Assert(ping.IsOk, "ping is answered before initialize");
+
+            // After initialize the same request is served.
+            await Handshake(clientEnd);
+            var afterInit = await clientEnd.SendRequest("tools/list", new ListToolsRequest().WriteMembers);
+            Assert(afterInit.IsOk, "tools/list is served after initialize");
+        }
+
+        private async Task DoubleInitializeRejected()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = BuildServer(serverEnd);
+            await server.Start();
+            await clientEnd.Start();
+
+            var first = await clientEnd.SendRequest("initialize",
+                new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("C", "1.0.0")).WriteMembers);
+            Assert(first.IsOk, "the first initialize succeeds");
+
+            var second = await clientEnd.SendRequest("initialize",
+                new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("C", "1.0.0")).WriteMembers);
+            Assert(second.IsError && second.Error?.Code == ErrorCode.InvalidRequest,
+                "a second initialize is rejected with InvalidRequest");
         }
 
         private async Task InitializeResultParsing()

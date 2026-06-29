@@ -78,8 +78,10 @@ namespace McpSdk.Server.Tests
                 "{\"jsonrpc\":\"2.0\",\"id\":102,\"method\":\"tools/list\",\"params\":{}}]";
             await clientEnd.SendRaw(batch);
 
-            // A valid single request afterwards proves the message pump survived the batch.
-            var valid = await clientEnd.SendRequest("tools/list", _ => { });
+            // A valid single request afterwards proves the message pump survived the batch. Use ping: it is
+            // answerable before initialize, so this stays a pure framing test (no handshake) and the server
+            // still emits exactly one reply.
+            var valid = await clientEnd.SendRequest("ping", _ => { });
             Assert(valid.IsOk, "a valid request after a batch is still answered");
 
             // Let any (erroneous) batch handling settle, then confirm the batch produced no output.

@@ -26,6 +26,8 @@ namespace McpSdk.Server.Tests
         {
             await Test("tools/list carries title + annotations + icons", ToolMetadataInListing);
             await Test("a tool with no input schema still emits an object-root inputSchema", ToolWithoutSchemaStillEmitsInputSchema);
+            await Test("a tool with no description omits the field (not null)", ToolOmitsNullDescription);
+            await Test("CallToolResult with null content serializes an empty content array", CallToolResultNullContentIsEmptyArray);
             await Test("inputSchema/outputSchema declare the 2020-12 dialect", SchemaDialectAndOutputSchemaEmitted);
             await Test("structured output: structuredContent + back-compat text", StructuredOutputRoundTrip);
             await Test("schema-validation failure returns a tool error, not a protocol error", ValidationErrorIsToolError);
@@ -71,6 +73,28 @@ namespace McpSdk.Server.Tests
 
             Assert(inputSchema != null, "a tool with no declared input schema still emits inputSchema");
             AssertEqual("object", inputSchema?["type"]?.AsString(), "the emitted inputSchema has an object root type");
+            return Task.CompletedTask;
+        }
+
+        private Task ToolOmitsNullDescription()
+        {
+            // description is optional: a tool without one must omit the field, not emit "description":null
+            // (strict clients parse it as an optional string, which accepts absent but rejects null).
+            var raw = Json.Object(new Tool { Name = "noargs" }.WriteMembers);
+
+            Assert(raw["description"] == null, "a tool with no description omits the field");
+            AssertEqual("noargs", raw["name"]?.AsString(), "the tool name is still emitted");
+            return Task.CompletedTask;
+        }
+
+        private Task CallToolResultNullContentIsEmptyArray()
+        {
+            // content is a required array: a result built with null content must serialize "content":[]
+            // rather than throw or emit null.
+            var raw = Json.Object(new CallToolResult((Content[])null).WriteMembers);
+
+            Assert(raw["content"].IsArray, "null content serializes as a content array");
+            Assert(raw["content"].AsObjectArray().Length == 0, "the content array is empty");
             return Task.CompletedTask;
         }
 
