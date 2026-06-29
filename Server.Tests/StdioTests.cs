@@ -9,13 +9,13 @@ public sealed class StdioTests
     public async Task Run()
     {
         var json = new NewtonsoftJson();
-        var schemaValidator = new NewtonsoftJsonSchemaValidator();
+        var schemaCompiler = new NewtonsoftJsonSchemaCompiler();
         var mcpServer = new ServerBuilder()
             .WithName("Demo Server")
             .WithVersion("1.0.0")
             .WithConsoleLogger()
             .WithStdioTransport(json)
-            .WithDefaultToolsCapability(json, schemaValidator, tools =>
+            .WithDefaultToolsCapability(json, schemaCompiler, tools =>
             {
                 tools.AddTool(new TestToolHandler());
             })

@@ -16,13 +16,13 @@ if (args.Length > 0 && args[0] == "conformance")
 if (args.Length > 0 && args[0] == "stdio-server")
 {
     var stdioJson = new NewtonsoftJson();
-    var stdioValidator = new NewtonsoftJsonSchemaValidator();
+    var stdioCompiler = new NewtonsoftJsonSchemaCompiler();
     var stdioServer = new ServerBuilder()
         .WithName("Stdio Conf Server")
         .WithVersion("1.0.0")
         .WithConsoleLogger()
         .WithStdioTransport(stdioJson)
-        .WithDefaultToolsCapability(stdioJson, stdioValidator, tools => tools.AddTool(new TestToolHandler()))
+        .WithDefaultToolsCapability(stdioJson, stdioCompiler, tools => tools.AddTool(new TestToolHandler()))
         .Build();
 
     await stdioServer.Start();
@@ -34,7 +34,7 @@ if (args.Length > 0 && args[0] == "stdio-server")
 if (args.Length > 0 && args[0] == "streamable-http-server")
 {
     var httpJson = new NewtonsoftJson();
-    var httpValidator = new NewtonsoftJsonSchemaValidator();
+    var httpCompiler = new NewtonsoftJsonSchemaCompiler();
     var httpLoggerFactory = new ServerConsoleLoggerFactory();
     var baseUrl = args.Length > 1 ? args[1] : "http://localhost:3000";
     const string endpointPath = "/mcp";
@@ -51,7 +51,7 @@ if (args.Length > 0 && args[0] == "streamable-http-server")
                 .WithVersion("1.0.0")
                 .WithLogger(httpLoggerFactory)
                 .WithStreamableHttpTransport(transport)
-                .WithDefaultToolsCapability(httpJson, httpValidator, tools => tools.AddTool(new TestToolHandler()))
+                .WithDefaultToolsCapability(httpJson, httpCompiler, tools => tools.AddTool(new TestToolHandler()))
                 .Build();
             await server.Start();
         });

@@ -131,21 +131,24 @@ namespace McpSdk.Server.Tests
                 { "b", new NumberSchema() },
             };
 
-            var cases = new (string name, IJson json, IJsonSchemaValidator validator)[]
+            var cases = new (string name, IJson json, IJsonSchemaCompiler compiler)[]
             {
-                ("Newtonsoft", newtonsoft, new McpSdk.Adapter.Newtonsoft.Json.NewtonsoftJsonSchemaValidator()),
-                ("SystemText", systemText, new McpSdk.Adapter.System.Text.Json.SystemTextJsonSchemaValidator()),
+                ("Newtonsoft", newtonsoft, new McpSdk.Adapter.Newtonsoft.Json.NewtonsoftJsonSchemaCompiler()),
+                ("SystemText", systemText, new McpSdk.Adapter.System.Text.Json.SystemTextJsonSchemaCompiler()),
             };
-            foreach (var (name, json, validator) in cases)
+            foreach (var (name, json, compiler) in cases)
             {
-                // The schema is passed as the write-only model itself — never materialized as an object.
+                // The schema is compiled once from the write-only model itself — never materialized as
+                // an object — then reused to validate many values.
+                var compiledSchema = compiler.Compile(schema);
+
                 var good = json.Object(w => { w.Write("a", 1.0); w.Write("b", 2.0); });
-                var goodValid = validator.IsValid(good, schema, out _);
+                var goodValid = compiledSchema.Validate(good, out _);
                 Assert(goodValid, $"{name}: valid args pass 2020-12 validation");
 
                 // 'b' is required but omitted — every adapter must catch this, not silently pass.
                 var bad = json.Object(w => w.Write("a", 1.0));
-                var badValid = validator.IsValid(bad, schema, out var errors);
+                var badValid = compiledSchema.Validate(bad, out var errors);
                 Assert(!badValid, $"{name}: missing required field fails validation");
                 Assert(!badValid && errors != null && errors.Count > 0, $"{name}: failure reports at least one error");
             }

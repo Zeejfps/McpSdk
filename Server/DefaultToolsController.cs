@@ -8,9 +8,15 @@ namespace McpSdk.Server
 {
     public sealed class DefaultToolsController : IToolsController
     {
-        private readonly IJsonSchemaValidator _schemaValidator;
+        private readonly IJsonSchemaCompiler _schemaCompiler;
         private readonly IJsonObject _emptyArguments;
         private readonly Dictionary<string, IToolHandler> _toolByNameLookup = new();
+
+        // A tool's input schema is fixed at registration, so it is compiled once in AddTool and the
+        // reusable IJsonSchema cached here — every call validates against it without recompiling.
+        // A tool with no input schema has no entry (it accepts any arguments). Keyed by tool name and
+        // mutated alongside the lookups above.
+        private readonly Dictionary<string, IJsonSchema> _compiledSchemaByName = new();
 
         // Parallel to the name lookup: preserves registration order so an offset-based pagination
         // cursor refers to the same slice across calls. Dictionary enumeration order is not a
@@ -27,9 +33,9 @@ namespace McpSdk.Server
         /// </summary>
         public int? PageSize { get; set; }
 
-        public DefaultToolsController(IJson json, IJsonSchemaValidator schemaValidator)
+        public DefaultToolsController(IJson json, IJsonSchemaCompiler schemaCompiler)
         {
-            _schemaValidator = schemaValidator;
+            _schemaCompiler = schemaCompiler;
             // Stand-in for omitted call arguments: validation (not a null-ref) then decides whether any
             // required inputs are missing. Built once — it never changes.
             _emptyArguments = json.Parse("{}");
@@ -40,6 +46,12 @@ namespace McpSdk.Server
             // Add to the lookup first: it throws on a duplicate name, keeping the ordered list in sync.
             _toolByNameLookup.Add(toolHandler.Tool.Name, toolHandler);
             _toolsInOrder.Add(toolHandler);
+
+            // Compile the input schema once, here, rather than on every tools/call.
+            var inputSchema = toolHandler.Tool.InputSchema;
+            if (inputSchema != null)
+                _compiledSchemaByName[toolHandler.Tool.Name] = _schemaCompiler.Compile(inputSchema);
+
             ListChanged?.Invoke();
         }
 
@@ -50,6 +62,7 @@ namespace McpSdk.Server
 
             _toolByNameLookup.Remove(name);
             _toolsInOrder.Remove(tool);
+            _compiledSchemaByName.Remove(name);
             ListChanged?.Invoke();
             return true;
         }
@@ -98,9 +111,9 @@ namespace McpSdk.Server
 
             // SEP-1303: schema-validation failures are returned to the model as a tool error
             // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error. A tool
-            // with no input schema accepts any arguments.
-            var inputSchema = toolHandler.Tool.InputSchema;
-            if (inputSchema != null && !_schemaValidator.IsValid(toolArguments, inputSchema, out var errors))
+            // with no input schema has no compiled entry and accepts any arguments.
+            if (_compiledSchemaByName.TryGetValue(toolName, out var compiledSchema)
+                && !compiledSchema.Validate(toolArguments, out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)
@@ -116,9 +129,9 @@ namespace McpSdk.Server
 
     public static class DefaultToolsControllerExtensions
     {
-        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, IJsonSchemaValidator schemaValidator, Action<DefaultToolsController> configure)
+        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, IJsonSchemaCompiler schemaCompiler, Action<DefaultToolsController> configure)
         {
-            var toolsController = new DefaultToolsController(json, schemaValidator);
+            var toolsController = new DefaultToolsController(json, schemaCompiler);
             configure(toolsController);
             builder.WithToolsCapability(toolsController);
             return builder;

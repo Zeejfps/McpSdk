@@ -86,7 +86,7 @@ namespace McpSdk.Server.Tests
             new ServerBuilder()
                 .WithName("Conf Server").WithVersion("1.0.0")
                 .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, SchemaValidator, tools => tools.AddTool(new ProgressToolHandler()))
+                .WithDefaultToolsCapability(Json, SchemaCompiler, tools => tools.AddTool(new ProgressToolHandler()))
                 .Build();
 
         private sealed class ProgressToolHandler : IToolHandler

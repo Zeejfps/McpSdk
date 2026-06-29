@@ -32,7 +32,7 @@ namespace McpSdk.Server.Tests
             var server = new ServerBuilder()
                 .WithName("Conf Server").WithVersion("1.0.0")
                 .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, SchemaValidator, tools => tools.AddTool(tool))
+                .WithDefaultToolsCapability(Json, SchemaCompiler, tools => tools.AddTool(tool))
                 .Build();
             await server.Start();
 

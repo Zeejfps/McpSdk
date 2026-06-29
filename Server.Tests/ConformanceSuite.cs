@@ -81,7 +81,7 @@ namespace McpSdk.Server.Tests
     public abstract class ConformanceSuite
     {
         protected static readonly IJson Json = new NewtonsoftJson();
-        protected static readonly IJsonSchemaValidator SchemaValidator = new NewtonsoftJsonSchemaValidator();
+        protected static readonly IJsonSchemaCompiler SchemaCompiler = new NewtonsoftJsonSchemaCompiler();
         protected static readonly ILoggerFactory Loggers = new NullLoggerFactory();
 
         private readonly TestReport _report;
@@ -107,7 +107,7 @@ namespace McpSdk.Server.Tests
                 .WithName("Conf Server")
                 .WithVersion("1.0.0")
                 .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, SchemaValidator, tools =>
+                .WithDefaultToolsCapability(Json, SchemaCompiler, tools =>
                 {
                     tools.AddTool(new TestToolHandler());
                     tools.AddTool(new StructuredToolHandler(Json));
