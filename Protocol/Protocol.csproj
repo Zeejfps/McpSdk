@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Protocol</AssemblyName>
         <RootNamespace>McpSdk.Protocol</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>Core Model Context Protocol (MCP) types, messages, and JSON-RPC primitives for McpSdk.</Description>
     </PropertyGroup>
 
 </Project>

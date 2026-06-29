@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Adapter.System.Text.Json</AssemblyName>
         <RootNamespace>McpSdk.Adapter.System.Text.Json</RootNamespace>
         <LangVersion>default</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>System.Text.Json (with JsonSchema.Net) serialization adapter for McpSdk.</Description>
     </PropertyGroup>
 
     <ItemGroup>

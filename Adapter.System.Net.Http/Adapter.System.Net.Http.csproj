@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Adapter.System.Net.Http</AssemblyName>
         <RootNamespace>McpSdk.Adapter.System.Net.Http</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>System.Net.Http client transport adapter for McpSdk.</Description>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Shared</AssemblyName>
         <RootNamespace>McpSdk.Shared</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>Shared abstractions and utilities used across the McpSdk client and server libraries.</Description>
     </PropertyGroup>
 
     <ItemGroup>

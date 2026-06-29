@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Client</AssemblyName>
         <RootNamespace>McpSdk.Client</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>Connect to Model Context Protocol (MCP) servers from .NET with McpSdk.</Description>
     </PropertyGroup>
 
     <ItemGroup>

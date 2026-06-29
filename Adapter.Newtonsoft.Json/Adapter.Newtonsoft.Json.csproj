@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Adapter.Newtonsoft.Json</AssemblyName>
         <RootNamespace>McpSdk.Adapter.Newtonsoft.Json</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>Newtonsoft.Json (Json.NET) serialization adapter for McpSdk.</Description>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,7 +5,7 @@
         <AssemblyName>McpSdk.Adapter.StreamableHttpServer</AssemblyName>
         <RootNamespace>McpSdk.Adapter.StreamableHttpServer</RootNamespace>
         <LangVersion>latest</LangVersion>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Description>Streamable HTTP server transport adapter for McpSdk servers.</Description>
     </PropertyGroup>
 
     <ItemGroup>

@@ -19,6 +19,8 @@ obj/
 
 # NuGet packages and related files
 *.nupkg
+*.snupkg
+nupkgs/
 packages/
 .nuget/
 project.lock.json
