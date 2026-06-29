@@ -87,15 +87,13 @@ namespace McpSdk.Server
             {
                 return CallToolResult.Error($"No tool found with name: {toolName}");
             }
-
-            // Treat omitted arguments as an empty object so validation (rather than a null-ref) decides
-            // whether required inputs are missing.
-            var toolArguments = request.ToolArguments ?? _json.Object(_ => { });
+            
+            var toolArguments = request.ToolArguments ?? _json.Parse("{}");
 
             // SEP-1303: schema-validation failures are returned to the model as a tool error
             // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error.
-            var inputSchema = toolHandler.Tool.InputSchema.AsJsonObject(_json);
-            if (!toolArguments.IsValid(inputSchema, out var errors))
+            var inputSchema = _json.Stringify(toolHandler.Tool.InputSchema.WriteMembers);
+            if (!toolArguments.IsValid(_json.Parse(inputSchema), out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)

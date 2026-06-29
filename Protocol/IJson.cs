@@ -21,7 +21,6 @@ namespace McpSdk.Protocol
 
     public interface IJson
     {
-        IJsonObject Object(Action<IJsonWriter> props);
         IJsonObject Parse(string text);
         string Stringify(Action<IJsonWriter> json);
     }

@@ -51,13 +51,13 @@ foreach (var tool in listToolsResult.Tools)
     Console.WriteLine(json.Stringify(tool.WriteMembers));
 }
 
-var request = new CallToolRequest("get-forecast", json.Object(props =>
+var request = new CallToolRequest("get-forecast", json.Parse(json.Stringify(props =>
 {
     props.Write("latitude", 39.384358225955);
     props.Write("longitude", -110.686663445063);
     props.Write("testBool", true);
     props.Write("testArray", new[] { "alpha", "beta" });
-}));
+})));
 var result = await client.CallTool(request);
 
 Console.WriteLine(json.Stringify(request.WriteMembers));

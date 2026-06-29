@@ -133,7 +133,7 @@ namespace McpSdk.Server.Tests
 
             foreach (var (name, json) in new (string, IJson)[] { ("Newtonsoft", newtonsoft), ("SystemText", systemText) })
             {
-                var schemaObj = schema.AsJsonObject(json);
+                var schemaObj = json.Object(schema.WriteMembers);
 
                 var good = json.Object(w => { w.Write("a", 1.0); w.Write("b", 2.0); });
                 var goodValid = good.IsValid(schemaObj, out _);
