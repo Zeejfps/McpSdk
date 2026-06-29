@@ -36,7 +36,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
         private readonly IJson _json;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
-        private readonly Func<ITransport, Task> _onSession;
+        private readonly Func<ITransport, Task<IServer>> _onSession;
         private readonly HashSet<string> _allowedOrigins;
         private readonly Dictionary<string, Session> _sessions = new Dictionary<string, Session>();
         private readonly object _sessionsGate = new object();
@@ -46,7 +46,9 @@ namespace McpSdk.Adapter.StreamableHttpServer
 
         /// <param name="baseUrl">Origin to bind, e.g. <c>http://localhost:3000</c>.</param>
         /// <param name="endpointPath">The single MCP endpoint path, e.g. <c>/mcp</c>.</param>
-        /// <param name="onSession">Builds and starts an McpServer over the new session's transport.</param>
+        /// <param name="onSession">Builds and starts an McpServer over the new session's transport, returning
+        /// the started <see cref="IServer"/> so session teardown can <c>Stop()</c> it (or <c>null</c> when a
+        /// caller drives the transport directly without a server, e.g. a transport-level test).</param>
         /// <param name="allowedOrigins">Permitted <c>Origin</c> values; <c>null</c> disables the check
         /// (no browser-rebinding protection — appropriate only for non-browser deployments).</param>
         public StreamableHttpListener(
@@ -54,7 +56,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
             string endpointPath,
             IJson json,
             ILoggerFactory loggerFactory,
-            Func<ITransport, Task> onSession,
+            Func<ITransport, Task<IServer>> onSession,
             IEnumerable<string> allowedOrigins = null)
         {
             _baseUrl = baseUrl.TrimEnd('/');
@@ -79,6 +81,16 @@ namespace McpSdk.Adapter.StreamableHttpServer
         public async Task Stop()
         {
             _cts?.Cancel();
+
+            List<Session> sessions;
+            lock (_sessionsGate)
+            {
+                sessions = new List<Session>(_sessions.Values);
+                _sessions.Clear();
+            }
+            foreach (var session in sessions)
+                await TerminateSession(session).ConfigureAwait(false);
+
             try
             {
                 _listener.Stop();
@@ -175,13 +187,13 @@ namespace McpSdk.Adapter.StreamableHttpServer
 
             if (string.IsNullOrEmpty(sessionId))
             {
-                // No session yet: this is the initialize request. Create the session transport, let the
-                // consumer build & start its McpServer (subscribing before we dispatch), echo the id.
-                transport = new HttpServerTransport(_json, _loggerFactory, Guid.NewGuid().ToString("N"));
+                transport = new HttpServerTransport(
+                    _json, _loggerFactory, Guid.NewGuid().ToString("N"), request.Headers["Origin"]);
+                Session session;
                 lock (_sessionsGate)
-                    _sessions[transport.SessionId] = new Session(transport);
+                    _sessions[transport.SessionId] = session = new Session(transport);
 
-                await _onSession(transport).ConfigureAwait(false);
+                session.Server = await _onSession(transport).ConfigureAwait(false);
                 response.Headers[SessionIdHeader] = transport.SessionId;
             }
             else
@@ -316,10 +328,26 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 return;
             }
 
-            // Stopping the transport cancels in-flight requests, releases any open POSTs, and signals the
-            // GET loop to close.
-            await session.Transport.Stop().ConfigureAwait(false);
+            await TerminateSession(session).ConfigureAwait(false);
             WriteStatus(response, 200);
+        }
+
+        private async Task TerminateSession(Session session)
+        {
+            if (session == null)
+                return;
+
+            try
+            {
+                if (session.Server != null)
+                    await session.Server.Stop().ConfigureAwait(false);
+                else
+                    await session.Transport.Stop().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
+            }
         }
 
         private bool IsOriginAllowed(HttpListenerRequest request)
@@ -338,7 +366,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
             response.Close();
         }
 
-        // One MCP session: the HTTP/SSE transport the McpServer runs over.
         private sealed class Session
         {
             public Session(HttpServerTransport transport)
@@ -347,6 +374,8 @@ namespace McpSdk.Adapter.StreamableHttpServer
             }
 
             public HttpServerTransport Transport { get; }
+
+            public IServer Server { get; set; }
         }
     }
 }

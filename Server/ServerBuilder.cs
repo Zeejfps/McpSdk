@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using McpSdk.Protocol.Models;
 using McpSdk.Shared;
 
@@ -6,121 +6,44 @@ namespace McpSdk.Server
 {
     public sealed class ServerBuilder
     {
-        private string _name;
-        private string _version;
-        private string _title;
-        private string _description;
-        private ITransportFactory _transportFactory;
-        private IToolsController _toolsController;
-        private IPromptController _promptsController;
-        private IResourcesController _resourcesController;
-        private ICompletionController _completionController;
-        private bool _loggingEnabled;
-        private ILoggerFactory _loggerFactory;
-
-        public ServerBuilder()
-        {
-            _loggerFactory = new NullLoggerFactory();
-        }
-        
-        public ServerBuilder WithLogger(ILoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
-            return this;
-        }
-
-        public ServerBuilder WithTransport(ITransportFactory transportFactory)
-        {
-            _transportFactory = transportFactory;
-            return this;
-        }
-        
-        public ServerBuilder WithName(string name)
-        {
-            _name = name;
-            return this;
-        }
-
-        public ServerBuilder WithVersion(string version)
-        {
-            _version = version;
-            return this;
-        }
-
-        public ServerBuilder WithTitle(string title)
-        {
-            _title = title;
-            return this;
-        }
-
-        public ServerBuilder WithDescription(string description)
-        {
-            _description = description;
-            return this;
-        }
-
-        public ServerBuilder WithResourcesCapability(IResourcesController resourcesController)
-        {
-            _resourcesController = resourcesController;
-            return this;
-        }
-        
-        public ServerBuilder WithPromptsCapability(IPromptController promptsController)
-        {
-            _promptsController = promptsController;
-            return this;
-        }
-        
-        public ServerBuilder WithToolsCapability(IToolsController toolsController)
-        {
-            _toolsController = toolsController;
-            return this;
-        }
-
-        public ServerBuilder WithCompletionCapability(ICompletionController completionController)
-        {
-            _completionController = completionController;
-            return this;
-        }
+        private readonly DiContainer _context;
 
         /// <summary>
-        /// Advertises the <c>logging</c> capability and accepts <c>logging/setLevel</c>. The server then
-        /// emits logs via <see cref="IServer.Log"/>, filtered by the level the client sets.
+        /// The dependency-injection context. Register the transport, serializer, logger, and capabilities
+        /// here (e.g. <c>builder.Context.AddStdioTransport()</c>), then call <see cref="Build"/>.
         /// </summary>
-        public ServerBuilder WithLoggingCapability()
+        public IContext Context => _context;
+
+        /// <summary>
+        /// <paramref name="name"/> and <paramref name="version"/> are required and seeded into
+        /// <see cref="Context"/> as a <see cref="ServerInfoOptions"/> singleton, alongside a default
+        /// <see cref="NullLoggerFactory"/> (overridable via <c>AddLogger</c>, last-wins).
+        /// </summary>
+        public ServerBuilder(string name, string version)
         {
-            _loggingEnabled = true;
-            return this;
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (version == null) throw new ArgumentNullException(nameof(version));
+
+            _context = new DiContainer();
+            _context.AddSingleton(new ServerInfoOptions { Name = name, Version = version });
+            _context.AddSingleton<ILoggerFactory>(new NullLoggerFactory());
+
+            _context.AddSingleton<ServerInfo>(sp =>
+            {
+                var o = sp.GetService<ServerInfoOptions>();
+                return new ServerInfo(o.Name, o.Version, o.Title, o.Description);
+            });
         }
 
         public IServer Build()
         {
-            if (_name == null)
-                throw new ArgumentNullException(nameof(_name), "Server name cannot be null.");
-            
-            if (_version == null)
-                throw new ArgumentNullException(nameof(_version), "Server version cannot be null.");
-            
-            var loggerFactory = _loggerFactory;
-            var transport = _transportFactory.Create(loggerFactory);
-            var serverInfo = new ServerInfo(_name, _version, _title, _description);
-            
-            var tools = _toolsController;
-            var prompts = _promptsController;
-            var resources = _resourcesController;
+            var provider = _context.BuildServiceProvider();
+            var host = provider.GetService<IServerHost>();
+            if (host == null)
+                throw new InvalidOperationException(
+                    "No transport registered. Call Context.AddStdioTransport()/AddStreamableHttpTransport(...) before Build().");
 
-            var server =  new McpServer(
-                transport,
-                serverInfo,
-                loggerFactory,
-                tools,
-                prompts,
-                resources,
-                _completionController,
-                _loggingEnabled
-            );
-
-            return server;
+            return host;
         }
     }
 }

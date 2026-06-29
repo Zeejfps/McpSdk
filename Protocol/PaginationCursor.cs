@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using McpSdk.Protocol.Models;
 
 namespace McpSdk.Protocol
 {
@@ -52,6 +54,42 @@ namespace McpSdk.Protocol
                 // Not valid Base64 — treat as an unrecognized cursor rather than throwing.
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Pages <paramref name="items"/> with this SDK's offset-cursor scheme and projects each paged item to
+        /// its wire <see cref="Tool"/> via <paramref name="toTool"/>. An unrecognized/malformed
+        /// <paramref name="cursor"/> falls back to the first page; the offset is clamped into range so a stale
+        /// cursor (items removed since it was issued) yields an empty final page rather than throwing; a
+        /// non-positive <paramref name="pageSize"/> (or <c>null</c>) means "no paging" — one page holding every
+        /// item, with no <c>nextCursor</c>. Shared by <c>DefaultToolsController</c> and
+        /// <c>CompositeToolsController</c> so their paging cannot drift.
+        /// </summary>
+        public static ListToolsResult GetPage<T>(IReadOnlyList<T> items, string cursor, int? pageSize, Func<T, Tool> toTool)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+            if (toTool == null) throw new ArgumentNullException(nameof(toTool));
+
+            var count = items.Count;
+
+            var offset = 0;
+            if (cursor != null && TryDecodeOffset(cursor, out var decoded))
+                offset = decoded;
+            if (offset < 0)
+                offset = 0;
+            if (offset > count)
+                offset = count;
+
+            var size = pageSize is > 0 ? pageSize.Value : count;
+            var take = Math.Min(size, count - offset);
+
+            var page = new Tool[take];
+            for (var i = 0; i < take; i++)
+                page[i] = toTool(items[offset + i]);
+
+            var nextOffset = offset + take;
+            var nextCursor = nextOffset < count ? EncodeOffset(nextOffset) : null;
+            return new ListToolsResult(page, nextCursor);
         }
     }
 }

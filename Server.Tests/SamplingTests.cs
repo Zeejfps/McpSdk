@@ -35,7 +35,7 @@ namespace McpSdk.Server.Tests
 
             var controller = new TestSamplingController(supportsTools: true,
                 _ => new CreateMessagesResult("assistant", "m", new TextContent("hi"), "endTurn"));
-            var client = ConnectClientWith(clientEnd, sampling: new TestSamplingFactory(controller));
+            var client = ConnectClientWith(clientEnd, sampling: controller);
             await client.Connect();
 
             var sampling = FindInitializeCapabilities(clientEnd.Sent)?["sampling"]?.AsObject();
@@ -85,7 +85,7 @@ namespace McpSdk.Server.Tests
 
                 return new CreateMessagesResult("assistant", "test-model", new TextContent("no tools"), "endTurn");
             });
-            var client = ConnectClientWith(clientEnd, sampling: new TestSamplingFactory(controller));
+            var client = ConnectClientWith(clientEnd, sampling: controller);
             await client.Connect();
 
             var tool = new Tool("get_weather", "Get current weather for a city",
@@ -153,13 +153,6 @@ namespace McpSdk.Server.Tests
                 LastRequest = request;
                 return Task.FromResult(_respond(request));
             }
-        }
-
-        private sealed class TestSamplingFactory : ISamplingCapabilityFactory
-        {
-            private readonly ISamplingController _controller;
-            public TestSamplingFactory(ISamplingController controller) => _controller = controller;
-            public ISamplingController Create() => _controller;
         }
     }
 }

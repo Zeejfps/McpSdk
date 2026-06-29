@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Shared;
@@ -7,96 +7,50 @@ namespace McpSdk.Client
 {
     public sealed class ClientBuilder
     {
-        private string _name;
-        private string _version;
-        private string _title;
-        private string _description;
-        private ITransportFactory _transportFactory;
-        private IRootsCapabilityFactory _rootsCapabilityFactory;
-        private ISamplingCapabilityFactory _samplingCapabilityFactory;
-        private IElicitationCapabilityFactory _elicitationCapabilityFactory;
-        private ILoggerFactory _loggerFactory;
+        private readonly DiContainer _context;
 
-        public ClientBuilder()
-        {
-            _loggerFactory = new NullLoggerFactory();
-        }
+        /// <summary>
+        /// The dependency-injection context. Register the transport, serializer, logger, and capabilities
+        /// here (e.g. <c>builder.Context.AddStdioTransport(...)</c>), then call <see cref="Build"/>.
+        /// </summary>
+        public IContext Context => _context;
 
-        public ClientBuilder WithName(string name)
+        /// <summary>
+        /// <paramref name="name"/> and <paramref name="version"/> are required and seeded into
+        /// <see cref="Context"/> as a <see cref="ClientInfoOptions"/> singleton, alongside a default
+        /// <see cref="NullLoggerFactory"/> (overridable via <c>AddLogger</c>, last-wins).
+        /// </summary>
+        public ClientBuilder(string name, string version)
         {
-            _name = name;
-            return this;
-        }
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (version == null) throw new ArgumentNullException(nameof(version));
 
-        public ClientBuilder WithVersion(string version)
-        {
-            _version = version;
-            return this;
-        }
+            _context = new DiContainer();
+            _context.AddSingleton(new ClientInfoOptions { Name = name, Version = version });
+            _context.AddSingleton<ILoggerFactory>(new NullLoggerFactory());
 
-        public ClientBuilder WithTitle(string title)
-        {
-            _title = title;
-            return this;
-        }
-
-        public ClientBuilder WithDescription(string description)
-        {
-            _description = description;
-            return this;
-        }
-
-        public ClientBuilder WithLogger(ILoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
-            return this;
-        }
-        
-        public ClientBuilder WithTransport(ITransportFactory transportFactory)
-        {
-            _transportFactory = transportFactory;
-            return this;
-        }
-
-        public ClientBuilder WithRootsCapability(IRootsCapabilityFactory capabilityFactory)
-        {
-            _rootsCapabilityFactory = capabilityFactory;
-            return this;
-        }
-        
-        public ClientBuilder WithSamplingCapability(ISamplingCapabilityFactory capabilityFactory)
-        {
-            _samplingCapabilityFactory = capabilityFactory;
-            return this;
-        }
-
-        public ClientBuilder WithElicitationCapability(IElicitationCapabilityFactory capabilityFactory)
-        {
-            _elicitationCapabilityFactory = capabilityFactory;
-            return this;
+            _context.AddSingleton<ClientInfo>(sp =>
+            {
+                var o = sp.GetService<ClientInfoOptions>();
+                return new ClientInfo(o.Name, o.Version, o.Title, o.Description);
+            });
         }
 
         public IClient Build()
         {
-            if (_name == null)
-                throw new ArgumentNullException(nameof(_name), "Client name cannot be null.");
-            
-            if (_version == null)
-                throw new ArgumentNullException(nameof(_version), "Client version cannot be null.");
-            
-            var clientInfo = new ClientInfo(_name, _version, _title, _description);
-            
-            var transport = _transportFactory?.Create(_loggerFactory);
+            var provider = _context.BuildServiceProvider();
+            var transport = provider.GetService<ITransport>();
             if (transport == null)
-                throw new ArgumentNullException(nameof(transport), "Client transport cannot be null.");
+                throw new InvalidOperationException(
+                    "No transport registered. Call Context.AddStdioTransport()/AddStreamableHttpTransport(...) before Build().");
 
-            var rootsCapability = _rootsCapabilityFactory?.Create();
-            var samplingCapability = _samplingCapabilityFactory?.Create();
-            var elicitationCapability = _elicitationCapabilityFactory?.Create();
-
-            var loggerFactory = _loggerFactory;
-
-            return new McpClient(transport, loggerFactory, clientInfo, rootsCapability, samplingCapability, elicitationCapability);
+            return new McpClient(
+                transport,
+                provider.GetService<ILoggerFactory>(),
+                provider.GetService<ClientInfo>(),
+                provider.GetService<IRootsController>(),
+                provider.GetService<ISamplingController>(),
+                provider.GetService<IElicitationController>());
         }
     }
 }

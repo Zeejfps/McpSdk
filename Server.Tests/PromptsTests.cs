@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
@@ -189,11 +190,11 @@ namespace McpSdk.Server.Tests
             IPromptController controller)
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            var server = new ServerBuilder()
-                .WithName("Conf Server").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithPromptsCapability(controller)
-                .Build();
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddPromptsCapability(controller);
+            var server = builder.Build();
             await server.Start();
             await clientEnd.Start();
             return (clientEnd, serverEnd);

@@ -1,6 +1,7 @@
 #nullable disable
 using System.Linq;
 using System.Threading.Tasks;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
@@ -155,11 +156,11 @@ namespace McpSdk.Server.Tests
             // drive the notifications/tools/list_changed path the server wires on Start.
             var controller = new ListChangingToolsController();
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            var server = new ServerBuilder()
-                .WithName("Conf Server").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithToolsCapability(controller)
-                .Build();
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddToolsCapability(controller);
+            var server = builder.Build();
             await server.Start();
             await clientEnd.Start();
 

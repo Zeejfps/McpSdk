@@ -34,7 +34,7 @@ namespace McpSdk.Server.Tests
             await serverEnd.Start();
 
             var controller = new TestRootsController(listChangedSupported: true);
-            var client = ConnectClientWith(clientEnd, roots: new TestRootsFactory(controller));
+            var client = ConnectClientWith(clientEnd, roots: controller);
             await client.Connect();
 
             var roots = FindInitializeCapabilities(clientEnd.Sent)?["roots"]?.AsObject();
@@ -56,7 +56,7 @@ namespace McpSdk.Server.Tests
                     new Root("file:///tmp", "tmp"),
                 },
             };
-            var client = ConnectClientWith(clientEnd, roots: new TestRootsFactory(controller));
+            var client = ConnectClientWith(clientEnd, roots: controller);
             await client.Connect();
 
             // The server side asks the client for its roots over the raw transport.
@@ -76,7 +76,7 @@ namespace McpSdk.Server.Tests
             await serverEnd.Start();
 
             var controller = new TestRootsController(listChangedSupported: true);
-            var client = ConnectClientWith(clientEnd, roots: new TestRootsFactory(controller));
+            var client = ConnectClientWith(clientEnd, roots: controller);
             await client.Connect();
 
             controller.RaiseListChanged();
@@ -102,13 +102,6 @@ namespace McpSdk.Server.Tests
             public Task<ListRootsResult> ListRoots() => Task.FromResult(new ListRootsResult(RootsToReturn));
 
             public void RaiseListChanged() => ListChanged?.Invoke();
-        }
-
-        private sealed class TestRootsFactory : IRootsCapabilityFactory
-        {
-            private readonly IRootsController _controller;
-            public TestRootsFactory(IRootsController controller) => _controller = controller;
-            public IRootsController Create() => _controller;
         }
     }
 }

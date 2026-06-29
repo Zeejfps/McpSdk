@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
@@ -97,17 +98,16 @@ namespace McpSdk.Server.Tests
 
         private IServer BuildPaginatingServer(InMemoryTransport serverEnd, int pageSize, int toolCount)
         {
-            return new ServerBuilder()
-                .WithName("Page Server")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, tools =>
-                {
-                    tools.PageSize = pageSize;
-                    for (var i = 0; i < toolCount; i++)
-                        tools.AddTool(new NoOpToolHandler($"tool-{i:D2}"));
-                })
-                .Build();
+            var builder = new ServerBuilder("Page Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddToolsCapability(tools =>
+            {
+                tools.WithPageSize(pageSize);
+                for (var i = 0; i < toolCount; i++)
+                    tools.AddTool(new NoOpToolHandler($"tool-{i:D2}"));
+            });
+            return builder.Build();
         }
 
         /// <summary>A minimal tool with a unique name, used only to populate a list for paging.</summary>

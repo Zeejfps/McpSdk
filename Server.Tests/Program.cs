@@ -1,5 +1,4 @@
-﻿using McpSdk.Adapter.ConsoleLogger;
-using McpSdk.Adapter.Newtonsoft.Json;
+﻿using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Server;
 using McpSdk.Server.Tests;
@@ -15,14 +14,14 @@ if (args.Length > 0 && args[0] == "conformance")
 // blocks forever; the transport reserves stdout for protocol frames and sends all logging to stderr.
 if (args.Length > 0 && args[0] == "stdio-server")
 {
-    var stdioJson = new NewtonsoftJson();
-    var stdioServer = new ServerBuilder()
-        .WithName("Stdio Conf Server")
-        .WithVersion("1.0.0")
-        .WithConsoleLogger()
-        .WithStdioTransport(stdioJson)
-        .WithDefaultToolsCapability(stdioJson, tools => tools.AddTool(new TestToolHandler()))
-        .Build();
+    // New DI builder API: serializer + stderr-only console logger (stdout is reserved for protocol frames)
+    // + the stdio transport + the test tool.
+    var builder = new ServerBuilder("Stdio Conf Server", "1.0.0");
+    builder.Context.AddNewtonsoftJson();
+    builder.Context.AddConsoleLogger();
+    builder.Context.AddStdioTransport();
+    builder.Context.AddToolsCapability(tools => tools.AddTool(new TestToolHandler()));
+    var stdioServer = builder.Build();
 
     await stdioServer.Start();
     await Task.Delay(Timeout.Infinite);
@@ -32,29 +31,20 @@ if (args.Length > 0 && args[0] == "stdio-server")
 // Streamable HTTP demo server: a single endpoint serving the test tool, one McpServer per session.
 if (args.Length > 0 && args[0] == "streamable-http-server")
 {
-    var httpJson = new NewtonsoftJson();
-    var httpLoggerFactory = new ServerConsoleLoggerFactory();
     var baseUrl = args.Length > 1 ? args[1] : "http://localhost:3000";
     const string endpointPath = "/mcp";
 
-    var listener = new StreamableHttpListener(
-        baseUrl,
-        endpointPath,
-        httpJson,
-        httpLoggerFactory,
-        onSession: async transport =>
-        {
-            var server = new ServerBuilder()
-                .WithName("Streamable HTTP Demo Server")
-                .WithVersion("1.0.0")
-                .WithLogger(httpLoggerFactory)
-                .WithStreamableHttpTransport(transport)
-                .WithDefaultToolsCapability(httpJson, tools => tools.AddTool(new TestToolHandler()))
-                .Build();
-            await server.Start();
-        });
+    // New DI builder API: the Streamable HTTP host builds one McpServer per session in a child scope.
+    // ConfigureSession contributes the test tool to each session (mirroring the original per-session
+    // server built inside onSession); the stderr-only console logger backs the listener.
+    var builder = new ServerBuilder("Streamable HTTP Demo Server", "1.0.0");
+    builder.Context.AddNewtonsoftJson();
+    builder.Context.AddConsoleLogger();
+    builder.Context.AddStreamableHttpTransport(baseUrl, endpointPath, http => http.ConfigureSession(session =>
+        session.Context.AddToolsCapability(tools => tools.AddTool(new TestToolHandler()))));
+    var host = builder.Build();
 
-    await listener.Start();
+    await host.Start();
     Console.Error.WriteLine($"Streamable HTTP server listening on {baseUrl}{endpointPath}");
     await Task.Delay(Timeout.Infinite);
     return;
