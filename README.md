@@ -1,5 +1,10 @@
 # McpSdk
 
+[![McpSdk.Server](https://img.shields.io/nuget/v/McpSdk.Server?label=McpSdk.Server)](https://www.nuget.org/packages/McpSdk.Server)
+[![McpSdk.Client](https://img.shields.io/nuget/v/McpSdk.Client?label=McpSdk.Client)](https://www.nuget.org/packages/McpSdk.Client)
+[![CI](https://github.com/Zeejfps/EnvMcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Zeejfps/EnvMcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Zeejfps/EnvMcp/blob/main/LICENSE)
+
 A lean, zero-dependency C# SDK for the [Model Context Protocol](https://modelcontextprotocol.io). It
 implements the **2025-11-25** revision and negotiates down to older peers (`2025-06-18`,
 `2025-03-26`, `2024-11-05`). Both client and server ship from this repo, over stdio or Streamable
