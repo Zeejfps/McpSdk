@@ -20,6 +20,13 @@ namespace McpSdk.Server
 
         private readonly IJson _json;
 
+        // Serializes outbound writes. Dispatch is async-void (McpServer.OnRequestReceived), so the read
+        // loop pumps the next message while a handler is mid-flight, and notifications (progress, log,
+        // list_changed) fire on their own paths — any of these can call SendMessage concurrently with a
+        // response. StreamWriter is not safe for overlapping async writes: two concurrent WriteLineAsync
+        // calls throw "stream is currently in use" or interleave bytes and corrupt the frame stream.
+        private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+
         private TextWriter _standardOut;
         private TextReader _standardIn;
         private CancellationTokenSource _cts;
@@ -58,7 +65,17 @@ namespace McpSdk.Server
 
         protected override async Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
-            await _standardOut.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
+            // Render outside the lock to keep the critical section to just the write.
+            var line = JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers));
+            await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _standardOut.WriteLineAsync(line).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
         }
 
         private async Task ReadLoop(TextReader standardIn, CancellationToken cancellationToken)

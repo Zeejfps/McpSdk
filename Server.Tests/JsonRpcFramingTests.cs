@@ -10,8 +10,9 @@ namespace McpSdk.Server.Tests
     /// <summary>
     /// JSON-RPC base-protocol correctness: stdio framing collapses outgoing messages to a single
     /// newline-delimited line without mangling escaped content, top-level arrays are detected as
-    /// (removed-in-2025-06-18) batches and rejected rather than processed, and a string request id is
-    /// echoed back as a string rather than coerced to a number.
+    /// (removed-in-2025-06-18) batches and rejected rather than processed, a string request id is
+    /// echoed back as a string rather than coerced to a number, and a frame whose id can't be parsed is
+    /// dropped rather than throwing out of the parser (which would fault a transport read loop).
     /// </summary>
     public sealed class JsonRpcFramingTests : ConformanceSuite
     {
@@ -26,6 +27,7 @@ namespace McpSdk.Server.Tests
             await Test("batch detection flags arrays, not objects", BatchDetection);
             await Test("server ignores an incoming JSON-RPC batch (no response)", BatchRejectionRoundTrip);
             await Test("string request id is echoed back as a string", StringRequestId);
+            await Test("a malformed request id is dropped, not thrown", MalformedRequestIdIsDropped);
         }
 
         private Task FramingStripsEmbeddedControl()
@@ -116,6 +118,33 @@ namespace McpSdk.Server.Tests
             Assert(response["id"].IsString, "echoed id is a string, not coerced to a number");
             AssertEqual(id, response["id"].AsString(), "echoed string id matches");
             AssertEqual(ProtocolVersion.Latest, response["result"].AsObject()["protocolVersion"]?.AsString(), "string-id initialize negotiated correctly");
+        }
+
+        private Task MalformedRequestIdIsDropped()
+        {
+            // An id that can't be coerced to the SDK's representation — a spec-mandated null id on an error
+            // reply, or an out-of-range numeric id — makes RequestId.FromJson throw. TryParse must contain
+            // that throw and report a dropped frame; otherwise it escapes into a transport read loop and a
+            // single bad frame kills the connection.
+            Assert(
+                !JsonRpcMessage.TryParse(Json,
+                    "{\"jsonrpc\":\"2.0\",\"id\":99999999999999999999999,\"method\":\"tools/list\",\"params\":{}}",
+                    out _),
+                "an out-of-range numeric id is dropped, not thrown");
+
+            Assert(
+                !JsonRpcMessage.TryParse(Json,
+                    "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"parse\"}}",
+                    out _),
+                "a null id is handled without throwing");
+
+            // A well-formed frame still parses to a request — the parser stayed usable.
+            Assert(
+                JsonRpcMessage.TryParse(Json,
+                    "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/list\",\"params\":{}}",
+                    out var good) && good is JsonRpcRequest,
+                "a valid frame still parses to a request");
+            return Task.CompletedTask;
         }
 
         private static bool IsResultForId(string message, string id)

@@ -2,6 +2,12 @@ namespace McpSdk.Protocol.Models
 {
     public sealed class Tool : IJsonObjectWriter
     {
+        // MCP requires every tool to carry an object-root inputSchema. When a tool declares none, emit an
+        // empty object schema ({"type":"object","properties":{},...}) rather than omitting the field —
+        // strict clients reject the whole tools/list response if inputSchema is missing. An empty schema
+        // accepts any arguments, matching the "no validation" behaviour for a tool without a schema.
+        private static readonly ObjectSchema EmptyInputSchema = new ObjectSchema();
+
         public string Name { get; set; }
 
         /// <summary>Human-friendly display title (2025-06-18); falls back to Name when absent.</summary>
@@ -61,7 +67,7 @@ namespace McpSdk.Protocol.Models
             writer.Write("name", Name);
             Title?.WriteTo(writer, "title");
             writer.Write("description", Description);
-            InputSchema?.WriteTo(writer, "inputSchema");
+            (InputSchema ?? EmptyInputSchema).WriteTo(writer, "inputSchema");
             OutputSchema?.WriteTo(writer, "outputSchema");
             Annotations?.WriteTo(writer, "annotations");
             if (Icons is { Length: > 0 })

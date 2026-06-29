@@ -9,8 +9,8 @@ namespace McpSdk.Server.Tests
     /// <summary>
     /// Argument completion (<c>completion/complete</c>): the request carries the 2025-11-25
     /// <c>context</c> of previously-resolved variables; a configured controller round-trips suggestions
-    /// nested under <c>completion</c>; and the method returns MethodNotFound when no completion controller
-    /// is wired.
+    /// nested under <c>completion</c>; the capability is advertised under the spec's plural
+    /// <c>completions</c> key; and the method returns MethodNotFound when no completion controller is wired.
     /// </summary>
     public sealed class CompletionTests : ConformanceSuite
     {
@@ -22,6 +22,7 @@ namespace McpSdk.Server.Tests
         {
             await Test("completion request carries context (resolved variables)", CompletionContextRoundTrips);
             await Test("completion/complete round-trips (capability + nested result)", CompletionCompleteRoundTrips);
+            await Test("capability is advertised under the spec key 'completions' (plural)", CompletionCapabilityUsesPluralKey);
             await Test("completion/complete -> MethodNotFound when not configured", CompletionNotConfiguredIsMethodNotFound);
         }
 
@@ -75,6 +76,28 @@ namespace McpSdk.Server.Tests
             var values = completion?["values"]?.AsStringArray();
             Assert(values != null && values.Length == 2 && values[0] == "py_one", "completion values round-trip");
             Assert(completion?["total"]?.AsInt() == 2, "completion total round-trips");
+        }
+
+        private async Task CompletionCapabilityUsesPluralKey()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server").WithVersion("1.0.0")
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .WithCompletionCapability(new StubCompletionController())
+                .Build();
+            await server.Start();
+            await clientEnd.Start();
+
+            var init = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("C", "1.0.0"));
+            var initResp = await clientEnd.SendRequest("initialize", init.WriteMembers);
+
+            // Inspect the raw wire key, not the SDK parser (which would mask a wrong key): the spec names
+            // this capability "completions" (plural) even though the method is "completion/complete". A
+            // client gates the method on capabilities.completions, so a singular key silently disables it.
+            var caps = initResp.Result?["capabilities"]?.AsObject();
+            Assert(caps?["completions"]?.AsObject() != null, "server advertises capabilities.completions (plural)");
+            Assert(caps?["completion"] == null, "no off-spec singular 'completion' capability key is emitted");
         }
 
         private async Task CompletionNotConfiguredIsMethodNotFound()

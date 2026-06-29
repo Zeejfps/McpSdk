@@ -23,6 +23,11 @@ namespace McpSdk.Client.Transports
         private readonly string _arguments;
         private readonly IJson _json;
 
+        // Serializes outbound writes: SendRequest/SendNotification can be called from concurrent callers,
+        // and StreamWriter is not safe for overlapping async writes (they throw or interleave and corrupt
+        // the newline-delimited frame stream). Mirrors the server stdio transport.
+        private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+
         private StreamWriter _standardIn;
         private Process _process;
         private CancellationTokenSource _cts;
@@ -89,7 +94,17 @@ namespace McpSdk.Client.Transports
 
         protected override async Task SendMessage(JsonRpcMessage message, CancellationToken cancellationToken = default)
         {
-            await _standardIn.WriteLineAsync(JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers))).ConfigureAwait(false);
+            // Render outside the lock to keep the critical section to just the write.
+            var line = JsonRpcFraming.ToSingleLine(_json.Stringify(message.WriteMembers));
+            await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await _standardIn.WriteLineAsync(line).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
         }
 
         private async Task ReadStdOut(StreamReader standardOut, CancellationToken cancellationToken)

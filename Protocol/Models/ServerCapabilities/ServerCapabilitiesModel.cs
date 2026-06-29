@@ -28,7 +28,9 @@
             if (loggingObj != null)
                 Logging = new LoggingCapabilityModel(loggingObj);
             
-            var completionObj = jsonObject["completion"]?.AsObject();
+            // Spec key is "completions" (plural) in ServerCapabilities — even though the method is
+            // "completion/complete" and the result wraps under "completion" (both singular).
+            var completionObj = jsonObject["completions"]?.AsObject();
             if (completionObj != null)
                 Completion = new CompletionCapabilityModel(completionObj);
         }
@@ -39,7 +41,7 @@
             Prompts?.WriteTo(writer, "prompts");
             Resources?.WriteTo(writer, "resources");
             Logging?.WriteTo(writer, "logging");
-            Completion?.WriteTo(writer, "completion");
+            Completion?.WriteTo(writer, "completions");
         }
     }
 }

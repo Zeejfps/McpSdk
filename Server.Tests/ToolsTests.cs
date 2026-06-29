@@ -25,6 +25,7 @@ namespace McpSdk.Server.Tests
         public override async Task Run()
         {
             await Test("tools/list carries title + annotations + icons", ToolMetadataInListing);
+            await Test("a tool with no input schema still emits an object-root inputSchema", ToolWithoutSchemaStillEmitsInputSchema);
             await Test("inputSchema/outputSchema declare the 2020-12 dialect", SchemaDialectAndOutputSchemaEmitted);
             await Test("structured output: structuredContent + back-compat text", StructuredOutputRoundTrip);
             await Test("schema-validation failure returns a tool error, not a protocol error", ValidationErrorIsToolError);
@@ -56,6 +57,21 @@ namespace McpSdk.Server.Tests
             AssertEqual("https://example.com/forecast.png", forecast?.Icons?[0].Src, "icon src round-trips");
             AssertEqual("image/png", forecast?.Icons?[0].MimeType, "icon mimeType round-trips");
             AssertEqual("48x48", forecast?.Icons?[0].Sizes, "icon sizes round-trips");
+        }
+
+        private Task ToolWithoutSchemaStillEmitsInputSchema()
+        {
+            // inputSchema is required on every tool and must be an object-root JSON Schema. A tool that
+            // declares none must still serialize {"type":"object",...} rather than omit the field — strict
+            // clients reject the entire tools/list response when a tool is missing inputSchema. An empty
+            // schema accepts any arguments, matching the "no validation" behaviour for a schemaless tool.
+            var tool = new Tool { Name = "noargs", Description = "takes no arguments" }; // InputSchema left null
+            var raw = Json.Object(tool.WriteMembers);
+            var inputSchema = raw["inputSchema"]?.AsObject();
+
+            Assert(inputSchema != null, "a tool with no declared input schema still emits inputSchema");
+            AssertEqual("object", inputSchema?["type"]?.AsString(), "the emitted inputSchema has an object root type");
+            return Task.CompletedTask;
         }
 
         private Task SchemaDialectAndOutputSchemaEmitted()

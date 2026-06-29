@@ -61,17 +61,21 @@ namespace McpSdk.Protocol
             if (string.IsNullOrEmpty(frame) || JsonRpcFraming.IsBatch(frame))
                 return false;
 
-            IJsonObject obj;
+            // Classify inside the guard too: an edge-case frame (e.g. a JSON-RPC error reply with
+            // "id": null, or a non-integral/oversized numeric id) makes RequestId.FromJson throw. That
+            // throw must not escape into a transport read loop, where it would fault the loop and kill
+            // the connection — a single bad frame is dropped, never fatal.
             try
             {
-                obj = json.Parse(frame);
+                var obj = json.Parse(frame);
+                message = FromJsonObject(obj);
             }
             catch
             {
+                message = null;
                 return false;
             }
 
-            message = FromJsonObject(obj);
             return message != null;
         }
     }
