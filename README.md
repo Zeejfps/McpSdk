@@ -16,13 +16,9 @@ implemented (by deliberate scope choice).
 |---|---|
 | Protocol revision | ✅ `2025-11-25` (latest), negotiated per-handshake |
 | Back-compat (negotiated) | ✅ `2025-06-18`, `2025-03-26`, `2024-11-05` |
-| Request IDs | ✅ string or number |
 | stdio transport | ✅ client + server |
 | Streamable HTTP transport | ✅ client + server — single endpoint, `Mcp-Session-Id`, `Origin`→`403`, `MCP-Protocol-Version` header, server→client SSE stream, `Last-Event-ID` resumption, `DELETE` lifecycle |
-| Legacy HTTP+SSE transport | ❌ removed |
-| JSON-RPC batching | ❌ removed from the spec in `2025-06-18` |
 | OAuth 2.1 authorization | ❌ out of scope (fine for stdio / trusted-network; a public HTTP server normally needs it) |
-| Experimental Tasks | ❌ out of scope |
 
 ### Server — methods served
 
