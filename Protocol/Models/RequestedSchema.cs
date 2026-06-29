@@ -57,14 +57,8 @@ public sealed class RequestedSchema : IJsonObjectWriter, IEnumerable<KeyValuePai
             (type == "string" && property["enum"] != null))
             return new EnumSchema(property);
 
-        return type switch
-        {
-            "string" => new StringSchema(property),
-            "number" => new NumberSchema(property),
-            "integer" => new NumberSchema(property),
-            "boolean" => new BooleanSchema(property),
-            _ => null
-        };
+        // Everything else an elicitation schema allows is a scalar primitive.
+        return JsonSchema.ParseScalar(property);
     }
 
     public RequestedSchema Add(string name, JsonSchema schema, bool required = true)

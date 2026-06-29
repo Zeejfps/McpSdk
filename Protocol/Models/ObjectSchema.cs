@@ -49,22 +49,20 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
         }
     }
 
-    /// <summary>Maps a single property object to the most specific schema it represents.</summary>
+    /// <summary>
+    /// Maps a single property object to its schema. Arrays and nested objects are tool-schema specific;
+    /// scalar primitives defer to <see cref="JsonSchema.ParseScalar"/>, shared with the other schema dialects.
+    /// </summary>
     private static JsonSchema ParseProperty(IJsonObject property)
     {
         if (property == null)
             return null;
 
-        var type = property["type"]?.AsString();
-        return type switch
+        return property["type"]?.AsString() switch
         {
-            "string"  => new StringSchema(property),
-            "number"  => new NumberSchema(property),
-            "integer" => new NumberSchema(property),
-            "boolean" => new BooleanSchema(property),
-            "array"   => new ArraySchema(property),
-            "object"  => new ObjectSchema(property, isRoot: false),
-            _         => null
+            "array"  => new ArraySchema(property),
+            "object" => new ObjectSchema(property, isRoot: false),
+            _        => ParseScalar(property)
         };
     }
 
