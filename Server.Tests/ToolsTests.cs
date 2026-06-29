@@ -29,6 +29,7 @@ namespace McpSdk.Server.Tests
             await Test("structured output: structuredContent + back-compat text", StructuredOutputRoundTrip);
             await Test("schema-validation failure returns a tool error, not a protocol error", ValidationErrorIsToolError);
             await Test("schema validation agrees across both JSON adapters", SchemaValidationAdapterParity);
+            await Test("object schema round-trips integer, nested object, and the required subset", ObjectSchemaRoundTrip);
             await Test("notifications/tools/list_changed reaches the client", ToolsListChangedNotification);
         }
 
@@ -145,6 +146,61 @@ namespace McpSdk.Server.Tests
                 Assert(!badValid, $"{name}: missing required field fails validation");
                 Assert(!badValid && errors != null && errors.Count > 0, $"{name}: failure reports at least one error");
             }
+
+            return Task.CompletedTask;
+        }
+
+        private Task ObjectSchemaRoundTrip()
+        {
+            // A tool input schema exercising the three things ObjectSchema used to drop on parse:
+            // an integer property, a nested object property, and an optional property absent from `required`.
+            var source = Json.Object(w =>
+            {
+                w.Write("type", "object");
+                w.Write("properties", props =>
+                {
+                    props.Write("count", c =>
+                    {
+                        c.Write("type", "integer");
+                        c.Write("description", "how many");
+                    });
+                    props.Write("name", n => n.Write("type", "string"));
+                    props.Write("location", loc =>
+                    {
+                        loc.Write("type", "object");
+                        loc.Write("properties", locProps =>
+                            locProps.Write("lat", lat => lat.Write("type", "number")));
+                        loc.Write("required", new[] { "lat" });
+                    });
+                });
+                w.Write("required", new[] { "count", "location" });
+            });
+
+            var schema = new ObjectSchema(source);
+            Assert(schema.IsRequired("count"), "an integer property listed in 'required' parses as required");
+            Assert(!schema.IsRequired("name"), "a property absent from 'required' parses as optional");
+
+            var raw = Json.Object(schema.WriteMembers);
+            var properties = raw["properties"]?.AsObject();
+
+            AssertEqual(JsonSchema.Dialect2020_12, raw["$schema"]?.AsString(), "the root schema declares the dialect");
+
+            // #1 integer survives the round-trip instead of being silently dropped.
+            Assert(properties?["count"] != null, "the integer property survives the round-trip");
+            AssertEqual("integer", properties?["count"]?.AsObject()["type"]?.AsString(), "the integer property keeps type 'integer'");
+
+            // #2 the nested object survives, with its own properties, and does NOT re-declare $schema.
+            var location = properties?["location"]?.AsObject();
+            Assert(location != null, "the nested object property survives the round-trip");
+            Assert(location?["properties"]?.AsObject()["lat"] != null, "the nested object keeps its own properties");
+            Assert(location?["$schema"] == null, "a nested object subschema does not re-declare $schema");
+
+            // required fix: only the declared-required names round-trip, not every property.
+            var required = raw["required"]?.AsStringArray();
+            Assert(required != null && required.Contains("count") && required.Contains("location"),
+                "declared-required properties round-trip in 'required'");
+            Assert(required != null && !required.Contains("name"),
+                "an optional property is omitted from 'required'");
 
             return Task.CompletedTask;
         }
