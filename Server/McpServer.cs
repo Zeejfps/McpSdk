@@ -24,6 +24,8 @@ namespace McpSdk.Server
         private readonly Dictionary<string, RequestHandler> _requestHandlersByPathLookup = new();
         private readonly ServerCapabilitiesModel _capabilities = new();
         private readonly ConcurrentDictionary<RequestId, CancellationTokenSource> _inFlightRequests = new();
+        private readonly ConcurrentDictionary<Task, byte> _inFlightRequestHandlers = new();
+
         private readonly bool _loggingEnabled;
 
         private bool _isRunning;
@@ -167,9 +169,22 @@ namespace McpSdk.Server
             if (!_isRunning)
                 return;
 
+            // Detach from the transport first: no new requests get dispatched, but the read loop is still
+            // alive, so ping/cancel for the requests we're about to drain still flow through.
             UnregisterListeners();
             _logger.LogDebug("Stopping Mcp Server...");
             _isRunning = false;
+
+            // Let handlers already producing a response finish and flush before we close the wire.
+            var inflightRequestHandler = new List<Task>(_inFlightRequestHandlers.Keys);
+            if (inflightRequestHandler.Count > 0)
+            {
+                _logger.LogDebug($"Draining {inflightRequestHandler.Count} in-flight request(s)...");
+                // Faults are already logged inside ProcessRequest; WhenAll only re-surfaces them, so swallow.
+                try { await Task.WhenAll(inflightRequestHandler); }
+                catch (Exception ex) { _logger.LogError(ex); }
+            }
+
             await _transport.Stop();
             _logger.LogDebug("Mcp Server Stopped");
         }
@@ -226,7 +241,34 @@ namespace McpSdk.Server
             }
         }
 
-        private async void OnRequestReceived(JsonRpcRequest request)
+        // Event subscriber for the transport. Stays void (RequestReceivedCallback is void) and synchronous:
+        // it starts the handler and returns immediately, so the transport read loop keeps pumping — this is
+        // what lets requests run concurrently, and ping/cancel stay responsive while a slow handler is
+        // mid-flight. Unlike async-void, the handler's Task is captured here so Stop() can drain it.
+        private void OnRequestReceived(JsonRpcRequest request)
+        {
+            var task = ProcessRequest(request);
+
+            // Completed synchronously (no real await was hit) — nothing to drain, don't touch the set.
+            if (task.IsCompleted)
+                return;
+
+            _inFlightRequestHandlers[task] = 0;
+            task.ContinueWith(
+                OnRequestHandlerCompleted,
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        // Retires a finished handler from the drain set. ContinueWith hands us the completed antecedent,
+        // which is exactly the key OnRequestReceived stored, so we can remove it directly.
+        private void OnRequestHandlerCompleted(Task task)
+        {
+            _inFlightRequestHandlers.TryRemove(task, out _);
+        }
+
+        private async Task ProcessRequest(JsonRpcRequest request)
         {
             var requestId = request.Id;
             var path = request.Method;
@@ -240,7 +282,7 @@ namespace McpSdk.Server
             {
                 // Build the context inside the try: reading _meta.progressToken can fail on a malformed
                 // token, and that must produce an error response (and run the finally cleanup) rather than
-                // escape this async-void method, which would hang the request and leak the cts.
+                // escape this handler, which would hang the request and leak the cts.
                 var context = new McpRequestContext(
                     cts.Token,
                     new TransportProgressReporter(_transport, ReadProgressToken(payload)));
@@ -251,18 +293,9 @@ namespace McpSdk.Server
                     throw new McpErrorException(ErrorCode.InvalidRequest, "Server not initialized; send 'initialize' first");
 
                 if (_requestHandlersByPathLookup.TryGetValue(path, out var requestHandler))
-                {
                     await requestHandler.Invoke(requestId, payload, context);
-                }
                 else
-                {
-                    await _transport.SendResponse(JsonRpcResponse.Failure(
-                        requestId,
-                        new Error(
-                            code: ErrorCode.MethodNotFound,
-                            message: $"Method '{path}' is not supported")
-                        ));
-                }
+                    await TrySendError(requestId, ErrorCode.MethodNotFound, $"Method '{path}' is not supported");
             }
             catch (OperationCanceledException) when (cts.IsCancellationRequested)
             {
@@ -274,20 +307,32 @@ namespace McpSdk.Server
             {
                 // A handler asked for a specific JSON-RPC error (e.g. InvalidParams for malformed params),
                 // rather than letting it collapse into a generic InternalError below.
-                await _transport.SendResponse(JsonRpcResponse.Failure(requestId, new Error(ex.Code, ex.Message)));
+                await TrySendError(requestId, ex.Code, ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
-                await _transport.SendResponse(JsonRpcResponse.Failure(
-                    requestId,
-                    new Error(code: ErrorCode.InternalError, message: "Internal server error")
-                ));
+                await TrySendError(requestId, ErrorCode.InternalError, "Internal server error");
             }
             finally
             {
                 _inFlightRequests.TryRemove(requestId, out _);
                 cts.Dispose();
+            }
+        }
+
+        // Sends an error response, swallowing transport failures: during shutdown (or against a vanished
+        // peer) the write can throw, and there's nowhere left to report it. Keeping ProcessRequest
+        // non-faulting means the drain in Stop() never has to special-case a faulted handler task.
+        private async Task TrySendError(RequestId requestId, ErrorCode code, string message)
+        {
+            try
+            {
+                await _transport.SendResponse(JsonRpcResponse.Failure(requestId, new Error(code, message)));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex);
             }
         }
 
@@ -297,7 +342,7 @@ namespace McpSdk.Server
             try
             {
                 var token = payload?["_meta"]?.AsObject()?["progressToken"];
-                return token == null ? (RequestId?)null : RequestId.FromJson(token);
+                return token == null ? null : RequestId.FromJson(token);
             }
             catch
             {
