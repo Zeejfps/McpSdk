@@ -23,6 +23,29 @@ namespace McpSdk.Protocol
     {
         IJsonObject Parse(string text);
         string Stringify(Action<IJsonWriter> json);
+
+        /// <summary>
+        /// Compiles a schema (the members written by <paramref name="schema"/>) into a reusable
+        /// validator backed by the adapter's schema engine. Compiling is the expensive step — parsing
+        /// the schema text into the engine's representation — so callers should compile once and
+        /// validate many times. Takes the schema as a writer so a typed schema model
+        /// (e.g. <c>Tool.InputSchema</c>) can be passed directly, with no stringify/parse round-trip.
+        /// </summary>
+        ICompiledJsonSchema CompileSchema(IJsonObjectWriter schema);
+    }
+
+    /// <summary>
+    /// A schema parsed into the adapter engine's representation, ready to validate instances against.
+    /// Obtained from <see cref="IJson.CompileSchema"/>; the engine dependency lives entirely behind
+    /// this type, never on <see cref="IJsonObject"/> or the protocol schema models.
+    /// </summary>
+    public interface ICompiledJsonSchema
+    {
+        /// <summary>
+        /// Validates <paramref name="data"/> against this schema. Returns true and leaves
+        /// <paramref name="errors"/> null when valid; returns false with at least one message when not.
+        /// </summary>
+        bool Validate(IJsonObject data, out IList<string> errors);
     }
     
     public interface IJsonWriter
@@ -50,7 +73,6 @@ namespace McpSdk.Protocol
     public interface IJsonObject : IJsonObjectWriter, IEnumerable<KeyValuePair<string, IJsonProperty>>
     {
         IJsonProperty this[string propertyName] { get; }
-        bool IsValid(IJsonObject schema, out IList<string> errors);
     }
 
     public interface IJsonProperty

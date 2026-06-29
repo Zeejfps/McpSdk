@@ -11,6 +11,12 @@ namespace McpSdk.Server
         private readonly IJson _json;
         private readonly Dictionary<string, IToolHandler> _toolByNameLookup = new();
 
+        // Input schemas are compiled once at registration and reused on every call — compiling
+        // (parsing schema text into the engine's representation) is the expensive step, and a tool's
+        // schema never changes once registered. Null entry => the tool declared no input schema, so
+        // CallTool skips validation. Kept engine-bound here so the protocol Tool model stays clean.
+        private readonly Dictionary<string, ICompiledJsonSchema> _compiledSchemaByName = new();
+
         // Parallel to the name lookup: preserves registration order so an offset-based pagination
         // cursor refers to the same slice across calls. Dictionary enumeration order is not a
         // documented guarantee, so we track order explicitly here. Both are mutated together.
@@ -36,6 +42,9 @@ namespace McpSdk.Server
             // Add to the lookup first: it throws on a duplicate name, keeping the ordered list in sync.
             _toolByNameLookup.Add(toolHandler.Tool.Name, toolHandler);
             _toolsInOrder.Add(toolHandler);
+            _compiledSchemaByName[toolHandler.Tool.Name] = toolHandler.Tool.InputSchema is { } schema
+                ? _json.CompileSchema(schema)
+                : null;
             ListChanged?.Invoke();
         }
 
@@ -46,6 +55,7 @@ namespace McpSdk.Server
 
             _toolByNameLookup.Remove(name);
             _toolsInOrder.Remove(tool);
+            _compiledSchemaByName.Remove(name);
             ListChanged?.Invoke();
             return true;
         }
@@ -92,8 +102,8 @@ namespace McpSdk.Server
 
             // SEP-1303: schema-validation failures are returned to the model as a tool error
             // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error.
-            var inputSchema = _json.Stringify(toolHandler.Tool.InputSchema.WriteMembers);
-            if (!toolArguments.IsValid(_json.Parse(inputSchema), out var errors))
+            var compiledSchema = _compiledSchemaByName[toolName];
+            if (compiledSchema != null && !compiledSchema.Validate(toolArguments, out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)

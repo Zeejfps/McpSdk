@@ -5,7 +5,6 @@ using System.Linq;
 using McpSdk.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Schema;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
 {
@@ -17,6 +16,9 @@ namespace McpSdk.Adapter.Newtonsoft.Json
         {
             _jToken = jToken;
         }
+
+        /// <summary>The underlying token, read by <see cref="CompiledJsonSchema"/> to validate this instance.</summary>
+        internal JToken Token => _jToken;
 
         public IJsonProperty this[string propertyName]
         {
@@ -47,12 +49,6 @@ namespace McpSdk.Adapter.Newtonsoft.Json
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-
-        public bool IsValid(IJsonObject schema, out IList<string> errors)
-        {
-            var jSchema = JSchema.Parse(schema.ToString());
-            return _jToken.IsValid(jSchema, out errors);
         }
 
         public void WriteMembers(IJsonWriter writer)

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using Json.Schema;
 using McpSdk.Protocol;
 
 namespace McpSdk.Adapter.System.Text.Json
@@ -24,6 +25,11 @@ namespace McpSdk.Adapter.System.Text.Json
             writer.Flush();
             var jsonString = Encoding.UTF8.GetString(memory.ToArray());
             return jsonString;
+        }
+
+        public ICompiledJsonSchema CompileSchema(IJsonObjectWriter schema)
+        {
+            return new CompiledJsonSchema(JsonSchema.FromText(Stringify(schema.WriteMembers)));
         }
     }
 }

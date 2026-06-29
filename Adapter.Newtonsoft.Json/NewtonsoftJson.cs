@@ -3,6 +3,7 @@ using System.IO;
 using McpSdk.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
 {
@@ -24,6 +25,11 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             writer.WriteEndObject();
             writer.Flush();
             return stringWriter.ToString();
+        }
+
+        public ICompiledJsonSchema CompileSchema(IJsonObjectWriter schema)
+        {
+            return new CompiledJsonSchema(JSchema.Parse(Stringify(schema.WriteMembers)));
         }
     }
 }

@@ -134,15 +134,17 @@ namespace McpSdk.Server.Tests
 
             foreach (var (name, json) in new (string, IJson)[] { ("Newtonsoft", newtonsoft), ("SystemText", systemText) })
             {
-                var schemaObj = json.Object(schema.WriteMembers);
+                // The typed schema model is an IJsonObjectWriter, so it compiles directly — no
+                // stringify/parse round-trip to turn it into a schema instance first.
+                var compiled = json.CompileSchema(schema);
 
                 var good = json.Object(w => { w.Write("a", 1.0); w.Write("b", 2.0); });
-                var goodValid = good.IsValid(schemaObj, out _);
+                var goodValid = compiled.Validate(good, out _);
                 Assert(goodValid, $"{name}: valid args pass 2020-12 validation");
 
                 // 'b' is required but omitted — every adapter must catch this, not silently pass.
                 var bad = json.Object(w => w.Write("a", 1.0));
-                var badValid = bad.IsValid(schemaObj, out var errors);
+                var badValid = compiled.Validate(bad, out var errors);
                 Assert(!badValid, $"{name}: missing required field fails validation");
                 Assert(!badValid && errors != null && errors.Count > 0, $"{name}: failure reports at least one error");
             }
