@@ -28,9 +28,6 @@ namespace McpSdk.Server
             _context.AddSingleton(new ServerInfoOptions { Name = name, Version = version });
             _context.AddSingleton<ILoggerFactory>(new NullLoggerFactory());
 
-            // Produce the advertised ServerInfo at resolve time from the (mutable) options singleton, so that
-            // a ConfigureInfo(...) call made after this ctor flows its Title/Description through. Name/Version
-            // always come from this ctor. Resolvable even if ConfigureInfo is never called (title/desc null).
             _context.AddSingleton<ServerInfo>(sp =>
             {
                 var o = sp.GetService<ServerInfoOptions>();
@@ -40,10 +37,6 @@ namespace McpSdk.Server
 
         public IServer Build()
         {
-            // Single DI path: build the provider and resolve the registered IServerHost. A server transport
-            // registration (e.g. Context.AddStdioTransport()) puts an IServerHost into Context. Building the
-            // provider here eagerly realizes its singletons, so a transport with a missing serializer surfaces
-            // its wiring error here at Build() — not later at Start().
             var provider = _context.BuildServiceProvider();
             var host = provider.GetService<IServerHost>();
             if (host == null)

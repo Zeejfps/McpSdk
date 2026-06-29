@@ -5,18 +5,12 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
-    /// <summary>
-    /// The concrete <see cref="IToolsBuilder"/> accumulated by an <c>AddToolsCapability(Action&lt;IToolsBuilder&gt;)</c>
-    /// call. It records handler instances, handler <i>types</i>, and an optional page size, then materializes
-    /// them into one leaf <see cref="DefaultToolsController"/> via <see cref="BuildLeaf"/> at resolve time.
-    /// </summary>
     internal sealed class ToolsBuilder : IToolsBuilder
     {
         private readonly List<IToolHandler> _handlers = new List<IToolHandler>();
         private readonly List<Type> _handlerTypes = new List<Type>();
         private int? _pageSize;
 
-        /// <summary>The configured page size, surfaced to the composite so it pages over the merged set.</summary>
         public int? PageSize => _pageSize;
 
         public IToolsBuilder AddTool(IToolHandler handler)
@@ -38,11 +32,6 @@ namespace McpSdk.Server
             return this;
         }
 
-        /// <summary>
-        /// Builds the leaf controller from <paramref name="provider"/> — the scope this leaf is resolved in.
-        /// The serializer is required (a missing one fails fast here, during eager singleton realization);
-        /// handler types are activated from the same provider so their dependencies are injected at session scope.
-        /// </summary>
         public IToolsController BuildLeaf(IServiceProvider provider)
         {
             var controller = new DefaultToolsController(provider.GetRequiredService<IJson>());

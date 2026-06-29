@@ -8,24 +8,13 @@ using McpSdk.Shared;
 
 namespace McpSdk.Server
 {
-    /// <summary>
-    /// Internal marker under which each <c>AddToolsCapability(...)</c> call registers exactly one <i>leaf</i>
-    /// tools controller. The public <see cref="IToolsController"/> is never registered as a leaf — it is the
-    /// <see cref="CompositeToolsController"/>, which resolves every leaf via <c>GetServices&lt;IToolsControllerSource&gt;()</c>.
-    /// Keeping leaves under a distinct marker type avoids the last-wins collision and self-recursion that
-    /// would arise from registering both the leaves and the composite under <see cref="IToolsController"/>
-    /// (implementation-plan decision #2).
-    /// </summary>
     internal interface IToolsControllerSource
     {
-        /// <summary>The leaf controller this source contributes to the merged set.</summary>
         IToolsController Controller { get; }
 
-        /// <summary>The leaf's configured page size, if any, used to derive the composite's effective page size.</summary>
         int? PageSize { get; }
     }
 
-    /// <summary>The trivial <see cref="IToolsControllerSource"/> implementation produced by each capability registration.</summary>
     internal sealed class ToolsControllerSource : IToolsControllerSource
     {
         public ToolsControllerSource(IToolsController controller, int? pageSize)
@@ -38,16 +27,6 @@ namespace McpSdk.Server
         public int? PageSize { get; }
     }
 
-    /// <summary>
-    /// The public <see cref="IToolsController"/> that merges every leaf controller registered under
-    /// <see cref="IToolsControllerSource"/> (implementation-plan decision #2). Leaves are read once, in
-    /// registration order, from the provider it is resolved in — on a per-session child provider that yields
-    /// the root leaves first, then the session's leaves, so session tools are <i>overlaid</i> on the shared
-    /// root set and win on name conflicts. <c>tools/list</c> pages over the merged set (reusing the
-    /// <see cref="DefaultToolsController"/> offset-cursor semantics); <c>tools/call</c> routes to the leaf
-    /// that owns the named tool. When no leaf exists the composite is never registered, so the server's
-    /// null-tolerant controller probe returns <c>null</c> and the tools capability is not advertised.
-    /// </summary>
     internal sealed class CompositeToolsController : IToolsController, IDisposable
     {
         private readonly List<IToolsControllerSource> _sources;
@@ -63,12 +42,8 @@ namespace McpSdk.Server
         {
             if (provider == null) throw new ArgumentNullException(nameof(provider));
 
-            // Registrations are frozen once the provider is built, so snapshot the leaves once. On a child
-            // provider GetServices returns the parent's leaves first, then this child's (root ∪ session).
             _sources = new List<IToolsControllerSource>(provider.GetServices<IToolsControllerSource>());
 
-            // Effective page size: the first leaf that declares a positive one (root before session). A single
-            // leaf — the common case — therefore reproduces that leaf's paging exactly.
             int? pageSize = null;
             var supportsListChanged = false;
             foreach (var source in _sources)

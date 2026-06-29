@@ -29,8 +29,6 @@ namespace McpSdk.Adapter.StreamableHttpClient
 
             context.AddSingleton<ITransport>(sp =>
             {
-                // Build the HTTP adapter internally from the bare url (the public API takes a string, not a
-                // pre-built IStreamableHttpClient). Creating the adapter only constructs an HttpClient.
                 var http = new StreamableHttpClientAdapter(endpointUrl, sp.GetService<ILoggerFactory>());
                 return new StreamableHttpTransport(http, sp.GetRequiredService<IJson>(), sp.GetService<ILoggerFactory>());
             });

@@ -30,15 +30,11 @@ namespace McpSdk.Server
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            // (1) The wire transport, constructed directly from DI. GetRequiredService makes a missing IJson
-            // throw during eager singleton realization inside Build().
             context.AddSingleton<ITransport>(sp =>
                 new StdioTransport(sp.GetRequiredService<IJson>(), sp.GetService<ILoggerFactory>()));
 
-            // (2) The lifecycle owner Build() resolves and returns as IServer.
             context.AddSingleton<IServerHost>(sp => new SingleSessionServerHost(sp));
 
-            // (3) The single session server, which resolves the ITransport above from this same scope.
             context.AddServerSession();
 
             return context;

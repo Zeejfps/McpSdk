@@ -27,7 +27,6 @@ namespace McpSdk.Client
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (command == null) throw new ArgumentNullException(nameof(command));
 
-            // The client StdioTransport ctor takes a single joined argument string.
             var arguments = string.Join(" ", args ?? Array.Empty<string>());
 
             context.AddSingleton<ITransport>(sp =>

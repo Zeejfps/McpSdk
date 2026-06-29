@@ -31,7 +31,6 @@ namespace McpSdk.Shared
             if (provider is ServiceProvider serviceProvider)
                 return serviceProvider.GetServices(serviceType);
 
-            // Fallback for foreign IServiceProvider implementations: surface the single service, if any.
             var service = provider.GetService(serviceType);
             return service == null ? Enumerable.Empty<object>() : new[] { service };
         }

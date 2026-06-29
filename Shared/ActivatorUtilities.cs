@@ -45,16 +45,6 @@ namespace McpSdk.Shared
         public static T CreateInstance<T>(IServiceProvider provider)
             => (T)CreateInstance(provider, typeof(T));
 
-        /// <summary>
-        /// Selects the greediest public instance constructor of <paramref name="implementationType"/> whose
-        /// parameters are all satisfiable, where <paramref name="canResolve"/> reports whether a given
-        /// parameter type can be supplied (a parameter of type <see cref="IServiceProvider"/> is always
-        /// satisfiable). This is the single selection rule shared by <see cref="ServiceProvider"/> (for
-        /// registered types) and <see cref="CreateInstance(IServiceProvider, Type)"/> (for unregistered
-        /// types), so the two can never diverge: <c>GetConstructors()</c> has no guaranteed order, so an
-        /// equal-arity tie is reported as ambiguous rather than picked at random, and a type with no
-        /// satisfiable constructor throws.
-        /// </summary>
         internal static ConstructorInfo SelectConstructor(Type implementationType, Func<Type, bool> canResolve)
         {
             var constructors = implementationType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
@@ -62,8 +52,6 @@ namespace McpSdk.Shared
                 throw new InvalidOperationException(
                     $"A suitable constructor for type '{implementationType}' could not be located. Ensure the type has a public constructor.");
 
-            // Pick the greediest constructor whose parameters are all resolvable. GetConstructors() has no
-            // guaranteed order, so an equal-arity tie is reported as ambiguous rather than picked at random.
             ConstructorInfo best = null;
             var bestParameterCount = -1;
             var ambiguous = false;
@@ -113,8 +101,6 @@ namespace McpSdk.Shared
 
         private static bool CanResolve(IServiceProvider provider, Type serviceType)
         {
-            // Our own provider answers from its descriptor chain without instantiating anything; a foreign
-            // IServiceProvider is probed by resolving — a registered service yields a non-null instance.
             if (provider is ServiceProvider serviceProvider)
                 return serviceProvider.CanResolve(serviceType);
             return provider.GetService(serviceType) != null;

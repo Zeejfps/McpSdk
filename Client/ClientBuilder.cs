@@ -29,9 +29,6 @@ namespace McpSdk.Client
             _context.AddSingleton(new ClientInfoOptions { Name = name, Version = version });
             _context.AddSingleton<ILoggerFactory>(new NullLoggerFactory());
 
-            // Produce the advertised ClientInfo at resolve time from the (mutable) options singleton, so that
-            // a ConfigureInfo(...) call made after this ctor flows its Title/Description through. Name/Version
-            // always come from this ctor. Resolvable even if ConfigureInfo is never called (title/desc null).
             _context.AddSingleton<ClientInfo>(sp =>
             {
                 var o = sp.GetService<ClientInfoOptions>();
@@ -41,9 +38,6 @@ namespace McpSdk.Client
 
         public IClient Build()
         {
-            // Single DI path: resolve the registered transport (plus logger, client info, and capability
-            // controllers) and build the McpClient from the container. Controllers are pulled null-tolerant
-            // (decision #3, client side) — McpClient is not type-injected.
             var provider = _context.BuildServiceProvider();
             var transport = provider.GetService<ITransport>();
             if (transport == null)

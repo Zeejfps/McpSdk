@@ -55,9 +55,6 @@ namespace McpSdk.Server
                 sp.GetService<IPromptController>(),
                 sp.GetService<IResourcesController>(),
                 sp.GetService<ICompletionController>(),
-                // Logging has no controller: AddLoggingCapability() registers a LoggingCapabilityOptions marker
-                // whose presence enables logging. Pulled null-tolerantly, so logging is advertised + served only
-                // when that marker was registered (implementation-plan decision #6).
                 loggingEnabled: sp.GetService<LoggingCapabilityOptions>()?.Enabled == true));
 
             return context;

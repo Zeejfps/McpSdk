@@ -31,22 +31,12 @@ namespace McpSdk.Adapter.StreamableHttpServer
         IStreamableHttpServerOptions AllowOrigin(string origin);
     }
 
-    /// <summary>
-    /// Concrete <see cref="IStreamableHttpServerOptions"/> the registration extension builds and the
-    /// <see cref="StreamableHttpServerHost"/> reads. The captured state is exposed to the host via the
-    /// internal <see cref="SessionConfigurator"/> / <see cref="AllowedOrigins"/> members.
-    /// </summary>
     internal sealed class StreamableHttpServerOptions : IStreamableHttpServerOptions
     {
         private readonly List<string> _allowedOrigins = new List<string>();
 
-        /// <summary>The stored per-session callback (invoked per session in T13b), or <c>null</c>.</summary>
         public Action<ISession> SessionConfigurator { get; private set; }
 
-        /// <summary>
-        /// The allowed origins to hand the listener, or <c>null</c> when none were added (which the listener
-        /// reads as "origin checking disabled").
-        /// </summary>
         public IEnumerable<string> AllowedOrigins => _allowedOrigins.Count == 0 ? null : _allowedOrigins;
 
         public IStreamableHttpServerOptions ConfigureSession(Action<ISession> configure)

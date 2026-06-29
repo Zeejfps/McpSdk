@@ -187,9 +187,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
 
             if (string.IsNullOrEmpty(sessionId))
             {
-                // No session yet: this is the initialize request. Create the session transport, capturing the
-                // connection's Origin header so the host can surface it as session.Origin; let the consumer
-                // build & start its McpServer (subscribing before we dispatch), echo the id.
                 transport = new HttpServerTransport(
                     _json, _loggerFactory, Guid.NewGuid().ToString("N"), request.Headers["Origin"]);
                 Session session;
