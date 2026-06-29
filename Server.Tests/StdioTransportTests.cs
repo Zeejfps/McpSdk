@@ -3,7 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
+using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Shared;
 
 namespace McpSdk.Server.Tests
 {
@@ -29,11 +31,9 @@ namespace McpSdk.Server.Tests
             var (command, arguments) = ResolveStdioServerCommand();
             var json = new NewtonsoftJson();
             var transport = new Client.Transports.StdioTransport(command, arguments, json, Loggers);
-            var client = new ClientBuilder()
-                .WithName("Stdio Conf Client")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(transport))
-                .Build();
+            var clientBuilder = new ClientBuilder("Stdio Conf Client", "1.0.0");
+            clientBuilder.Context.AddSingleton<ITransport>(transport);
+            var client = clientBuilder.Build();
 
             try
             {

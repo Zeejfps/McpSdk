@@ -40,7 +40,7 @@ namespace McpSdk.Server.Tests
             await serverEnd.Start();
 
             var controller = new TestElicitationController(form: true, url: true, _ => ElicitResult.Cancel());
-            var client = ConnectClientWith(clientEnd, elicitation: new TestElicitationFactory(controller));
+            var client = ConnectClientWith(clientEnd, elicitation: controller);
             await client.Connect();
 
             var capabilities = FindInitializeCapabilities(clientEnd.Sent);
@@ -57,7 +57,7 @@ namespace McpSdk.Server.Tests
             await serverEnd.Start();
 
             var controller = new TestElicitationController(form: true, url: false, _ => ElicitResult.Cancel());
-            var client = ConnectClientWith(clientEnd, elicitation: new TestElicitationFactory(controller));
+            var client = ConnectClientWith(clientEnd, elicitation: controller);
             await client.Connect();
 
             var elicitation = FindInitializeCapabilities(clientEnd.Sent)?["elicitation"]?.AsObject();
@@ -73,7 +73,7 @@ namespace McpSdk.Server.Tests
 
             var controller = new TestElicitationController(form: true, url: false,
                 _ => ElicitResult.Accept(Json.Object(w => w.Write("name", "octocat"))));
-            var client = ConnectClientWith(clientEnd, elicitation: new TestElicitationFactory(controller));
+            var client = ConnectClientWith(clientEnd, elicitation: controller);
             await client.Connect();
 
             var request = new ElicitRequest(
@@ -102,7 +102,7 @@ namespace McpSdk.Server.Tests
 
             var controller = new TestElicitationController(form: true, url: false,
                 request => request.Message == "decline" ? ElicitResult.Decline() : ElicitResult.Cancel());
-            var client = ConnectClientWith(clientEnd, elicitation: new TestElicitationFactory(controller));
+            var client = ConnectClientWith(clientEnd, elicitation: controller);
             await client.Connect();
 
             var declineReq = new ElicitRequest("decline", new RequestedSchema());
@@ -122,7 +122,7 @@ namespace McpSdk.Server.Tests
 
             var controller = new TestElicitationController(form: true, url: true,
                 request => request.IsUrlMode ? ElicitResult.AcceptUrl() : ElicitResult.Cancel());
-            var client = ConnectClientWith(clientEnd, elicitation: new TestElicitationFactory(controller));
+            var client = ConnectClientWith(clientEnd, elicitation: controller);
             await client.Connect();
 
             var request = ElicitRequest.ForUrl(
@@ -149,7 +149,7 @@ namespace McpSdk.Server.Tests
 
             // Client supports form mode only; a url-mode request must be rejected before reaching Elicit.
             var controller = new TestElicitationController(form: true, url: false, _ => ElicitResult.AcceptUrl());
-            var client = ConnectClientWith(clientEnd, elicitation: new TestElicitationFactory(controller));
+            var client = ConnectClientWith(clientEnd, elicitation: controller);
             await client.Connect();
 
             var request = ElicitRequest.ForUrl("secret", "https://example.com", "id-1");
@@ -277,13 +277,6 @@ namespace McpSdk.Server.Tests
                 LastRequest = request;
                 return Task.FromResult(_respond(request));
             }
-        }
-
-        private sealed class TestElicitationFactory : IElicitationCapabilityFactory
-        {
-            private readonly IElicitationController _controller;
-            public TestElicitationFactory(IElicitationController controller) => _controller = controller;
-            public IElicitationController Create() => _controller;
         }
     }
 }

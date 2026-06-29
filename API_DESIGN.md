@@ -1,8 +1,14 @@
 # MCP SDK — Target Public API
 
-This describes the **desired** construction API for the SDK: how an application builds an MCP server
-or client. It is a design goal, not yet implemented, and it documents *what* the API should look
-like — not how it will be built internally.
+> **Status: implemented on branch `improved_di`.** This API is now the *only* construction API; the
+> legacy `WithX` fluent builders have been removed. The shipped surface follows this spec with a few
+> deviations (HTTP-host `IServer.Log`, the two `AddConsoleLogger` overloads, no static builder
+> factory, and `ConfigureInfo` taking a configurator interface). See
+> [README → API notes & deviations](./README.md#api-notes--deviations-from-api_designmd) for the full
+> list and working examples.
+
+This describes the construction API for the SDK: how an application builds an MCP server
+or client. It documents *what* the API looks like — not how it is built internally.
 
 The SDK uses a small dependency-injection container behind an `IContext` registration surface
 (modeled on `Microsoft.Extensions.DependencyInjection`). Every builder exposes that `Context`, and

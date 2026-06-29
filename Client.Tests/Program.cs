@@ -1,9 +1,7 @@
-using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.StreamableHttpClient;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
-using McpSdk.Client.Transports;
 using McpSdk.Protocol.Models;
 
 // Demo MCP client. Runs initialize -> tools/list -> tools/call against the server given on the
@@ -20,24 +18,23 @@ if (args.Length == 0)
 
 var target = args[0];
 
+// The demo still uses a serializer directly to pretty-print tools and build the call arguments below;
+// AddNewtonsoftJson() registers the same serializer in the builder's DI context for the transport.
 var json = new NewtonsoftJson();
-var loggerFactory = new ClientConsoleLoggerFactory();
-var rootsControllerFactory = new RootsControllerFactory();
-var samplingControllerFactory = new SamplingControllerFactory();
-var builder = new ClientBuilder()
-    .WithName("Echo Client")
-    .WithVersion("1.0.0")
-    .WithLogger(loggerFactory)
-    .WithRootsCapability(rootsControllerFactory)
-    .WithSamplingCapability(samplingControllerFactory);
+
+var builder = new ClientBuilder("Echo Client", "1.0.0");
+builder.Context.AddNewtonsoftJson();
+builder.Context.AddConsoleLogger();
+builder.Context.AddRootsCapability(new DemoRootsController());
+builder.Context.AddSamplingCapability(new DemoSamplingController());
 
 if (target.StartsWith("http://") || target.StartsWith("https://"))
 {
-    builder.WithStreamableHttpTransport(json, new StreamableHttpClientAdapter(target, loggerFactory));
+    builder.Context.AddStreamableHttpTransport(target);
 }
 else
 {
-    builder.WithStdioTransport(json, target, args[1..]);
+    builder.Context.AddStdioTransport(target, args[1..]);
 }
 
 var client = builder.Build();

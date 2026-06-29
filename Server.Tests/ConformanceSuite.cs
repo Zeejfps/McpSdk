@@ -102,46 +102,46 @@ namespace McpSdk.Server.Tests
         /// <summary>The standard tools server: a forecast tool plus a structured-output 'add' tool.</summary>
         protected IServer BuildServer(InMemoryTransport serverEnd)
         {
-            return new ServerBuilder()
-                .WithName("Conf Server")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, tools =>
-                {
-                    tools.AddTool(new TestToolHandler());
-                    tools.AddTool(new StructuredToolHandler(Json));
-                })
-                .Build();
+            // New DI builder API (T10b): serializer + the pre-built in-memory transport + tools-only capability.
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddToolsCapability(tools =>
+            {
+                tools.AddTool(new TestToolHandler());
+                tools.AddTool(new StructuredToolHandler(Json));
+            });
+            return builder.Build();
         }
 
         /// <summary>A plain client with no client-side capabilities, over the given loopback end.</summary>
         protected IClient ConnectClient(InMemoryTransport clientEnd)
         {
-            return new ClientBuilder()
-                .WithName("Conf Client")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
-                .Build();
+            // New DI builder API (T10b): the client needs no host — dual-mode Build() resolves the registered
+            // ITransport directly, so we just register the pre-built in-memory end.
+            var builder = new ClientBuilder("Conf Client", "1.0.0");
+            builder.Context.AddSingleton<ITransport>(clientEnd);
+            return builder.Build();
         }
 
         /// <summary>A client that advertises whichever client-side capabilities are supplied.</summary>
         protected IClient ConnectClientWith(
             InMemoryTransport clientEnd,
-            IElicitationCapabilityFactory elicitation = null,
-            ISamplingCapabilityFactory sampling = null,
-            IRootsCapabilityFactory roots = null)
+            IElicitationController elicitation = null,
+            ISamplingController sampling = null,
+            IRootsController roots = null)
         {
-            var builder = new ClientBuilder()
-                .WithName("Conf Client")
-                .WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd));
+            // New DI builder API (T15): register the pre-built in-memory ITransport and the supplied controllers
+            // directly via Add…Capability, then let dual-mode Build() resolve them — no factory indirection.
+            var builder = new ClientBuilder("Conf Client", "1.0.0");
+            builder.Context.AddSingleton<ITransport>(clientEnd);
 
             if (elicitation != null)
-                builder.WithElicitationCapability(elicitation);
+                builder.Context.AddElicitationCapability(elicitation);
             if (sampling != null)
-                builder.WithSamplingCapability(sampling);
+                builder.Context.AddSamplingCapability(sampling);
             if (roots != null)
-                builder.WithRootsCapability(roots);
+                builder.Context.AddRootsCapability(roots);
 
             return builder.Build();
         }

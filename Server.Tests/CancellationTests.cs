@@ -2,7 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using McpSdk.Client;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
@@ -29,17 +29,14 @@ namespace McpSdk.Server.Tests
         {
             var tool = new CancellableToolHandler();
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            var server = new ServerBuilder()
-                .WithName("Conf Server").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, tools => tools.AddTool(tool))
-                .Build();
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddToolsCapability(tools => tools.AddTool(tool));
+            var server = builder.Build();
             await server.Start();
 
-            var client = new ClientBuilder()
-                .WithName("Conf Client").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
-                .Build();
+            var client = ConnectClient(clientEnd);
             await client.Connect();
 
             var cts = new CancellationTokenSource();

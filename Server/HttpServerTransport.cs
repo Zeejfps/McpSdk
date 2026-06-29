@@ -37,14 +37,23 @@ namespace McpSdk.Server
         private long _nextEventId;
         private long _deliveredThrough;
 
-        public HttpServerTransport(IJson json, ILoggerFactory loggerFactory, string sessionId) : base(loggerFactory)
+        public HttpServerTransport(IJson json, ILoggerFactory loggerFactory, string sessionId, string origin = null) : base(loggerFactory)
         {
             _json = json;
             SessionId = sessionId;
+            Origin = origin;
         }
 
         /// <summary>The <c>Mcp-Session-Id</c> this transport is bound to.</summary>
         public string SessionId { get; }
+
+        /// <summary>
+        /// The HTTP <c>Origin</c> header captured from the connection's initialize request (the request that
+        /// created this session's transport), or <c>null</c> when none was sent. The Streamable HTTP host
+        /// surfaces this as <c>session.Origin</c> so a <c>ConfigureSession</c> callback can vary per-session
+        /// registrations by origin.
+        /// </summary>
+        public string Origin { get; }
 
         /// <summary>Fires when the session is torn down, so an open SSE stream can close promptly.</summary>
         public CancellationToken Lifetime => _lifetimeCts.Token;
@@ -217,30 +226,5 @@ namespace McpSdk.Server
 
             public void Dispose() => _transport.DetachStream(_writeEvent);
         }
-    }
-
-    public static class StreamableHttpServerBuilderExtensions
-    {
-        /// <summary>
-        /// Wires a pre-built per-session <see cref="HttpServerTransport"/> (created by the HTTP listener)
-        /// into the server, from the listener's session callback.
-        /// </summary>
-        public static ServerBuilder WithStreamableHttpTransport(this ServerBuilder builder, ITransport transport)
-        {
-            builder.WithTransport(new ExistingTransportFactory(transport));
-            return builder;
-        }
-    }
-
-    internal sealed class ExistingTransportFactory : ITransportFactory
-    {
-        private readonly ITransport _transport;
-
-        public ExistingTransportFactory(ITransport transport)
-        {
-            _transport = transport;
-        }
-
-        public ITransport Create(ILoggerFactory loggerFactory) => _transport;
     }
 }

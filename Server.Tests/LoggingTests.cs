@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using McpSdk.Client;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
+using McpSdk.Protocol.Models.ClientCapabilities;
 
 namespace McpSdk.Server.Tests
 {
@@ -28,18 +29,15 @@ namespace McpSdk.Server.Tests
         private async Task LoggingRoundTripAndFiltering()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            var server = new ServerBuilder()
-                .WithName("Conf Server").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithLoggingCapability()
-                .Build();
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddLoggingCapability();
+            var server = builder.Build();
             await server.Start();
 
             var received = new List<LogMessage>();
-            var client = new ClientBuilder()
-                .WithName("Conf Client").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(clientEnd))
-                .Build();
+            var client = ConnectClient(clientEnd);
             client.LogMessageReceived += m => { lock (received) received.Add(m); };
             await client.Connect();
 
@@ -72,6 +70,13 @@ namespace McpSdk.Server.Tests
             var server = BuildServer(serverEnd); // no logging capability
             await server.Start();
             await clientEnd.Start();
+
+            // The advertisement is gated on AddLoggingCapability(): a server that never called it must not
+            // advertise the logging capability at all (complements the positive case above).
+            var init = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("C", "1.0.0"));
+            var initResp = await clientEnd.SendRequest("initialize", init.WriteMembers);
+            Assert(new InitializeResult(initResp.Result).Capabilities?.Logging == null,
+                "logging capability is absent when AddLoggingCapability was not called");
 
             var resp = await clientEnd.SendRequest("logging/setLevel", new SetLevelRequest(LoggingLevel.Debug).WriteMembers);
             Assert(resp.IsError && resp.Error?.Code == ErrorCode.MethodNotFound,

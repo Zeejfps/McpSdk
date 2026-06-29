@@ -1,6 +1,7 @@
 #nullable disable
 using System.Linq;
 using System.Threading.Tasks;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
@@ -82,12 +83,14 @@ namespace McpSdk.Server.Tests
                 "progress fields round-trip to the client handler");
         }
 
-        private IServer BuildProgressServer(InMemoryTransport serverEnd) =>
-            new ServerBuilder()
-                .WithName("Conf Server").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, tools => tools.AddTool(new ProgressToolHandler()))
-                .Build();
+        private IServer BuildProgressServer(InMemoryTransport serverEnd)
+        {
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddToolsCapability(tools => tools.AddTool(new ProgressToolHandler()));
+            return builder.Build();
+        }
 
         private sealed class ProgressToolHandler : IToolHandler
         {

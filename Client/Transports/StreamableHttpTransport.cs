@@ -125,28 +125,4 @@ namespace McpSdk.Client.Transports
                 OnMessageReceived(message);
         }
     }
-
-    public sealed class StreamableHttpClientTransportFactory : ITransportFactory
-    {
-        private readonly IStreamableHttpClient _http;
-        private readonly IJson _json;
-
-        public StreamableHttpClientTransportFactory(IStreamableHttpClient http, IJson json)
-        {
-            _http = http;
-            _json = json;
-        }
-
-        public ITransport Create(ILoggerFactory loggerFactory)
-            => new StreamableHttpTransport(_http, _json, loggerFactory);
-    }
-
-    public static class StreamableHttpClientBuilderExtensions
-    {
-        public static ClientBuilder WithStreamableHttpTransport(this ClientBuilder builder, IJson json, IStreamableHttpClient http)
-        {
-            builder.WithTransport(new StreamableHttpClientTransportFactory(http, json));
-            return builder;
-        }
-    }
 }

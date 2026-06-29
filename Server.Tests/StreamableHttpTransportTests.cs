@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Adapter.StreamableHttpClient;
 using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Client;
@@ -40,6 +41,7 @@ namespace McpSdk.Server.Tests
             await Test("Streamable HTTP server->client: notification + request over the SSE stream", StreamableHttpServerToClient);
             await Test("Streamable HTTP resumability: Last-Event-ID replays only the missed tail", StreamableHttpResumability);
             await Test("Streamable HTTP lifecycle: DELETE terminates the session (then 404)", StreamableHttpDeleteTerminatesSession);
+            await Test("Streamable HTTP per-session tools: root∪session aggregation + sibling isolation", StreamableHttpPerSessionToolAggregation);
         }
 
         private async Task StreamableHttpRoundTrip()
@@ -47,31 +49,21 @@ namespace McpSdk.Server.Tests
             const string baseUrl = "http://localhost:17453";
             const string endpointPath = "/mcp";
 
-            var listener = new StreamableHttpListener(
-                baseUrl,
-                endpointPath,
-                Json,
-                Loggers,
-                onSession: async transport =>
-                {
-                    var server = new ServerBuilder()
-                        .WithName("Http Conf Server")
-                        .WithVersion("1.0.0")
-                        .WithStreamableHttpTransport(transport)
-                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
-                        .Build();
-                    await server.Start();
-                });
-            await listener.Start();
+            // New DI builder API (T13a): root serializer + tools, then the Streamable HTTP host. The host
+            // builds one per-connection McpServer in a child scope; the root TestToolHandler is visible to it.
+            var server = new ServerBuilder("Http Conf Server", "1.0.0");
+            server.Context.AddNewtonsoftJson();
+            server.Context.AddToolsCapability(tools => tools.AddTool(new TestToolHandler()));
+            server.Context.AddStreamableHttpTransport(baseUrl, endpointPath);
+            var host = server.Build();
+            await host.Start();
 
             try
             {
                 using var http = new StreamableHttpClientAdapter($"{baseUrl}{endpointPath}", Loggers);
-                var client = new ClientBuilder()
-                    .WithName("Http Conf Client")
-                    .WithVersion("1.0.0")
-                    .WithStreamableHttpTransport(Json, http)
-                    .Build();
+                var clientBuilder = new ClientBuilder("Http Conf Client", "1.0.0");
+                clientBuilder.Context.AddSingleton<ITransport>(new StreamableHttpTransport(http, Json, Loggers));
+                var client = clientBuilder.Build();
 
                 await WithTimeout(client.Connect(), 15000, "connect");
                 Assert(client.IsConnected, "client connected over Streamable HTTP");
@@ -96,7 +88,7 @@ namespace McpSdk.Server.Tests
             }
             finally
             {
-                await listener.Stop();
+                await host.Stop();
             }
         }
 
@@ -107,23 +99,14 @@ namespace McpSdk.Server.Tests
             const string allowedOrigin = baseUrl;
             var url = $"{baseUrl}{endpointPath}";
 
-            var listener = new StreamableHttpListener(
-                baseUrl,
-                endpointPath,
-                Json,
-                Loggers,
-                onSession: async transport =>
-                {
-                    var server = new ServerBuilder()
-                        .WithName("Http Conf Server")
-                        .WithVersion("1.0.0")
-                        .WithStreamableHttpTransport(transport)
-                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
-                        .Build();
-                    await server.Start();
-                },
-                allowedOrigins: new[] { allowedOrigin });
-            await listener.Start();
+            // New DI builder API (T13a): the allowed origin is configured through the options so the
+            // listener's Origin->403 guard still fires for a disallowed Origin.
+            var server = new ServerBuilder("Http Conf Server", "1.0.0");
+            server.Context.AddNewtonsoftJson();
+            server.Context.AddToolsCapability(tools => tools.AddTool(new TestToolHandler()));
+            server.Context.AddStreamableHttpTransport(baseUrl, endpointPath, http => http.AllowOrigin(allowedOrigin));
+            var host = server.Build();
+            await host.Start();
 
             try
             {
@@ -165,7 +148,7 @@ namespace McpSdk.Server.Tests
             }
             finally
             {
-                await listener.Stop();
+                await host.Stop();
             }
         }
 
@@ -313,22 +296,13 @@ namespace McpSdk.Server.Tests
             const string endpointPath = "/mcp";
             var url = $"{baseUrl}{endpointPath}";
 
-            var listener = new StreamableHttpListener(
-                baseUrl,
-                endpointPath,
-                Json,
-                Loggers,
-                onSession: async transport =>
-                {
-                    var server = new ServerBuilder()
-                        .WithName("Delete Server")
-                        .WithVersion("1.0.0")
-                        .WithStreamableHttpTransport(transport)
-                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
-                        .Build();
-                    await server.Start();
-                });
-            await listener.Start();
+            // New DI builder API (T13a): a full per-connection McpServer over the Streamable HTTP host.
+            var server = new ServerBuilder("Delete Server", "1.0.0");
+            server.Context.AddNewtonsoftJson();
+            server.Context.AddToolsCapability(tools => tools.AddTool(new TestToolHandler()));
+            server.Context.AddStreamableHttpTransport(baseUrl, endpointPath);
+            var host = server.Build();
+            await host.Start();
 
             try
             {
@@ -354,8 +328,102 @@ namespace McpSdk.Server.Tests
             }
             finally
             {
-                await listener.Stop();
+                await host.Stop();
             }
+        }
+
+        /// <summary>
+        /// T13b proof (implementation-plan decision #2): per-session tools <i>aggregate</i> with the shared
+        /// root set rather than replacing it, and sibling sessions are isolated. One HTTP host registers a
+        /// shared <c>EchoTool</c> at the root; <c>ConfigureSession</c> adds <c>CartTool</c> to every session and
+        /// <c>AdminTool</c> only when the connection's <c>Origin</c> is the admin origin. Two sessions are then
+        /// opened over raw HTTP with different <c>Origin</c> headers and their <c>tools/list</c> compared.
+        /// </summary>
+        private async Task StreamableHttpPerSessionToolAggregation()
+        {
+            const string baseUrl = "http://localhost:17458";
+            const string endpointPath = "/mcp";
+            var url = $"{baseUrl}{endpointPath}";
+            const string adminOrigin = "http://admin.example";
+            const string userOrigin = "http://user.example";
+
+            // ONE host: a shared root tool (EchoTool) plus per-session tools contributed by ConfigureSession,
+            // which lands its registrations in the per-connection child container (session.Context). CartTool is
+            // added to every session; AdminTool only for the admin Origin. The composite's parent-then-child
+            // GetServices overlay then merges root ∪ session per connection.
+            var server = new ServerBuilder("Agg Server", "1.0.0");
+            server.Context.AddNewtonsoftJson();
+            server.Context.AddToolsCapability(tools => tools.AddTool(new EchoTool()));
+            server.Context.AddStreamableHttpTransport(baseUrl, endpointPath, http => http.ConfigureSession(session =>
+            {
+                session.Context.AddToolsCapability(t => t.AddTool(new CartTool()));
+                if (session.Origin == adminOrigin)
+                    session.Context.AddToolsCapability(t => t.AddTool(new AdminTool()));
+            }));
+            var host = server.Build();
+            await host.Start();
+
+            try
+            {
+                using var http = new HttpClient();
+
+                // Session A from the ADMIN origin, session B from a NON-admin origin (concurrent siblings).
+                var toolsA = await ListToolsForSession(http, url, adminOrigin);
+                var toolsB = await ListToolsForSession(http, url, userOrigin);
+
+                // (3) BOTH sessions see the shared EchoTool (overlay = root ∪ session).
+                Assert(toolsA.Contains("echo"), "aggregation: admin session sees the shared root EchoTool");
+                Assert(toolsB.Contains("echo"), "aggregation: non-admin session sees the shared root EchoTool");
+
+                // (1) admin session aggregates EchoTool + CartTool + AdminTool.
+                Assert(toolsA.Contains("cart"), "aggregation: admin session sees its per-session CartTool");
+                Assert(toolsA.Contains("admin"), "aggregation: admin session sees the admin-origin-only AdminTool");
+
+                // (2) non-admin session sees EchoTool + CartTool but NOT AdminTool — the admin-only tool is
+                //     unique to session A's child scope, so its absence here proves sibling isolation.
+                Assert(toolsB.Contains("cart"), "aggregation: non-admin session sees its per-session CartTool");
+                Assert(!toolsB.Contains("admin"),
+                    "isolation: non-admin session does NOT see session A's admin-only AdminTool (sibling isolation)");
+            }
+            finally
+            {
+                await host.Stop();
+            }
+        }
+
+        /// <summary>Opens one session from <paramref name="origin"/> and returns its <c>tools/list</c> tool names.</summary>
+        private async Task<List<string>> ListToolsForSession(HttpClient http, string url, string origin)
+        {
+            var initResp = await Post(http, url, InitializeBody(1), ("Origin", origin));
+            var sessionId = initResp.Headers.GetValues("Mcp-Session-Id").First();
+
+            var listResp = await Post(http, url, ListToolsBody(2),
+                ("Origin", origin), ("Mcp-Session-Id", sessionId), ("MCP-Protocol-Version", ProtocolVersion.Latest));
+            var listBody = await listResp.Content.ReadAsStringAsync();
+            var listResult = new ListToolsResult(Json.Parse(listBody)["result"].AsObject());
+            return listResult.Tools.Select(t => t.Name).ToList();
+        }
+
+        // Minimal tool handlers for the aggregation test: distinct names, trivial results.
+        private sealed class EchoTool : IToolHandler
+        {
+            public Tool Tool { get; } = new Tool("echo", "Shared root echo tool", new ObjectSchema());
+            public Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context)
+                => Task.FromResult(new CallToolResult([new TextContent("echo")], false));
+        }
+
+        private sealed class CartTool : IToolHandler
+        {
+            public Tool Tool { get; } = new Tool("cart", "Per-session cart tool", new ObjectSchema());
+            public Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context)
+                => Task.FromResult(new CallToolResult([new TextContent("cart")], false));
+        }
+
+        private sealed class AdminTool : IToolHandler
+        {
+            public Tool Tool { get; } = new Tool("admin", "Admin-origin-only tool", new ObjectSchema());
+            public Task<CallToolResult> Call(IJsonObject arguments, McpRequestContext context)
+                => Task.FromResult(new CallToolResult([new TextContent("admin")], false));
         }
 
         // -- Helpers -------------------------------------------------------------------------

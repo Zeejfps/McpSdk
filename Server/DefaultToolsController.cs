@@ -108,15 +108,4 @@ namespace McpSdk.Server
             return await toolHandler.Call(toolArguments, context);
         }
     }
-
-    public static class DefaultToolsControllerExtensions
-    {
-        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, Action<DefaultToolsController> configure)
-        {
-            var toolsController = new DefaultToolsController(json);
-            configure(toolsController);
-            builder.WithToolsCapability(toolsController);
-            return builder;
-        }
-    }
 }

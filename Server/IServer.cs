@@ -12,7 +12,7 @@ namespace McpSdk.Server
         /// <summary>
         /// Emits a <c>notifications/message</c> log to the client, filtered by the level the client set via
         /// <c>logging/setLevel</c>. A no-op unless logging was enabled via
-        /// <see cref="ServerBuilder.WithLoggingCapability"/>.
+        /// <c>Context.AddLoggingCapability()</c>.
         /// </summary>
         Task Log(LoggingLevel level, Json data, string logger = null);
     }

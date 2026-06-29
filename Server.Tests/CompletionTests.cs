@@ -1,5 +1,6 @@
 #nullable disable
 using System.Threading.Tasks;
+using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 using McpSdk.Protocol.Models.ClientCapabilities;
@@ -51,11 +52,11 @@ namespace McpSdk.Server.Tests
         private async Task CompletionCompleteRoundTrips()
         {
             var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
-            var server = new ServerBuilder()
-                .WithName("Conf Server").WithVersion("1.0.0")
-                .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithCompletionCapability(new StubCompletionController())
-                .Build();
+            var builder = new ServerBuilder("Conf Server", "1.0.0");
+            builder.Context.AddNewtonsoftJson();
+            builder.Context.AddInMemoryServerTransport(serverEnd);
+            builder.Context.AddCompletionCapability(new StubCompletionController());
+            var server = builder.Build();
             await server.Start();
             await clientEnd.Start();
 

@@ -19,6 +19,10 @@ namespace McpSdk.Server.Tests
 
             ConformanceSuite[] suites =
             {
+                // Foundation: dependency-injection container
+                new DiContainerTests(report),
+                new RegistrationTests(report),
+
                 // Base protocol & lifecycle
                 new ProtocolNegotiationTests(report),
                 new JsonRpcFramingTests(report),
