@@ -5,6 +5,7 @@
         <AssemblyName>McpSdk.Server</AssemblyName>
         <RootNamespace>McpSdk.Server</RootNamespace>
         <LangVersion>latest</LangVersion>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>

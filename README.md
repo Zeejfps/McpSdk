@@ -163,3 +163,7 @@ var client = new ClientBuilder()
 
 await client.Connect();
 ```
+
+## License
+
+Licensed under the [MIT License](LICENSE).

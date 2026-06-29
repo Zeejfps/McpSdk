@@ -5,6 +5,7 @@
         <AssemblyName>McpSdk.Adapter.ConsoleLogger</AssemblyName>
         <RootNamespace>McpSdk.Adapter.ConsoleLogger</RootNamespace>
         <LangVersion>latest</LangVersion>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,6 +5,7 @@
         <AssemblyName>McpSdk.Protocol</AssemblyName>
         <RootNamespace>McpSdk.Protocol</RootNamespace>
         <LangVersion>latest</LangVersion>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
 </Project>
