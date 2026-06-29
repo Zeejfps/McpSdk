@@ -33,8 +33,6 @@ namespace McpSdk.Server
         /// <c>(name, version)</c> ctor.
         /// </summary>
         public static IContext ConfigureInfo(this IContext context, Action<IServerInfoConfigurator> configure)
-            // ServerInfoOptions : IServerInfoConfigurator, and Action is contravariant, so the caller's
-            // Action<IServerInfoConfigurator> binds directly to the Action<ServerInfoOptions> the helper wants.
             => context.ConfigureSeededOptions<ServerInfoOptions>(
                 configure,
                 $"ConfigureInfo requires a {nameof(ServerBuilder)} created with its (name, version) constructor.");
@@ -144,14 +142,6 @@ namespace McpSdk.Server
             return context;
         }
 
-        /// <summary>
-        /// Ensures the public <see cref="IToolsController"/> on <paramref name="context"/> is a
-        /// <see cref="CompositeToolsController"/>, registering it (once per container) the first time a tools
-        /// leaf is added. <see cref="ContextRegistrationExtensions.TryAddSingleton{TService}"/> makes a second
-        /// <c>AddToolsCapability</c> on the same container a no-op here (the new leaf still aggregates via the
-        /// composite's <c>GetServices</c> overlay); a per-session child container is a separate container, so
-        /// it gets — and needs — its own composite.
-        /// </summary>
         private static void EnsureCompositeToolsController(IContext context)
         {
             context.TryAddSingleton<IToolsController>(sp => new CompositeToolsController(sp));

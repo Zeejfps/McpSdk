@@ -21,9 +21,6 @@ namespace McpSdk.Shared
     {
         private readonly Dictionary<Type, List<ServiceDescriptor>> _descriptors;
         private readonly Dictionary<ServiceDescriptor, object> _singletons = new Dictionary<ServiceDescriptor, object>();
-        // The IDisposable singletons THIS provider constructed (factory/type activation), in creation order,
-        // so Dispose() can release them. Populated only during construction (single-threaded eager
-        // realization), then read-only — so it does not break the concurrent-resolution guarantee.
         private readonly List<IDisposable> _disposables = new List<IDisposable>();
         private readonly ServiceProvider _parent;
         private bool _disposed;
@@ -152,9 +149,6 @@ namespace McpSdk.Shared
             if (descriptor.Lifetime == ServiceLifetime.Singleton)
             {
                 _singletons[descriptor] = instance;
-                // Track disposables WE constructed (factory- or type-activated) so Dispose() can release them.
-                // A pre-built instance registration is owned by the caller, not the container, so it is left
-                // alone — e.g. the per-connection transport instance is managed by the HTTP host, not here.
                 if (descriptor.ImplementationInstance == null && instance is IDisposable disposable)
                     _disposables.Add(disposable);
             }
@@ -171,11 +165,6 @@ namespace McpSdk.Shared
                 return descriptor.ImplementationFactory(this);
 
             var implementationType = descriptor.ImplementationType;
-            // Share the greediest-satisfiable constructor selection with ActivatorUtilities so a registered
-            // type and an unregistered one (activated via ActivatorUtilities.CreateInstance) follow the same
-            // rules. Satisfiability must walk the parent chain (via CanResolve) so it agrees with how the
-            // arguments are actually resolved below — on a child provider a constructor parameter the parent
-            // supplies is resolvable, so it must count as satisfiable here too.
             var constructor = ActivatorUtilities.SelectConstructor(implementationType, CanResolve);
             var parameters = constructor.GetParameters();
             var arguments = new object[parameters.Length];
@@ -200,13 +189,6 @@ namespace McpSdk.Shared
             return _parent != null && _parent.CanResolve(serviceType);
         }
 
-        /// <summary>
-        /// Disposes the IDisposable singletons this provider itself constructed (factory- or type-activated),
-        /// in reverse creation order. Pre-built instance registrations and the parent provider are left
-        /// untouched — a child scope releases only what it created. Idempotent. Not safe to call concurrently
-        /// with resolution: call it once the scope is finished (e.g. at HTTP session teardown), after the
-        /// session's server has stopped.
-        /// </summary>
         public void Dispose()
         {
             if (_disposed)

@@ -48,24 +48,11 @@ namespace McpSdk.Server
     /// that owns the named tool. When no leaf exists the composite is never registered, so the server's
     /// null-tolerant controller probe returns <c>null</c> and the tools capability is not advertised.
     /// </summary>
-    /// <remarks>
-    /// The merged set is built once and cached (the leaf set is frozen at construction), and invalidated when
-    /// any leaf raises <see cref="IToolsController.ListChanged"/> — so <c>tools/list</c> paging and
-    /// <c>tools/call</c> routing are O(1) lookups against the cache rather than re-walking every leaf on every
-    /// request. The catalog is therefore treated as stable between change notifications (a leaf that varies
-    /// its tool set by <see cref="McpRequestContext"/> without raising <c>ListChanged</c> is not re-listed
-    /// per request) — matching the MCP model where <c>tools/list</c> is a session-stable catalog announced via
-    /// <c>tools/list_changed</c>. The composite is <see cref="IDisposable"/>: disposing it detaches the leaf
-    /// subscriptions, so a per-session composite layered over shared root leaves is not pinned by them.
-    /// </remarks>
     internal sealed class CompositeToolsController : IToolsController, IDisposable
     {
         private readonly List<IToolsControllerSource> _sources;
         private readonly int? _pageSize;
 
-        // The merged catalog, built lazily on first use and cleared (null) when a leaf changes. A reference
-        // read/write is atomic; Volatile gives cross-thread visibility for the root composite, which is shared
-        // by every concurrent session that adds no tools of its own. The held instance is immutable.
         private MergedSet _merged;
         private bool _disposed;
 
@@ -92,9 +79,6 @@ namespace McpSdk.Server
                 if (source.Controller.IsListChangedNotificationSupported)
                     supportsListChanged = true;
 
-                // Subscribe to EVERY leaf (not just those advertising list-changed): a leaf that mutates its
-                // tool set — e.g. DefaultToolsController.AddTool/RemoveTool, which fires ListChanged but
-                // reports IsListChangedNotificationSupported == false — must still invalidate the cache.
                 source.Controller.ListChanged += OnLeafListChanged;
             }
 
@@ -104,9 +88,6 @@ namespace McpSdk.Server
 
         private void OnLeafListChanged()
         {
-            // A leaf's tool set changed: drop the cache so the next request rebuilds it, and surface the
-            // change to the client only when we actually advertise the tools list-changed capability (never
-            // notify for a capability we did not advertise).
             Volatile.Write(ref _merged, null);
             if (IsListChangedNotificationSupported)
                 ListChanged?.Invoke();
@@ -115,7 +96,6 @@ namespace McpSdk.Server
         public async Task<ListToolsResult> ListTools(ListToolsRequest request, McpRequestContext context)
         {
             var merged = await GetMerged(context);
-            // Same offset-cursor paging as DefaultToolsController, via the shared PaginationCursor helper.
             return PaginationCursor.GetPage(merged.Ordered, request?.Cursor, _pageSize, m => m.Tool);
         }
 
@@ -128,12 +108,6 @@ namespace McpSdk.Server
             return CallToolResult.Error($"No tool found with name: {request.ToolName}");
         }
 
-        /// <summary>
-        /// Returns the cached merged catalog, building it on a cache miss from the supplied
-        /// <paramref name="context"/>. Two concurrent cold callers may both build (the result is identical for
-        /// a stable catalog and the last publish wins) — cheaper than serializing, and warm calls just read the
-        /// volatile reference.
-        /// </summary>
         private async Task<MergedSet> GetMerged(McpRequestContext context)
         {
             var cached = Volatile.Read(ref _merged);
@@ -145,13 +119,6 @@ namespace McpSdk.Server
             return built;
         }
 
-        /// <summary>
-        /// Collects the tools of every leaf into one ordered, name-deduplicated set. Each leaf is walked
-        /// across all of its own pages so the merged set is complete regardless of a leaf's internal page
-        /// size. On a name conflict the later (session) leaf wins — its tool definition and owner replace the
-        /// earlier (root) one in place, preserving the first-seen position so offset-based paging stays stable
-        /// across calls.
-        /// </summary>
         private async Task<MergedSet> GatherTools(McpRequestContext context)
         {
             var order = new List<string>();
@@ -193,7 +160,6 @@ namespace McpSdk.Server
                 source.Controller.ListChanged -= OnLeafListChanged;
         }
 
-        /// <summary>Immutable merged catalog: the ordered list paging slices, plus a name lookup for routing.</summary>
         private sealed class MergedSet
         {
             public MergedSet(List<MergedTool> ordered, Dictionary<string, MergedTool> byName)

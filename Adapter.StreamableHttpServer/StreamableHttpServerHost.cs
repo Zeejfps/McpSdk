@@ -74,12 +74,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 "Logging is per-session on the Streamable HTTP host; obtain the per-session server to log " +
                 "(implementation-plan decision #6).");
 
-        /// <summary>
-        /// Per-connection callback: builds a child scope holding this connection's transport, then resolves and
-        /// starts its <c>McpServer</c> from that child. Returns the started server so the listener can
-        /// <c>Stop()</c> it at session teardown — which unsubscribes it from the (root-scoped, long-lived)
-        /// tools controller it would otherwise stay attached to for the host's lifetime.
-        /// </summary>
         private async Task<IServer> OnSession(ITransport transport)
         {
             // (1) A fresh child container — this becomes the per-session session.Context.
@@ -114,18 +108,9 @@ namespace McpSdk.Adapter.StreamableHttpServer
             // (5) Resolve the McpServer from the CHILD provider and start it.
             var server = childProvider.GetRequiredService<McpServer>();
             await server.Start();
-
-            // Hand back a wrapper so session teardown both stops the server (which unsubscribes it from its
-            // tools controller) AND disposes the child scope — releasing the scope's IDisposable singletons,
-            // notably a per-session CompositeToolsController, which detaches it from the shared root leaves.
             return new SessionScope(server, childProvider as IDisposable);
         }
 
-        /// <summary>
-        /// Couples a per-session <see cref="McpServer"/> to its child scope: stopping the session stops the
-        /// server and then disposes the scope. Used so the listener's single <c>Stop()</c> at teardown tears
-        /// the whole per-connection graph down.
-        /// </summary>
         private sealed class SessionScope : IServer
         {
             private readonly IServer _server;

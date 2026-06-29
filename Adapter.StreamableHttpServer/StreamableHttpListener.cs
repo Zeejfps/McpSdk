@@ -82,8 +82,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
         {
             _cts?.Cancel();
 
-            // Terminate any live sessions so each McpServer unsubscribes from its tools controller and its
-            // transport closes (which unblocks the SSE GET loops) before we tear the HTTP listener down.
             List<Session> sessions;
             lock (_sessionsGate)
             {
@@ -198,9 +196,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 lock (_sessionsGate)
                     _sessions[transport.SessionId] = session = new Session(transport);
 
-                // Build & start the consumer's McpServer (subscribing before we dispatch). Retain it on the
-                // session so teardown can Stop() it — that unsubscribes the server from the (possibly
-                // root-scoped, long-lived) tools controller that would otherwise pin every closed session.
                 session.Server = await _onSession(transport).ConfigureAwait(false);
                 response.Headers[SessionIdHeader] = transport.SessionId;
             }
@@ -336,19 +331,10 @@ namespace McpSdk.Adapter.StreamableHttpServer
                 return;
             }
 
-            // Tear the session down: stop its McpServer (unsubscribes it from its tools controller and stops
-            // the transport, which cancels in-flight requests, releases any open POSTs, and signals the GET
-            // loop to close), or stop the transport directly when no server was attached.
             await TerminateSession(session).ConfigureAwait(false);
             WriteStatus(response, 200);
         }
 
-        /// <summary>
-        /// Ends one session. Prefers <see cref="IServer.Stop"/> — it unsubscribes the McpServer from its tools
-        /// controller (so a controller shared with the long-lived root scope no longer pins the closed
-        /// session) and then stops the transport — falling back to stopping the transport directly when no
-        /// server is attached (a transport-only session). Never throws: teardown best-effort, errors logged.
-        /// </summary>
         private async Task TerminateSession(Session session)
         {
             if (session == null)
@@ -383,8 +369,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
             response.Close();
         }
 
-        // One MCP session: the HTTP/SSE transport the McpServer runs over, plus the server itself so the
-        // session can be stopped (unsubscribing the server) at teardown.
         private sealed class Session
         {
             public Session(HttpServerTransport transport)
@@ -394,8 +378,6 @@ namespace McpSdk.Adapter.StreamableHttpServer
 
             public HttpServerTransport Transport { get; }
 
-            /// <summary>The session's McpServer, set once <c>onSession</c> has built it; <c>null</c> for a
-            /// transport-only session. Stopped at teardown to unsubscribe it from its tools controller.</summary>
             public IServer Server { get; set; }
         }
     }

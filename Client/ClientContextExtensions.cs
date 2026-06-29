@@ -33,8 +33,6 @@ namespace McpSdk.Client
         /// <c>(name, version)</c> ctor.
         /// </summary>
         public static IContext ConfigureInfo(this IContext context, Action<IClientInfoConfigurator> configure)
-            // ClientInfoOptions : IClientInfoConfigurator, and Action is contravariant, so the caller's
-            // Action<IClientInfoConfigurator> binds directly to the Action<ClientInfoOptions> the helper wants.
             => context.ConfigureSeededOptions<ClientInfoOptions>(
                 configure,
                 $"ConfigureInfo requires a {nameof(ClientBuilder)} created with its (name, version) constructor.");

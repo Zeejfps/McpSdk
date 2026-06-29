@@ -52,8 +52,6 @@ namespace McpSdk.Server
 
         public Task<ListToolsResult> ListTools(ListToolsRequest request, McpRequestContext context)
         {
-            // Offset-cursor paging shared with CompositeToolsController: unrecognized cursor -> first page,
-            // offsets clamped, a non-positive PageSize means "no paging" (one page, no nextCursor).
             var result = PaginationCursor.GetPage(_toolsInOrder, request?.Cursor, PageSize, h => h.Tool);
             return Task.FromResult(result);
         }

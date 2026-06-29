@@ -10,14 +10,6 @@ namespace McpSdk.Server
     /// call. It records handler instances, handler <i>types</i>, and an optional page size, then materializes
     /// them into one leaf <see cref="DefaultToolsController"/> via <see cref="BuildLeaf"/> at resolve time.
     /// </summary>
-    /// <remarks>
-    /// <see cref="BuildLeaf"/> runs inside the leaf's singleton factory, against the container the leaf was
-    /// registered in. The serializer is pulled from that scope, and every <c>AddTool&lt;THandler&gt;()</c> type
-    /// is activated from it via <see cref="ActivatorUtilities"/>, so a handler's lifetime follows the
-    /// registration site: registered on the global builder <c>Context</c> it is one singleton shared across
-    /// sessions; registered on a per-session <c>session.Context</c> it is built once per session
-    /// (implementation-plan decision #7).
-    /// </remarks>
     internal sealed class ToolsBuilder : IToolsBuilder
     {
         private readonly List<IToolHandler> _handlers = new List<IToolHandler>();
