@@ -52,32 +52,10 @@ namespace McpSdk.Server
 
         public Task<ListToolsResult> ListTools(ListToolsRequest request, McpRequestContext context)
         {
-            var toolCount = _toolsInOrder.Count;
-
-            // Recover where this page starts. An unrecognized/malformed cursor falls back to the
-            // first page rather than erroring; offsets are clamped into range so a stale cursor
-            // (e.g. tools removed since it was issued) yields an empty final page, never a throw.
-            var offset = 0;
-            if (request?.Cursor != null && PaginationCursor.TryDecodeOffset(request.Cursor, out var decoded))
-                offset = decoded;
-            if (offset < 0)
-                offset = 0;
-            if (offset > toolCount)
-                offset = toolCount;
-
-            var pageSize = PageSize is > 0 ? PageSize.Value : toolCount;
-            var take = Math.Min(pageSize, toolCount - offset);
-
-            var page = new Tool[take];
-            for (var i = 0; i < take; i++)
-                page[i] = _toolsInOrder[offset + i].Tool;
-
-            var nextOffset = offset + page.Length;
-            var nextCursor = nextOffset < toolCount
-                ? PaginationCursor.EncodeOffset(nextOffset)
-                : null;
-
-            return Task.FromResult(new ListToolsResult(page, nextCursor));
+            // Offset-cursor paging shared with CompositeToolsController: unrecognized cursor -> first page,
+            // offsets clamped, a non-positive PageSize means "no paging" (one page, no nextCursor).
+            var result = PaginationCursor.GetPage(_toolsInOrder, request?.Cursor, PageSize, h => h.Tool);
+            return Task.FromResult(result);
         }
 
         public async Task<CallToolResult> CallTool(CallToolRequest request, McpRequestContext context)

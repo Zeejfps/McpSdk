@@ -20,6 +20,17 @@ namespace McpSdk.Shared
             return this;
         }
 
+        /// <inheritdoc />
+        public bool TryAdd(ServiceDescriptor descriptor)
+        {
+            if (descriptor == null) throw new ArgumentNullException(nameof(descriptor));
+            foreach (var existing in _descriptors)
+                if (existing.ServiceType == descriptor.ServiceType)
+                    return false;
+            _descriptors.Add(descriptor);
+            return true;
+        }
+
         /// <summary>
         /// Returns the pre-built instance from the most recent <see cref="ServiceLifetime.Singleton"/>
         /// registration of <typeparamref name="TService"/> that was added as an instance (via

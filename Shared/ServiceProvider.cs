@@ -17,11 +17,16 @@ namespace McpSdk.Shared
     /// child realizes only its own singletons at construction time, so it too is read-only afterwards and
     /// many children can be created and resolved concurrently off one shared parent.
     /// </remarks>
-    internal sealed class ServiceProvider : IServiceProvider
+    internal sealed class ServiceProvider : IServiceProvider, IDisposable
     {
         private readonly Dictionary<Type, List<ServiceDescriptor>> _descriptors;
         private readonly Dictionary<ServiceDescriptor, object> _singletons = new Dictionary<ServiceDescriptor, object>();
+        // The IDisposable singletons THIS provider constructed (factory/type activation), in creation order,
+        // so Dispose() can release them. Populated only during construction (single-threaded eager
+        // realization), then read-only — so it does not break the concurrent-resolution guarantee.
+        private readonly List<IDisposable> _disposables = new List<IDisposable>();
         private readonly ServiceProvider _parent;
+        private bool _disposed;
 
         public ServiceProvider(IEnumerable<ServiceDescriptor> descriptors)
             : this(descriptors, null)
@@ -145,7 +150,14 @@ namespace McpSdk.Shared
             chain.RemoveAt(chain.Count - 1);
 
             if (descriptor.Lifetime == ServiceLifetime.Singleton)
+            {
                 _singletons[descriptor] = instance;
+                // Track disposables WE constructed (factory- or type-activated) so Dispose() can release them.
+                // A pre-built instance registration is owned by the caller, not the container, so it is left
+                // alone — e.g. the per-connection transport instance is managed by the HTTP host, not here.
+                if (descriptor.ImplementationInstance == null && instance is IDisposable disposable)
+                    _disposables.Add(disposable);
+            }
 
             return instance;
         }
@@ -186,6 +198,22 @@ namespace McpSdk.Shared
             if (_descriptors.ContainsKey(serviceType))
                 return true;
             return _parent != null && _parent.CanResolve(serviceType);
+        }
+
+        /// <summary>
+        /// Disposes the IDisposable singletons this provider itself constructed (factory- or type-activated),
+        /// in reverse creation order. Pre-built instance registrations and the parent provider are left
+        /// untouched — a child scope releases only what it created. Idempotent. Not safe to call concurrently
+        /// with resolution: call it once the scope is finished (e.g. at HTTP session teardown), after the
+        /// session's server has stopped.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            for (var i = _disposables.Count - 1; i >= 0; i--)
+                _disposables[i].Dispose();
         }
 
         private static IEnumerable<string> ToNames(IEnumerable<Type> types)

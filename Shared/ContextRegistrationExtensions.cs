@@ -29,6 +29,18 @@ namespace McpSdk.Shared
         }
 
         /// <summary>
+        /// Registers a singleton factory for <typeparamref name="TService"/> only if no registration for
+        /// <typeparamref name="TService"/> exists yet (mirrors Microsoft.Extensions.DependencyInjection's
+        /// <c>TryAddSingleton</c>). Returns the same <see cref="IContext"/> so calls can be chained.
+        /// </summary>
+        public static IContext TryAddSingleton<TService>(this IContext context, Func<IServiceProvider, TService> factory)
+        {
+            if (factory == null) throw new ArgumentNullException(nameof(factory));
+            context.TryAdd(ServiceDescriptor.Singleton(typeof(TService), sp => factory(sp)));
+            return context;
+        }
+
+        /// <summary>
         /// Registers <typeparamref name="TImplementation"/> as a transient for <typeparamref name="TService"/>,
         /// activated via constructor injection on each resolve.
         /// </summary>

@@ -33,22 +33,11 @@ namespace McpSdk.Server
         /// <c>(name, version)</c> ctor.
         /// </summary>
         public static IContext ConfigureInfo(this IContext context, Action<IServerInfoConfigurator> configure)
-        {
-            if (context == null) throw new ArgumentNullException(nameof(context));
-            if (configure == null) throw new ArgumentNullException(nameof(configure));
-            if (!(context is DiContainer container))
-                throw new ArgumentException(
-                    $"ConfigureInfo requires the {nameof(ServerBuilder)}.Context produced by a {nameof(DiContainer)}.",
-                    nameof(context));
-
-            var options = container.GetRegisteredInstance<ServerInfoOptions>();
-            if (options == null)
-                throw new InvalidOperationException(
-                    $"ConfigureInfo requires a {nameof(ServerBuilder)} created with its (name, version) constructor.");
-
-            configure(options);
-            return context;
-        }
+            // ServerInfoOptions : IServerInfoConfigurator, and Action is contravariant, so the caller's
+            // Action<IServerInfoConfigurator> binds directly to the Action<ServerInfoOptions> the helper wants.
+            => context.ConfigureSeededOptions<ServerInfoOptions>(
+                configure,
+                $"ConfigureInfo requires a {nameof(ServerBuilder)} created with its (name, version) constructor.");
 
         /// <summary>
         /// Registers the prompts capability, served by the supplied <see cref="IPromptController"/>. The
@@ -155,19 +144,14 @@ namespace McpSdk.Server
         /// <summary>
         /// Ensures the public <see cref="IToolsController"/> on <paramref name="context"/> is a
         /// <see cref="CompositeToolsController"/>, registering it (once per container) the first time a tools
-        /// leaf is added. An instance sentinel scoped to the container guards against duplicate registrations;
-        /// a per-session child container is a separate container, so it gets — and needs — its own composite.
+        /// leaf is added. <see cref="ContextRegistrationExtensions.TryAddSingleton{TService}"/> makes a second
+        /// <c>AddToolsCapability</c> on the same container a no-op here (the new leaf still aggregates via the
+        /// composite's <c>GetServices</c> overlay); a per-session child container is a separate container, so
+        /// it gets — and needs — its own composite.
         /// </summary>
         private static void EnsureCompositeToolsController(IContext context)
         {
-            if (context is DiContainer container)
-            {
-                if (container.GetRegisteredInstance<CompositeToolsControllerMarker>() != null)
-                    return;
-                container.AddSingleton(new CompositeToolsControllerMarker());
-            }
-
-            context.AddSingleton<IToolsController>(sp => new CompositeToolsController(sp));
+            context.TryAddSingleton<IToolsController>(sp => new CompositeToolsController(sp));
         }
     }
 }

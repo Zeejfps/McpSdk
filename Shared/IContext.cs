@@ -18,5 +18,13 @@ namespace McpSdk.Shared
         /// service is resolved.
         /// </summary>
         IContext Add(ServiceDescriptor descriptor);
+
+        /// <summary>
+        /// Adds <paramref name="descriptor"/> only if no registration for its
+        /// <see cref="ServiceDescriptor.ServiceType"/> exists yet, mirroring
+        /// Microsoft.Extensions.DependencyInjection's <c>TryAdd</c>. Returns <c>true</c> if it was added,
+        /// <c>false</c> if a registration for that service type was already present.
+        /// </summary>
+        bool TryAdd(ServiceDescriptor descriptor);
     }
 }
