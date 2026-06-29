@@ -22,6 +22,7 @@ namespace McpSdk.Server.Tests
         public override async Task Run()
         {
             await Test("logging: notifications/message round-trips + setLevel filters by severity", LoggingRoundTripAndFiltering);
+            await Test("logging/setLevel with an unknown level returns InvalidParams", SetLevelUnknownLevelIsInvalidParams);
             await Test("logging/setLevel -> MethodNotFound when logging not enabled", LoggingNotConfiguredIsMethodNotFound);
         }
 
@@ -64,6 +65,24 @@ namespace McpSdk.Server.Tests
                 var err = received.FirstOrDefault(m => m.Data?["msg"]?.AsString() == "above");
                 Assert(err?.Level == LoggingLevel.Error, "the delivered log carries its severity level");
             }
+        }
+
+        private async Task SetLevelUnknownLevelIsInvalidParams()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server").WithVersion("1.0.0")
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .WithLoggingCapability()
+                .Build();
+            await server.Start();
+            await clientEnd.Start();
+
+            // A level the spec doesn't define must be rejected as InvalidParams (-32602), not swallowed or
+            // collapsed into a generic InternalError.
+            var resp = await clientEnd.SendRequest("logging/setLevel", w => w.Write("level", "bogus"));
+            Assert(resp.IsError && resp.Error?.Code == ErrorCode.InvalidParams,
+                "logging/setLevel with an unknown level returns InvalidParams (-32602)");
         }
 
         private async Task LoggingNotConfiguredIsMethodNotFound()

@@ -27,7 +27,9 @@ namespace McpSdk.Server.Tests
             await Test("prompts/get request round-trips name + arguments", GetPromptRequestReadsArguments);
             await Test("prompts/list round-trips prompts through the server", ListPromptsThroughServer);
             await Test("prompts/get round-trips messages + arguments through the server", GetPromptThroughServer);
+            await Test("prompts/get without 'name' returns InvalidParams", GetPromptMissingNameIsInvalidParams);
             await Test("notifications/prompts/list_changed reaches the client", PromptsListChangedNotification);
+            await Test("prompts/list_changed is not emitted after the server stops", PromptsListChangedStopsAfterStop);
         }
 
         // -- Model round-trips ---------------------------------------------------------------
@@ -169,6 +171,16 @@ namespace McpSdk.Server.Tests
                 "the server delivered the prompt arguments to the controller");
         }
 
+        private async Task GetPromptMissingNameIsInvalidParams()
+        {
+            var (clientEnd, _) = await StartPromptServer(new TestPromptController(listChangedSupported: false));
+
+            // 'name' is required; omitting it must yield InvalidParams (-32602), not a generic -32603.
+            var resp = await clientEnd.SendRequest("prompts/get", w => { });
+            Assert(resp.IsError && resp.Error?.Code == ErrorCode.InvalidParams,
+                "prompts/get without 'name' returns InvalidParams (-32602)");
+        }
+
         private async Task PromptsListChangedNotification()
         {
             var controller = new TestPromptController(listChangedSupported: true);
@@ -181,6 +193,29 @@ namespace McpSdk.Server.Tests
             var got = await WaitUntil(() => Snapshot(clientEnd.Received).Any(m =>
                 Json.Parse(m)["method"]?.AsString() == "notifications/prompts/list_changed"));
             Assert(got, "notifications/prompts/list_changed reaches the client");
+        }
+
+        private async Task PromptsListChangedStopsAfterStop()
+        {
+            var controller = new TestPromptController(listChangedSupported: true);
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server").WithVersion("1.0.0")
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .WithPromptsCapability(controller)
+                .Build();
+            await server.Start();
+            await clientEnd.Start();
+            await server.Stop();
+
+            // The ListChanged handler is wired on Start and removed on Stop, so a change raised after Stop
+            // must not emit anything. (The pre-fix code subscribed in the constructor and never unsubscribed,
+            // so it would still fire here, on a stopped server.)
+            controller.RaiseListChanged();
+            await Task.Delay(150);
+            Assert(!Snapshot(clientEnd.Received).Any(m =>
+                    Json.Parse(m)["method"]?.AsString() == "notifications/prompts/list_changed"),
+                "no prompts/list_changed is emitted after the server has stopped");
         }
 
         // -- Helpers -------------------------------------------------------------------------

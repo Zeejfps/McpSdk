@@ -62,10 +62,20 @@ namespace McpSdk.Shared
             lock (_lock)
                 _pending[request.Id] = tcs;
 
-            await SendMessage(request, cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await SendMessage(request, cancellationToken).ConfigureAwait(false);
 
-            using (cancellationToken.Register(() => tcs.TrySetCanceled()))
-                return await tcs.Task.ConfigureAwait(false);
+                using (cancellationToken.Register(() => tcs.TrySetCanceled()))
+                    return await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                // Always reclaim the slot. On a normal reply OnMessageReceived already removed it (this is
+                // a no-op); on a send failure or cancellation it would otherwise leak forever.
+                lock (_lock)
+                    _pending.Remove(request.Id);
+            }
         }
 
         public Task SendNotification(JsonRpcNotification notification, CancellationToken cancellationToken = default)

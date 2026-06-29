@@ -23,6 +23,7 @@ namespace McpSdk.Server.Tests
             await Test("completion request carries context (resolved variables)", CompletionContextRoundTrips);
             await Test("completion/complete round-trips (capability + nested result)", CompletionCompleteRoundTrips);
             await Test("capability is advertised under the spec key 'completions' (plural)", CompletionCapabilityUsesPluralKey);
+            await Test("completion/complete without 'ref' returns InvalidParams", CompletionMissingRefIsInvalidParams);
             await Test("completion/complete -> MethodNotFound when not configured", CompletionNotConfiguredIsMethodNotFound);
         }
 
@@ -98,6 +99,24 @@ namespace McpSdk.Server.Tests
             var caps = initResp.Result?["capabilities"]?.AsObject();
             Assert(caps?["completions"]?.AsObject() != null, "server advertises capabilities.completions (plural)");
             Assert(caps?["completion"] == null, "no off-spec singular 'completion' capability key is emitted");
+        }
+
+        private async Task CompletionMissingRefIsInvalidParams()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server").WithVersion("1.0.0")
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .WithCompletionCapability(new StubCompletionController())
+                .Build();
+            await server.Start();
+            await clientEnd.Start();
+
+            // 'ref' and 'argument' are required; omitting them must yield InvalidParams (-32602) rather than
+            // an NRE that collapses to a generic InternalError (-32603).
+            var resp = await clientEnd.SendRequest("completion/complete", w => { });
+            Assert(resp.IsError && resp.Error?.Code == ErrorCode.InvalidParams,
+                "completion/complete without 'ref' returns InvalidParams (-32602)");
         }
 
         private async Task CompletionNotConfiguredIsMethodNotFound()

@@ -25,6 +25,7 @@ namespace McpSdk.Server.Tests
             await Test("modern peer full handshake (real client <-> real server)", ModernPeerHandshake);
             await Test("legacy client (2024-11-05) -> modern server echoes legacy version", LegacyClientNegotiation);
             await Test("unsupported client version -> server offers Latest, never errors", UnsupportedClientNegotiation);
+            await Test("missing protocolVersion -> server offers Latest, never errors", MissingProtocolVersionNegotiation);
             await Test("modern client -> legacy server (2024-11-05) connects", ModernClientLegacyServer);
             await Test("modern client -> unsupported server disconnects cleanly", ModernClientUnsupportedServer);
             await Test("InitializeResult parses capabilities + serverInfo", InitializeResultParsing);
@@ -75,6 +76,26 @@ namespace McpSdk.Server.Tests
 
             Assert(response.IsOk, "server did not error on an unsupported version");
             AssertEqual(ProtocolVersion.Latest, response.Result?["protocolVersion"]?.AsString(), "server offers Latest to an unsupported client");
+        }
+
+        private async Task MissingProtocolVersionNegotiation()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = BuildServer(serverEnd);
+            await server.Start();
+            await clientEnd.Start();
+
+            // An initialize with no protocolVersion field at all. The server must negotiate (offer Latest),
+            // not throw an NRE reading the missing field that would surface as a generic internal error.
+            var response = await clientEnd.SendRequest("initialize", w =>
+            {
+                w.Write("capabilities", Json.Object(_ => { }));
+                w.Write("clientInfo", new ClientInfo("NoVersion", "1.0.0"));
+            });
+
+            Assert(response.IsOk, "server negotiates a missing protocolVersion instead of erroring");
+            AssertEqual(ProtocolVersion.Latest, response.Result?["protocolVersion"]?.AsString(),
+                "server offers Latest when the client omits protocolVersion");
         }
 
         private async Task ModernClientLegacyServer()

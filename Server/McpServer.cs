@@ -58,14 +58,14 @@ namespace McpSdk.Server
             // promptly with an empty result. Always available, independent of any capability.
             _requestHandlersByPathLookup.Add("ping", HandlePingRequest);
 
-            // NOTE(Zee): Is there a better way to do this?
             if (_promptController != null)
             {
                 _capabilities.Prompts = new PromptsCapabilityModel(_promptController.IsListChangedNotificationSupported);
                 _requestHandlersByPathLookup.Add("prompts/list", HandleListPromptsRequest);
                 _requestHandlersByPathLookup.Add("prompts/get", HandleGetPromptRequest);
-                if (_promptController.IsListChangedNotificationSupported)
-                    _promptController.ListChanged += OnPromptsListChanged;
+                // The ListChanged subscription is wired in RegisterListeners (on Start) and removed in
+                // UnregisterListeners (on Stop), alongside tools and resources — so the server only emits
+                // notifications while it is running, and never leaks the handler after Stop.
             }
             
             if (_resourcesController != null)
@@ -126,7 +126,7 @@ namespace McpSdk.Server
             return _transport.SendNotification(new JsonRpcNotification("notifications/message", message.WriteMembers));
         }
 
-        private async void OnPromptsListChanged()
+        private void OnPromptsListChanged()
         {
             SendNotification("notifications/prompts/list_changed");
         }
@@ -177,6 +177,9 @@ namespace McpSdk.Server
             if (_toolsController != null)
                 _toolsController.ListChanged += ToolsControllerOnListChanged;
 
+            if (_promptController != null && _promptController.IsListChangedNotificationSupported)
+                _promptController.ListChanged += OnPromptsListChanged;
+
             if (_resourcesController != null)
             {
                 if (_resourcesController.IsListChangedNotificationSupported == true)
@@ -193,6 +196,9 @@ namespace McpSdk.Server
         {
             if (_toolsController != null)
                 _toolsController.ListChanged -= ToolsControllerOnListChanged;
+
+            if (_promptController != null && _promptController.IsListChangedNotificationSupported)
+                _promptController.ListChanged -= OnPromptsListChanged;
 
             if (_resourcesController != null)
             {
@@ -228,11 +234,15 @@ namespace McpSdk.Server
             // request's _meta.progressToken) through an McpRequestContext passed explicitly to the handler.
             var cts = new CancellationTokenSource();
             _inFlightRequests[requestId] = cts;
-            var context = new McpRequestContext(
-                cts.Token,
-                new TransportProgressReporter(_transport, ReadProgressToken(payload)));
             try
             {
+                // Build the context inside the try: reading _meta.progressToken can fail on a malformed
+                // token, and that must produce an error response (and run the finally cleanup) rather than
+                // escape this async-void method, which would hang the request and leak the cts.
+                var context = new McpRequestContext(
+                    cts.Token,
+                    new TransportProgressReporter(_transport, ReadProgressToken(payload)));
+
                 _logger.LogDebug($"Received Request: Id: {requestId}, Method: {path}, Payload: {payload}");
                 if (_requestHandlersByPathLookup.TryGetValue(path, out var requestHandler))
                 {
@@ -254,6 +264,12 @@ namespace McpSdk.Server
                 // what we do — the canceller is no longer waiting for it.
                 _logger.LogDebug($"Request {requestId} ({path}) cancelled; response suppressed");
             }
+            catch (McpErrorException ex)
+            {
+                // A handler asked for a specific JSON-RPC error (e.g. InvalidParams for malformed params),
+                // rather than letting it collapse into a generic InternalError below.
+                await _transport.SendResponse(JsonRpcResponse.Failure(requestId, new Error(ex.Code, ex.Message)));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex);
@@ -272,8 +288,29 @@ namespace McpSdk.Server
         /// <summary>Reads an optional progress token from a request's <c>_meta.progressToken</c>.</summary>
         private static RequestId? ReadProgressToken(IJsonObject payload)
         {
-            var token = payload?["_meta"]?.AsObject()?["progressToken"];
-            return token == null ? (RequestId?)null : RequestId.FromJson(token);
+            try
+            {
+                var token = payload?["_meta"]?.AsObject()?["progressToken"];
+                return token == null ? (RequestId?)null : RequestId.FromJson(token);
+            }
+            catch
+            {
+                // A malformed optional progressToken must not fail the request; just disable progress for it.
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns the named request param, or throws <see cref="McpErrorException"/> with
+        /// <see cref="ErrorCode.InvalidParams"/> when the params object or the field is absent — so the
+        /// client gets a -32602, not a generic -32603, for a malformed request.
+        /// </summary>
+        private static IJsonProperty RequireField(IJsonObject payload, string field)
+        {
+            if (payload == null)
+                throw new McpErrorException(ErrorCode.InvalidParams, "Missing required params");
+            return payload[field]
+                ?? throw new McpErrorException(ErrorCode.InvalidParams, $"Missing required parameter '{field}'");
         }
 
         private Task HandlePingRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
@@ -281,7 +318,11 @@ namespace McpSdk.Server
 
         private Task HandleSetLevelRequest(RequestId requestId, IJsonObject reqPayload, McpRequestContext context)
         {
-            _minLogLevel = new SetLevelRequest(reqPayload).Level;
+            var levelText = RequireField(reqPayload, "level").AsString();
+            if (!LoggingLevelExtensions.TryParse(levelText, out var level))
+                throw new McpErrorException(ErrorCode.InvalidParams, $"Unknown logging level '{levelText}'");
+
+            _minLogLevel = level;
             return _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
@@ -319,6 +360,7 @@ namespace McpSdk.Server
 
         private async Task HandleGetPromptRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
+            RequireField(arguments, "name");
             var result = await _promptController.GetPrompt(new GetPromptRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
@@ -331,6 +373,7 @@ namespace McpSdk.Server
 
         private async Task HandleReadResourceRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
+            RequireField(arguments, "uri");
             var result = await _resourcesController.ReadResource(new ReadResourceRequest(arguments), context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
@@ -343,18 +386,22 @@ namespace McpSdk.Server
 
         private async Task HandleSubscribeRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            await _resourcesController.Subscribe(arguments["uri"].AsString(), context);
+            var uri = RequireField(arguments, "uri").AsString();
+            await _resourcesController.Subscribe(uri, context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
         private async Task HandleUnsubscribeRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
-            await _resourcesController.Unsubscribe(arguments["uri"].AsString(), context);
+            var uri = RequireField(arguments, "uri").AsString();
+            await _resourcesController.Unsubscribe(uri, context);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, _ => { }));
         }
 
         private async Task HandleCompleteRequest(RequestId requestId, IJsonObject arguments, McpRequestContext context)
         {
+            RequireField(arguments, "ref");
+            RequireField(arguments, "argument");
             var result = await _completionController.Complete(new CompletionRequest(arguments), context);
             // The CompleteResult nests the suggestions under a "completion" object, per spec.
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, w => w.Write("completion", result)));

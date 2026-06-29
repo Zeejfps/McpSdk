@@ -186,8 +186,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
             }
             else
             {
-                // Post-initialize: the negotiated protocol version is a required header.
-                if (string.IsNullOrEmpty(request.Headers[ProtocolVersionHeader]))
+                if (!IsProtocolVersionAcceptable(request))
                 {
                     WriteStatus(response, 400);
                     return;
@@ -224,7 +223,7 @@ namespace McpSdk.Adapter.StreamableHttpServer
         private async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response)
         {
             var sessionId = request.Headers[SessionIdHeader];
-            if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(request.Headers[ProtocolVersionHeader]))
+            if (string.IsNullOrEmpty(sessionId) || !IsProtocolVersionAcceptable(request))
             {
                 WriteStatus(response, 400);
                 return;
@@ -320,6 +319,14 @@ namespace McpSdk.Adapter.StreamableHttpServer
             // GET loop to close.
             await session.Transport.Stop().ConfigureAwait(false);
             WriteStatus(response, 200);
+        }
+
+        // True when the MCP-Protocol-Version header is either absent (assume the pre-header 2025-03-26
+        // baseline) or names a revision this SDK supports. A present-but-unsupported value is rejected.
+        private static bool IsProtocolVersionAcceptable(HttpListenerRequest request)
+        {
+            var version = request.Headers[ProtocolVersionHeader];
+            return string.IsNullOrEmpty(version) || ProtocolVersion.IsSupported(version);
         }
 
         private bool IsOriginAllowed(HttpListenerRequest request)

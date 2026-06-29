@@ -21,6 +21,7 @@ namespace McpSdk.Server.Tests
         {
             await Test("progress: notifications/progress emitted for a request with a progressToken", ProgressEmittedWhenTokenPresent);
             await Test("progress: no notifications/progress without a progressToken", ProgressNotEmittedWithoutToken);
+            await Test("progress: a malformed _meta.progressToken is ignored, request still succeeds", MalformedProgressTokenIsIgnored);
             await Test("progress: client dispatches an inbound notifications/progress", ClientDispatchesProgress);
         }
 
@@ -64,6 +65,28 @@ namespace McpSdk.Server.Tests
             Assert(completed, "tools/call completed");
             Assert(!Snapshot(clientEnd.Received).Any(m => Json.Parse(m)["method"]?.AsString() == "notifications/progress"),
                 "no progress notification is emitted when the request carries no progressToken");
+        }
+
+        private async Task MalformedProgressTokenIsIgnored()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = BuildProgressServer(serverEnd);
+            await server.Start();
+            await clientEnd.Start();
+
+            // A progressToken that is neither a string nor an integer (here an object) throws while being
+            // read. The request must still complete (progress simply disabled), not hang or error — so the
+            // read happens inside the dispatch try and the token read itself degrades to "no token".
+            var resp = await WithTimeout(
+                clientEnd.SendRequest("tools/call", w =>
+                {
+                    w.Write("name", "progress-tool");
+                    w.Write("arguments", Json.Object(_ => { }));
+                    w.Write("_meta", Json.Object(m => m.Write("progressToken", Json.Object(o => o.Write("bad", true)))));
+                }),
+                5000, "tools/call with a malformed progressToken");
+
+            Assert(resp.IsOk, "a request with a malformed progressToken still completes successfully");
         }
 
         private async Task ClientDispatchesProgress()

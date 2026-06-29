@@ -23,9 +23,10 @@ namespace McpSdk.Server.Tests
     /// The Streamable HTTP transport: a real <see cref="StreamableHttpListener"/> and
     /// <see cref="StreamableHttpClient"/> run in-process over loopback, exercising the full
     /// initialize + tools/list + tools/call round-trip on a single endpoint plus the protocol mechanics
-    /// raw HTTP makes visible — the <c>Mcp-Session-Id</c>, the required <c>MCP-Protocol-Version</c> header,
-    /// Origin→403, unknown-session→404, server→client traffic over the SSE stream, Last-Event-ID
-    /// resumability, and DELETE session termination.
+    /// raw HTTP makes visible — the <c>Mcp-Session-Id</c>, the <c>MCP-Protocol-Version</c> header (absent ⇒
+    /// the pre-header 2025-03-26 baseline is assumed; present-but-unsupported ⇒ 400), Origin→403,
+    /// unknown-session→404, server→client traffic over the SSE stream, Last-Event-ID resumability, and
+    /// DELETE session termination.
     /// </summary>
     public sealed class StreamableHttpTransportTests : ConformanceSuite
     {
@@ -143,11 +144,18 @@ namespace McpSdk.Server.Tests
                 var badOriginResp = await Post(http, url, InitializeBody(2), ("Origin", "http://evil.example"));
                 Assert((int)badOriginResp.StatusCode == 403, $"a disallowed Origin is rejected with 403 (got {(int)badOriginResp.StatusCode})");
 
-                // 3) a post-initialize request without the MCP-Protocol-Version header is a 400.
+                // 3) a post-init request WITHOUT the MCP-Protocol-Version header is accepted: the header
+                //    postdates 2025-03-26, so an older conformant client never sends it (assume that baseline).
                 var noVersionResp = await Post(http, url, ListToolsBody(3),
                     ("Origin", allowedOrigin), ("Mcp-Session-Id", sessionId));
-                Assert((int)noVersionResp.StatusCode == 400,
-                    $"a post-init request without MCP-Protocol-Version is rejected with 400 (got {(int)noVersionResp.StatusCode})");
+                Assert((int)noVersionResp.StatusCode == 200,
+                    $"a post-init request without MCP-Protocol-Version is accepted for back-compat (got {(int)noVersionResp.StatusCode})");
+
+                // 3b) but a present-yet-unsupported MCP-Protocol-Version is rejected with 400.
+                var badVersionResp = await Post(http, url, ListToolsBody(6),
+                    ("Origin", allowedOrigin), ("Mcp-Session-Id", sessionId), ("MCP-Protocol-Version", "1999-01-01"));
+                Assert((int)badVersionResp.StatusCode == 400,
+                    $"a post-init request with an unsupported MCP-Protocol-Version is rejected with 400 (got {(int)badVersionResp.StatusCode})");
 
                 // 4) an unknown session id is a 404 (the client must reinitialize).
                 var unknownResp = await Post(http, url, ListToolsBody(4),

@@ -19,10 +19,14 @@ namespace McpSdk.Protocol.Models
 
         public InitializeRequest(IJsonObject jsonObject)
         {
-            ProtocolVersion = jsonObject["protocolVersion"].AsString();
+            // Read defensively: a missing protocolVersion is left null so version negotiation can fall back
+            // to the latest revision, rather than throwing an NRE that surfaces as an opaque internal error.
+            ProtocolVersion = jsonObject["protocolVersion"]?.AsString();
 
-            var capabilities = jsonObject["capabilities"].AsObject();
-            ClientCapabilities = new ClientCapabilitiesModel(capabilities);
+            var capabilities = jsonObject["capabilities"]?.AsObject();
+            ClientCapabilities = capabilities != null
+                ? new ClientCapabilitiesModel(capabilities)
+                : new ClientCapabilitiesModel();
 
             var clientInfoObj = jsonObject["clientInfo"]?.AsObject();
             if (clientInfoObj != null)
