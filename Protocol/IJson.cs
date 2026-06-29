@@ -21,7 +21,6 @@ namespace McpSdk.Protocol
 
     public interface IJson
     {
-        IJsonObject Object(Action<IJsonWriter> props);
         IJsonObject Parse(string text);
         string Stringify(Action<IJsonWriter> json);
     }
@@ -51,7 +50,6 @@ namespace McpSdk.Protocol
     public interface IJsonObject : IJsonObjectWriter, IEnumerable<KeyValuePair<string, IJsonProperty>>
     {
         IJsonProperty this[string propertyName] { get; }
-        bool IsValid(IJsonObject schema, out IList<string> errors);
     }
 
     public interface IJsonProperty

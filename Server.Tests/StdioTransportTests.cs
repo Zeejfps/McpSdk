@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using McpSdk.Adapter.Newtonsoft.Json;
 using McpSdk.Client;
+using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
 namespace McpSdk.Server.Tests

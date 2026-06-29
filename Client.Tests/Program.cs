@@ -4,6 +4,7 @@ using McpSdk.Adapter.StreamableHttpClient;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
 using McpSdk.Client.Transports;
+using McpSdk.Protocol;
 using McpSdk.Protocol.Models;
 
 // Demo MCP client. Runs initialize -> tools/list -> tools/call against the server given on the

@@ -131,17 +131,21 @@ namespace McpSdk.Server.Tests
                 { "b", new NumberSchema() },
             };
 
-            foreach (var (name, json) in new (string, IJson)[] { ("Newtonsoft", newtonsoft), ("SystemText", systemText) })
+            var cases = new (string name, IJson json, IJsonSchemaValidator validator)[]
             {
-                var schemaObj = schema.AsJsonObject(json);
-
+                ("Newtonsoft", newtonsoft, new McpSdk.Adapter.Newtonsoft.Json.NewtonsoftJsonSchemaValidator()),
+                ("SystemText", systemText, new McpSdk.Adapter.System.Text.Json.SystemTextJsonSchemaValidator()),
+            };
+            foreach (var (name, json, validator) in cases)
+            {
+                // The schema is passed as the write-only model itself — never materialized as an object.
                 var good = json.Object(w => { w.Write("a", 1.0); w.Write("b", 2.0); });
-                var goodValid = good.IsValid(schemaObj, out _);
+                var goodValid = validator.IsValid(good, schema, out _);
                 Assert(goodValid, $"{name}: valid args pass 2020-12 validation");
 
                 // 'b' is required but omitted — every adapter must catch this, not silently pass.
                 var bad = json.Object(w => w.Write("a", 1.0));
-                var badValid = bad.IsValid(schemaObj, out var errors);
+                var badValid = validator.IsValid(bad, schema, out var errors);
                 Assert(!badValid, $"{name}: missing required field fails validation");
                 Assert(!badValid && errors != null && errors.Count > 0, $"{name}: failure reports at least one error");
             }

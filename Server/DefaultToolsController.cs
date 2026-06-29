@@ -8,7 +8,8 @@ namespace McpSdk.Server
 {
     public sealed class DefaultToolsController : IToolsController
     {
-        private readonly IJson _json;
+        private readonly IJsonSchemaValidator _schemaValidator;
+        private readonly IJsonObject _emptyArguments;
         private readonly Dictionary<string, IToolHandler> _toolByNameLookup = new();
 
         // Parallel to the name lookup: preserves registration order so an offset-based pagination
@@ -26,9 +27,12 @@ namespace McpSdk.Server
         /// </summary>
         public int? PageSize { get; set; }
 
-        public DefaultToolsController(IJson json)
+        public DefaultToolsController(IJson json, IJsonSchemaValidator schemaValidator)
         {
-            _json = json;
+            _schemaValidator = schemaValidator;
+            // Stand-in for omitted call arguments: validation (not a null-ref) then decides whether any
+            // required inputs are missing. Built once — it never changes.
+            _emptyArguments = json.Parse("{}");
         }
 
         public void AddTool(IToolHandler toolHandler)
@@ -90,12 +94,13 @@ namespace McpSdk.Server
 
             // Treat omitted arguments as an empty object so validation (rather than a null-ref) decides
             // whether required inputs are missing.
-            var toolArguments = request.ToolArguments ?? _json.Object(_ => { });
+            var toolArguments = request.ToolArguments ?? _emptyArguments;
 
             // SEP-1303: schema-validation failures are returned to the model as a tool error
-            // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error.
-            var inputSchema = toolHandler.Tool.InputSchema.AsJsonObject(_json);
-            if (!toolArguments.IsValid(inputSchema, out var errors))
+            // (isError: true) so it can self-correct, not raised as a JSON-RPC protocol error. A tool
+            // with no input schema accepts any arguments.
+            var inputSchema = toolHandler.Tool.InputSchema;
+            if (inputSchema != null && !_schemaValidator.IsValid(toolArguments, inputSchema, out var errors))
             {
                 var content = new Content[errors.Count];
                 for (var i = 0; i < errors.Count; i++)
@@ -111,9 +116,9 @@ namespace McpSdk.Server
 
     public static class DefaultToolsControllerExtensions
     {
-        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, Action<DefaultToolsController> configure)
+        public static ServerBuilder WithDefaultToolsCapability(this ServerBuilder builder, IJson json, IJsonSchemaValidator schemaValidator, Action<DefaultToolsController> configure)
         {
-            var toolsController = new DefaultToolsController(json);
+            var toolsController = new DefaultToolsController(json, schemaValidator);
             configure(toolsController);
             builder.WithToolsCapability(toolsController);
             return builder;

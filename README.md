@@ -100,12 +100,13 @@ using McpSdk.Server;
 using McpSdk.Server.Tests;
 
 var json = new NewtonsoftJson();
+var schemaValidator = new NewtonsoftJsonSchemaValidator();
 var mcpServer = new ServerBuilder()
     .WithName("Demo Server")
     .WithVersion("1.0.0")
     .WithConsoleLogger()
     .WithStdioTransport(json)
-    .WithDefaultToolsCapability(json, tools =>
+    .WithDefaultToolsCapability(json, schemaValidator, tools =>
     {
         tools.AddTool(new TestTool());
     })
@@ -129,6 +130,7 @@ using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Server;
 
 var json = new NewtonsoftJson();
+var schemaValidator = new NewtonsoftJsonSchemaValidator();
 var loggerFactory = new ServerConsoleLoggerFactory();
 var listener = new StreamableHttpListener(
     "http://localhost:3000", "/mcp", json, loggerFactory,
@@ -139,7 +141,7 @@ var listener = new StreamableHttpListener(
             .WithVersion("1.0.0")
             .WithLogger(loggerFactory)
             .WithStreamableHttpTransport(transport)
-            .WithDefaultToolsCapability(json, tools => tools.AddTool(new TestTool()))
+            .WithDefaultToolsCapability(json, schemaValidator, tools => tools.AddTool(new TestTool()))
             .Build();
         await server.Start();
     });

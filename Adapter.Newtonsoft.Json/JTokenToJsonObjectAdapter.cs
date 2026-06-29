@@ -1,22 +1,23 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using McpSdk.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Schema;
 
 namespace McpSdk.Adapter.Newtonsoft.Json
 {
     internal sealed class JTokenToJsonObjectAdapter : IJsonObject
     {
         private readonly JToken _jToken;
-        
+
         public JTokenToJsonObjectAdapter(JToken jToken)
         {
             _jToken = jToken;
         }
+
+        /// <summary>The backing token, so a same-assembly validator can read it without re-serializing.</summary>
+        internal JToken Token => _jToken;
 
         public IJsonProperty this[string propertyName]
         {
@@ -47,12 +48,6 @@ namespace McpSdk.Adapter.Newtonsoft.Json
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-
-        public bool IsValid(IJsonObject schema, out IList<string> errors)
-        {
-            var jSchema = JSchema.Parse(schema.ToString());
-            return _jToken.IsValid(jSchema, out errors);
         }
 
         public void WriteMembers(IJsonWriter writer)

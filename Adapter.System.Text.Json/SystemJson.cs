@@ -8,12 +8,6 @@ namespace McpSdk.Adapter.System.Text.Json
 {
     public sealed class SystemJson : IJson
     {
-        public IJsonObject Object(Action<IJsonWriter> props)
-        {
-            var json = Stringify(props);
-            return Parse(json);
-        }
-
         public IJsonObject Parse(string text)
         {
             var document = JsonDocument.Parse(text);

@@ -101,7 +101,7 @@ namespace McpSdk.Server.Tests
                 .WithName("Page Server")
                 .WithVersion("1.0.0")
                 .WithTransport(new FixedTransportFactory(serverEnd))
-                .WithDefaultToolsCapability(Json, tools =>
+                .WithDefaultToolsCapability(Json, SchemaValidator, tools =>
                 {
                     tools.PageSize = pageSize;
                     for (var i = 0; i < toolCount; i++)

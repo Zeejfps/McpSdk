@@ -58,7 +58,7 @@ namespace McpSdk.Server.Tests
                         .WithName("Http Conf Server")
                         .WithVersion("1.0.0")
                         .WithStreamableHttpTransport(transport)
-                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
+                        .WithDefaultToolsCapability(Json, SchemaValidator, tools => tools.AddTool(new TestToolHandler()))
                         .Build();
                     await server.Start();
                 });
@@ -118,7 +118,7 @@ namespace McpSdk.Server.Tests
                         .WithName("Http Conf Server")
                         .WithVersion("1.0.0")
                         .WithStreamableHttpTransport(transport)
-                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
+                        .WithDefaultToolsCapability(Json, SchemaValidator, tools => tools.AddTool(new TestToolHandler()))
                         .Build();
                     await server.Start();
                 },
@@ -324,7 +324,7 @@ namespace McpSdk.Server.Tests
                         .WithName("Delete Server")
                         .WithVersion("1.0.0")
                         .WithStreamableHttpTransport(transport)
-                        .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
+                        .WithDefaultToolsCapability(Json, SchemaValidator, tools => tools.AddTool(new TestToolHandler()))
                         .Build();
                     await server.Start();
                 });

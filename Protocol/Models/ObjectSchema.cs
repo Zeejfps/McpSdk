@@ -64,11 +64,6 @@ public sealed class ObjectSchema : JsonSchema, IEnumerable<KeyValuePair<string, 
         writer.Write("required", _requiredInputsByNameLookup.Keys.ToArray());
     }
     
-    public IJsonObject AsJsonObject(IJson json)
-    {
-        return json.Object(WriteMembers);
-    }
-
     public IEnumerator<KeyValuePair<string, JsonSchema>> GetEnumerator()
     {
         return _requiredInputsByNameLookup.GetEnumerator();
