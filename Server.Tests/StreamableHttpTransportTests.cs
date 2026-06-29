@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using McpSdk.Adapter.StreamableHttpClient;
+using McpSdk.Adapter.System.Net.Http;
 using McpSdk.Adapter.StreamableHttpServer;
 using McpSdk.Client;
 using McpSdk.Client.Transports;
@@ -21,7 +21,7 @@ namespace McpSdk.Server.Tests
 {
     /// <summary>
     /// The Streamable HTTP transport: a real <see cref="StreamableHttpListener"/> and
-    /// <see cref="StreamableHttpClientAdapter"/> run in-process over loopback, exercising the full
+    /// <see cref="StreamableHttpClient"/> run in-process over loopback, exercising the full
     /// initialize + tools/list + tools/call round-trip on a single endpoint plus the protocol mechanics
     /// raw HTTP makes visible — the <c>Mcp-Session-Id</c>, the required <c>MCP-Protocol-Version</c> header,
     /// Origin→403, unknown-session→404, server→client traffic over the SSE stream, Last-Event-ID
@@ -66,7 +66,7 @@ namespace McpSdk.Server.Tests
 
             try
             {
-                using var http = new StreamableHttpClientAdapter($"{baseUrl}{endpointPath}", Loggers);
+                using var http = new StreamableHttpClient($"{baseUrl}{endpointPath}", Loggers);
                 var client = new ClientBuilder()
                     .WithName("Http Conf Client")
                     .WithVersion("1.0.0")
@@ -203,7 +203,7 @@ namespace McpSdk.Server.Tests
             await listener.Start();
 
             var clientTransport = new StreamableHttpTransport(
-                new StreamableHttpClientAdapter(url, Loggers), Json, Loggers);
+                new StreamableHttpClient(url, Loggers), Json, Loggers);
 
             string receivedNotification = null;
             clientTransport.NotificationReceived += notification => receivedNotification = notification.Method;

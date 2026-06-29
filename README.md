@@ -147,7 +147,7 @@ await listener.Start();
 // Client
 using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
-using McpSdk.Adapter.StreamableHttpClient;
+using McpSdk.Adapter.System.Net.Http;
 using McpSdk.Client;
 
 var json = new NewtonsoftJson();

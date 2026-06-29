@@ -1,6 +1,6 @@
 using McpSdk.Adapter.ConsoleLogger;
 using McpSdk.Adapter.Newtonsoft.Json;
-using McpSdk.Adapter.StreamableHttpClient;
+using McpSdk.Adapter.System.Net.Http;
 using McpSdk.Client;
 using McpSdk.Client.Tests;
 using McpSdk.Client.Transports;
@@ -33,7 +33,7 @@ var builder = new ClientBuilder()
 
 if (target.StartsWith("http://") || target.StartsWith("https://"))
 {
-    builder.WithStreamableHttpTransport(json, new StreamableHttpClientAdapter(target, loggerFactory));
+    builder.WithStreamableHttpTransport(json, new StreamableHttpClient(target, loggerFactory));
 }
 else
 {

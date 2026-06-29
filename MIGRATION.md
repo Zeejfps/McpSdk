@@ -280,9 +280,9 @@ which move to stdio (and later Streamable HTTP).
     (GUIDs `B0C6F17D…` SseClient, `386DEDC5…` SseServer, `73A33E46…` StdioToSseBridge,
     `14D62640…` TransportBridge) are gone.
   - `Client.Tests/Client.Tests.csproj` — no longer references `Adapter.SseClient`; references
-    `Adapter.StreamableHttpClient` instead.
+    `Adapter.System.Net.Http` instead.
   - `Server.Tests/Server.Tests.csproj` — no longer references `Adapter.SseServer`; references the
-    `Adapter.StreamableHttp{Server,Client}` projects instead.
+    `Adapter.StreamableHttpServer` and `Adapter.System.Net.Http` projects instead.
   - `Client.Tests/Program.cs` — drives an `http(s)` URL over Streamable HTTP, or a stdio command
     otherwise (superseded the original "rewrite to stdio" interim plan once the G.2c client landed).
   - `Server.Tests/Program.cs` — the `HttpListenerSseServer` demo block is gone; it exposes
@@ -303,7 +303,7 @@ the symmetric legacy SSE channel, Streamable HTTP correlates each response to th
 its request, so the single-`Send` pump doesn't fit. It follows the old core-abstraction + adapter
 split — transport in `Server`/`Client`, the concrete HTTP machinery in adapter projects. New
 projects: `Adapter.StreamableHttpServer/` (`HttpListener`-based, zero new deps) and
-`Adapter.StreamableHttpClient/` (`HttpClient`-based), with `WithStreamableHttpTransport` builder
+`Adapter.System.Net.Http/` (`HttpClient`-based), with `WithStreamableHttpTransport` builder
 extensions on each side. Built in three independently-verifiable increments.
 
 #### G.2a — Core request/response, sessions, security ✅

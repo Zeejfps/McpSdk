@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
-        <AssemblyName>McpSdk.Adapter.StreamableHttpClient</AssemblyName>
-        <RootNamespace>McpSdk.Adapter.StreamableHttpClient</RootNamespace>
+        <AssemblyName>McpSdk.Adapter.System.Net.Http</AssemblyName>
+        <RootNamespace>McpSdk.Adapter.System.Net.Http</RootNamespace>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
 

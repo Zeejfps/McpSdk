@@ -20,7 +20,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.StreamableHttpServer", "Adapter.StreamableHttpServer\Adapter.StreamableHttpServer.csproj", "{B813D35B-6F60-47F9-A167-9B01FCC0D531}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.StreamableHttpClient", "Adapter.StreamableHttpClient\Adapter.StreamableHttpClient.csproj", "{7DD5937A-8C6F-4B98-A891-5F3A8813D991}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adapter.System.Net.Http", "Adapter.System.Net.Http\Adapter.System.Net.Http.csproj", "{7DD5937A-8C6F-4B98-A891-5F3A8813D991}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

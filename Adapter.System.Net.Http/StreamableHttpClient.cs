@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using McpSdk.Client;
 using McpSdk.Shared;
 
-namespace McpSdk.Adapter.StreamableHttpClient
+namespace McpSdk.Adapter.System.Net.Http
 {
     /// <summary>
     /// <see cref="System.Net.Http.HttpClient"/>-backed <see cref="IStreamableHttpClient"/>: POSTs a
@@ -17,7 +17,7 @@ namespace McpSdk.Adapter.StreamableHttpClient
     /// headers once the transport knows them. Reads back the <c>application/json</c> body and the
     /// <c>Mcp-Session-Id</c> the server issues on initialize.
     /// </summary>
-    public sealed class StreamableHttpClientAdapter : IStreamableHttpClient, IDisposable
+    public sealed class StreamableHttpClient : IStreamableHttpClient, IDisposable
     {
         private const string SessionIdHeader = "Mcp-Session-Id";
         private const string ProtocolVersionHeader = "MCP-Protocol-Version";
@@ -26,10 +26,10 @@ namespace McpSdk.Adapter.StreamableHttpClient
         private readonly string _endpointUrl;
         private readonly ILogger _logger;
 
-        public StreamableHttpClientAdapter(string endpointUrl, ILoggerFactory loggerFactory)
+        public StreamableHttpClient(string endpointUrl, ILoggerFactory loggerFactory)
         {
             _endpointUrl = endpointUrl;
-            _logger = loggerFactory.Create<StreamableHttpClientAdapter>();
+            _logger = loggerFactory.Create<StreamableHttpClient>();
             _httpClient = new HttpClient();
         }
 

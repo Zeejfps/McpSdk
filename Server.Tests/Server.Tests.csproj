@@ -14,7 +14,7 @@
       <ProjectReference Include="..\Adapter.Newtonsoft.Json\Adapter.Newtonsoft.Json.csproj" />
       <ProjectReference Include="..\Adapter.System.Text.Json\Adapter.System.Text.Json.csproj" />
       <ProjectReference Include="..\Adapter.StreamableHttpServer\Adapter.StreamableHttpServer.csproj" />
-      <ProjectReference Include="..\Adapter.StreamableHttpClient\Adapter.StreamableHttpClient.csproj" />
+      <ProjectReference Include="..\Adapter.System.Net.Http\Adapter.System.Net.Http.csproj" />
       <ProjectReference Include="..\Client\Client.csproj" />
       <ProjectReference Include="..\Server\Server.csproj" />
     </ItemGroup>
