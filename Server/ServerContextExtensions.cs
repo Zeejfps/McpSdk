@@ -98,10 +98,13 @@ namespace McpSdk.Server
         /// <summary>
         /// Registers a tools capability configured through an <see cref="IToolsBuilder"/>. The builder's
         /// handlers / handler-types / page size become one <i>leaf</i> tools controller (a
-        /// <see cref="DefaultToolsController"/>, its serializer resolved from the container) registered under
-        /// the internal source marker. The leaf is materialized lazily from the scope it is resolved in, so an
-        /// <c>AddTool&lt;THandler&gt;()</c> handler is activated — with its constructor dependencies injected —
-        /// from that scope (the root for stdio/in-memory, the per-connection child for HTTP).
+        /// <see cref="DefaultToolsController"/>, its serializer resolved from the container) registered as a
+        /// singleton under the internal source marker. The leaf is built (eagerly, when the provider is built)
+        /// from the container it was registered in, so an <c>AddTool&lt;THandler&gt;()</c> handler is activated
+        /// — with its constructor dependencies injected — from that scope. Lifetime therefore follows the
+        /// registration site, not the transport: registered on the global builder <c>Context</c> the handler is
+        /// one singleton shared across every session (stdio, in-memory, and HTTP alike); registered on a
+        /// per-session <c>session.Context</c> (HTTP <c>ConfigureSession</c>) it is built once per session.
         /// </summary>
         /// <remarks>
         /// Each call adds another leaf rather than replacing the previous one; the public
