@@ -27,9 +27,9 @@ namespace McpSdk.Adapter.System.Text.Json
             return jsonString;
         }
 
-        public ICompiledJsonSchema CompileSchema(IJsonObjectWriter schema)
+        public ICompiledJsonSchema CompileSchema(Action<IJsonWriter> schema)
         {
-            return new CompiledJsonSchema(JsonSchema.FromText(Stringify(schema.WriteMembers)));
+            return new CompiledJsonSchema(JsonSchema.FromText(Stringify(schema)));
         }
     }
 }

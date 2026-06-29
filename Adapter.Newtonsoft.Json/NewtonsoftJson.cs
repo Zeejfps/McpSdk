@@ -27,9 +27,9 @@ namespace McpSdk.Adapter.Newtonsoft.Json
             return stringWriter.ToString();
         }
 
-        public ICompiledJsonSchema CompileSchema(IJsonObjectWriter schema)
+        public ICompiledJsonSchema CompileSchema(Action<IJsonWriter> schema)
         {
-            return new CompiledJsonSchema(JSchema.Parse(Stringify(schema.WriteMembers)));
+            return new CompiledJsonSchema(JSchema.Parse(Stringify(schema)));
         }
     }
 }

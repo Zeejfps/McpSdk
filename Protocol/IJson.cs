@@ -28,10 +28,11 @@ namespace McpSdk.Protocol
         /// Compiles a schema (the members written by <paramref name="schema"/>) into a reusable
         /// validator backed by the adapter's schema engine. Compiling is the expensive step — parsing
         /// the schema text into the engine's representation — so callers should compile once and
-        /// validate many times. Takes the schema as a writer so a typed schema model
-        /// (e.g. <c>Tool.InputSchema</c>) can be passed directly, with no stringify/parse round-trip.
+        /// validate many times. For a typed schema model (e.g. <c>Tool.InputSchema</c>), use the
+        /// <see cref="JsonExtensions.CompileSchema(IJson, IJsonObjectWriter)"/> overload, which
+        /// forwards its <see cref="IJsonObjectWriter.WriteMembers"/>.
         /// </summary>
-        ICompiledJsonSchema CompileSchema(IJsonObjectWriter schema);
+        ICompiledJsonSchema CompileSchema(Action<IJsonWriter> schema);
     }
 
     /// <summary>
@@ -47,7 +48,19 @@ namespace McpSdk.Protocol
         /// </summary>
         bool Validate(IJsonObject data, out IList<string> errors);
     }
-    
+
+    public static class JsonExtensions
+    {
+        /// <summary>
+        /// Compiles a typed schema model into a reusable validator by forwarding its
+        /// <see cref="IJsonObjectWriter.WriteMembers"/> to <see cref="IJson.CompileSchema"/>.
+        /// </summary>
+        public static ICompiledJsonSchema CompileSchema(this IJson json, IJsonObjectWriter schema)
+        {
+            return json.CompileSchema(schema.WriteMembers);
+        }
+    }
+
     public interface IJsonWriter
     {
         IJsonWriter Write(string propertyName, string value);
