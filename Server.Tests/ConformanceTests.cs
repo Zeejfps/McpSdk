@@ -49,6 +49,7 @@ namespace McpSdk.Server.Tests
                 // Transports
                 new InMemoryTransportTests(report),
                 new StdioTransportTests(report),
+                new StdioShutdownTests(report),
                 new StreamableHttpTransportTests(report),
             };
 

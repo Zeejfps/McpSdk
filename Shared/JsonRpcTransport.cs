@@ -27,6 +27,8 @@ namespace McpSdk.Shared
         private readonly object _lock = new object();
         private readonly Dictionary<RequestId, TaskCompletionSource<JsonRpcResponse>> _pending = new();
 
+        private int _closed;
+
         protected JsonRpcTransport(ILoggerFactory loggerFactory)
         {
             Logger = loggerFactory.Create(GetType());
@@ -36,21 +38,14 @@ namespace McpSdk.Shared
 
         public event RequestReceivedCallback RequestReceived;
         public event NotificationReceivedCallback NotificationReceived;
+        public event TransportClosedCallback Closed;
 
         public Task Start(CancellationToken cancellationToken = default) => OnStart(cancellationToken);
 
         public async Task Stop()
         {
             // The connection is closing; fail any in-flight requests rather than letting them hang.
-            List<TaskCompletionSource<JsonRpcResponse>> pending;
-            lock (_lock)
-            {
-                pending = new List<TaskCompletionSource<JsonRpcResponse>>(_pending.Values);
-                _pending.Clear();
-            }
-            foreach (var tcs in pending)
-                tcs.TrySetCanceled();
-
+            FailPendingRequests();
             await OnStop().ConfigureAwait(false);
         }
 
@@ -94,6 +89,41 @@ namespace McpSdk.Shared
 
         /// <summary>Stops the transport's wire and releases its resources.</summary>
         protected abstract Task OnStop();
+
+        /// <summary>Called by a concrete transport when the peer closes the wire. Raises
+        /// <see cref="Closed"/> exactly once, and only for a close the peer initiated — a transport
+        /// shutting itself down in <see cref="OnStop"/> must not call it.</summary>
+        protected void OnClosed()
+        {
+            if (Interlocked.Exchange(ref _closed, 1) != 0)
+                return;
+
+            // No reply can arrive over a closed wire, so fail the in-flight requests now. Waiting for
+            // Stop() would deadlock it: it drains the handlers first, and a handler awaiting one of
+            // these would never return.
+            FailPendingRequests();
+
+            try
+            {
+                Closed?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+        }
+
+        private void FailPendingRequests()
+        {
+            List<TaskCompletionSource<JsonRpcResponse>> pending;
+            lock (_lock)
+            {
+                pending = new List<TaskCompletionSource<JsonRpcResponse>>(_pending.Values);
+                _pending.Clear();
+            }
+            foreach (var tcs in pending)
+                tcs.TrySetCanceled();
+        }
 
         /// <summary>Called by a concrete transport for each message parsed off the wire: dispatches
         /// requests/notifications to subscribers and correlates a response to its awaiting request.</summary>
