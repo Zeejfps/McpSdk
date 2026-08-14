@@ -72,6 +72,11 @@ var server = new ServerBuilder()
     .Build();
 
 await server.Start();
+
+// A stdio client shuts a server down by closing its stdin: WaitForShutdown returns on that (or on
+// the token you pass), and Stop drains the responses still in flight before the wire closes.
+await server.WaitForShutdown();
+await server.Stop();
 ```
 
 A tool is any `IToolHandler` — it advertises a `Tool` (name, description, JSON Schema) and handles the call:

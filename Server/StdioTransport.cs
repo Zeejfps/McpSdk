@@ -11,7 +11,8 @@ namespace McpSdk.Server
     /// <summary>
     /// The server stdio transport: the wire boundary over the process's std handles, framing JSON-RPC
     /// messages as newline-delimited UTF-8 (no BOM). Correlation and dispatch are inherited from
-    /// <see cref="JsonRpcTransport"/>.
+    /// <see cref="JsonRpcTransport"/>. End of input on stdin surfaces as
+    /// <see cref="ITransport.Closed"/> — the client closing stdin is how a stdio session ends.
     /// </summary>
     public sealed class StdioTransport : JsonRpcTransport
     {
@@ -80,15 +81,31 @@ namespace McpSdk.Server
 
         private async Task ReadLoop(TextReader standardIn, CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                var line = await standardIn.ReadLineAsync().ConfigureAwait(false);
-                if (line == null)
-                    break;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var line = await standardIn.ReadLineAsync().ConfigureAwait(false);
 
-                if (JsonRpcMessage.TryParse(_json, line, out var message))
-                    OnMessageReceived(message);
+                    // null is end of input: the client closed our stdin, which the spec makes the primary
+                    // graceful-shutdown signal for a stdio server.
+                    if (line == null)
+                        break;
+
+                    if (JsonRpcMessage.TryParse(_json, line, out var message))
+                        OnMessageReceived(message);
+                }
             }
+            catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+            {
+                // A broken pipe ends the session just as EOF does, but it is not a clean shutdown —
+                // log it so it can never pass for one.
+                Logger.LogError(e);
+            }
+
+            // Stop() cancels this loop on its way out; that close is ours, not the client's.
+            if (!cancellationToken.IsCancellationRequested)
+                OnClosed();
         }
     }
 

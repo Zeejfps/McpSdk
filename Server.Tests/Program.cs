@@ -11,8 +11,9 @@ if (args.Length > 0 && args[0] == "conformance")
     return;
 }
 
-// Child-process entry point for the stdio round-trip conformance test. Speaks MCP over stdio and
-// blocks forever; the transport reserves stdout for protocol frames and sends all logging to stderr.
+// Child-process entry point for the stdio conformance tests. Speaks MCP over stdio until the client
+// closes its stdin, then drains and exits; the transport reserves stdout for protocol frames and
+// sends all logging to stderr.
 if (args.Length > 0 && args[0] == "stdio-server")
 {
     var stdioJson = new NewtonsoftJson();
@@ -25,7 +26,8 @@ if (args.Length > 0 && args[0] == "stdio-server")
         .Build();
 
     await stdioServer.Start();
-    await Task.Delay(Timeout.Infinite);
+    await stdioServer.WaitForShutdown();
+    await stdioServer.Stop();
     return;
 }
 

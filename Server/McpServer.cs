@@ -26,6 +26,11 @@ namespace McpSdk.Server
         private readonly ConcurrentDictionary<RequestId, CancellationTokenSource> _inFlightRequests = new();
         private readonly ConcurrentDictionary<Task, byte> _inFlightRequestHandlers = new();
 
+        // Completed when the connection ends, whichever end ended it. Never faults, so a host can await it
+        // as a plain "run until shutdown".
+        private readonly TaskCompletionSource<bool> _shutdown =
+            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
         private readonly bool _loggingEnabled;
 
         private bool _isRunning;
@@ -164,8 +169,35 @@ namespace McpSdk.Server
             }
         }
 
+        /// <summary>
+        /// Completes when the client closes the connection, when <paramref name="cancellationToken"/> is
+        /// cancelled, or when <see cref="Stop"/> is called.
+        /// </summary>
+        public async Task WaitForShutdown(CancellationToken cancellationToken = default)
+        {
+            if (!cancellationToken.CanBeCanceled)
+            {
+                await _shutdown.Task.ConfigureAwait(false);
+                return;
+            }
+
+            var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+                await Task.WhenAny(_shutdown.Task, cancelled.Task).ConfigureAwait(false);
+        }
+
+        // The client closed the wire. Don't tear anything down from here: Stop() is the host's to call, so
+        // it can drain the responses still being written before the process goes away.
+        private void OnTransportClosed()
+        {
+            _logger.LogDebug("Client closed the connection");
+            _shutdown.TrySetResult(true);
+        }
+
         public async Task Stop()
         {
+            _shutdown.TrySetResult(true);
+
             if (!_isRunning)
                 return;
 
@@ -207,6 +239,7 @@ namespace McpSdk.Server
 
             _transport.RequestReceived += OnRequestReceived;
             _transport.NotificationReceived += OnNotificationReceived;
+            _transport.Closed += OnTransportClosed;
         }
 
         private void UnregisterListeners()
@@ -227,6 +260,7 @@ namespace McpSdk.Server
 
             _transport.RequestReceived -= OnRequestReceived;
             _transport.NotificationReceived -= OnNotificationReceived;
+            _transport.Closed -= OnTransportClosed;
         }
 
         private async void ToolsControllerOnListChanged()

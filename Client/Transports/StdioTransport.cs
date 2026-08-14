@@ -81,8 +81,9 @@ namespace McpSdk.Client.Transports
         {
             try
             {
-                _process?.Kill();
+                // Cancel before killing, so the read loops see our shutdown rather than the EOF it causes.
                 _cts?.Cancel();
+                _process?.Kill();
                 var readers = Task.WhenAll(_readStdOutTask ?? Task.CompletedTask, _readStdErrTask ?? Task.CompletedTask);
                 await Task.WhenAny(readers, Task.Delay(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
             }
@@ -109,16 +110,29 @@ namespace McpSdk.Client.Transports
 
         private async Task ReadStdOut(StreamReader standardOut, CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                var line = await standardOut.ReadLineAsync().ConfigureAwait(false);
-                if (line == null)
-                    break;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var line = await standardOut.ReadLineAsync().ConfigureAwait(false);
 
-                Logger.LogDebug($"[SERVER-OUT] {line}");
-                if (JsonRpcMessage.TryParse(_json, line, out var message))
-                    OnMessageReceived(message);
+                    // null is end of input: the server process closed its stdout (usually by exiting).
+                    if (line == null)
+                        break;
+
+                    Logger.LogDebug($"[SERVER-OUT] {line}");
+                    if (JsonRpcMessage.TryParse(_json, line, out var message))
+                        OnMessageReceived(message);
+                }
             }
+            catch (Exception e) when (!cancellationToken.IsCancellationRequested)
+            {
+                Logger.LogError(e);
+            }
+
+            // Stop() kills the process and cancels this loop; that close is ours, not the server's.
+            if (!cancellationToken.IsCancellationRequested)
+                OnClosed();
         }
 
         private async Task ReadStdErr(StreamReader standardErr, CancellationToken cancellationToken)

@@ -40,6 +40,9 @@ namespace McpSdk.Server.Tests
         /// <summary>Sends a raw, pre-serialized JSON-RPC frame (used to craft custom request ids).</summary>
         public Task SendRaw(string messageAsJson) => Deliver(messageAsJson);
 
+        /// <summary>Simulates the peer dropping the wire (the loopback equivalent of stdio EOF).</summary>
+        public void Close() => OnClosed();
+
         protected override Task OnStart(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         protected override Task OnStop() => Task.CompletedTask;
