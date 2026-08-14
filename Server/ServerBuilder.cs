@@ -10,6 +10,7 @@ namespace McpSdk.Server
         private string _version;
         private string _title;
         private string _description;
+        private string _instructions;
         private ITransportFactory _transportFactory;
         private IToolsController _toolsController;
         private IPromptController _promptsController;
@@ -56,6 +57,17 @@ namespace McpSdk.Server
         public ServerBuilder WithDescription(string description)
         {
             _description = description;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the server-level <c>instructions</c> returned on initialize: free-form guidance on how to
+        /// use this server as a whole, which a client MAY feed to the model as a system prompt. Unlike
+        /// <see cref="WithDescription"/> (a human-facing blurb on <c>serverInfo</c>), this is aimed at the model.
+        /// </summary>
+        public ServerBuilder WithInstructions(string instructions)
+        {
+            _instructions = instructions;
             return this;
         }
 
@@ -117,7 +129,8 @@ namespace McpSdk.Server
                 prompts,
                 resources,
                 _completionController,
-                _loggingEnabled
+                _loggingEnabled,
+                _instructions
             );
 
             return server;

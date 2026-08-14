@@ -31,6 +31,8 @@ namespace McpSdk.Server.Tests
             await Test("requests before initialize are rejected (ping still allowed)", RequestsBeforeInitializeRejected);
             await Test("a second initialize is rejected", DoubleInitializeRejected);
             await Test("InitializeResult parses capabilities + serverInfo", InitializeResultParsing);
+            await Test("instructions are omitted when the server sets none", InstructionsOmittedWhenUnset);
+            await Test("instructions round-trip when the server sets them", InstructionsRoundTrip);
         }
 
         private async Task ModernPeerHandshake()
@@ -192,6 +194,41 @@ namespace McpSdk.Server.Tests
             Assert(parsed.Capabilities?.Tools != null, "tools capability is parsed");
             Assert(parsed.ServerInfo != null, "serverInfo is parsed");
             AssertEqual("Conf Server", parsed.ServerInfo?.Name, "serverInfo.name parsed from lowercase 'name'");
+        }
+
+        private async Task InstructionsOmittedWhenUnset()
+        {
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = BuildServer(serverEnd);
+            await server.Start();
+            await clientEnd.Start();
+
+            var request = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("Parse", "1.0.0"));
+            var response = await clientEnd.SendRequest("initialize", request.WriteMembers);
+
+            Assert(response.Result?["instructions"] == null, "no 'instructions' property on the wire");
+            Assert(new InitializeResult(response.Result).Instructions == null, "parsed Instructions is null");
+        }
+
+        private async Task InstructionsRoundTrip()
+        {
+            const string instructions = "Call get-forecast before answering weather questions.";
+
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server")
+                .WithVersion("1.0.0")
+                .WithInstructions(instructions)
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .Build();
+            await server.Start();
+            await clientEnd.Start();
+
+            var request = new InitializeRequest(ProtocolVersion.Latest, new ClientCapabilitiesModel(), new ClientInfo("Parse", "1.0.0"));
+            var response = await clientEnd.SendRequest("initialize", request.WriteMembers);
+
+            AssertEqual(instructions, response.Result?["instructions"]?.AsString(), "instructions written to the wire");
+            AssertEqual(instructions, new InitializeResult(response.Result).Instructions, "instructions parsed back off the wire");
         }
     }
 }

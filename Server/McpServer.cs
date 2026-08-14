@@ -16,6 +16,9 @@ namespace McpSdk.Server
     {
         private readonly ITransport _transport;
         private readonly ServerInfo _serverInfo;
+
+        // Server-wide usage guidance sent on initialize; null means the field is left off the wire.
+        private readonly string _instructions;
         private readonly IToolsController _toolsController;
         private readonly IPromptController _promptController;
         private readonly IResourcesController _resourcesController;
@@ -49,10 +52,12 @@ namespace McpSdk.Server
             IPromptController promptController,
             IResourcesController resourcesController,
             ICompletionController completionController = null,
-            bool loggingEnabled = false)
+            bool loggingEnabled = false,
+            string instructions = null)
         {
             _transport = transport ?? throw new ArgumentNullException(nameof(transport));
             _serverInfo = serverInfo ?? throw new ArgumentNullException(nameof(serverInfo));
+            _instructions = instructions;
             _logger = loggerFactory.Create<McpServer>();
 
             _toolsController = toolsController;
@@ -426,7 +431,7 @@ namespace McpSdk.Server
 
             _initialized = true;
 
-            var result = new InitializeResult(negotiatedVersion, _capabilities, _serverInfo);
+            var result = new InitializeResult(negotiatedVersion, _capabilities, _serverInfo, _instructions);
             await _transport.SendResponse(JsonRpcResponse.Ok(requestId, result.WriteMembers));
         }
 

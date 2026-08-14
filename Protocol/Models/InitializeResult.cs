@@ -9,13 +9,20 @@ namespace McpSdk.Protocol.Models
 
         public ServerInfo ServerInfo { get; }
 
+        /// <summary>
+        /// Free-form guidance describing how to use the server as a whole, which a client MAY surface
+        /// to the model as a system prompt. Optional; omitted from the wire payload when null.
+        /// </summary>
+        public string Instructions { get; }
+
         public Meta Meta { get; }
 
-        public InitializeResult(string protocolVersion, ServerCapabilitiesModel capabilities, ServerInfo serverInfo, Meta meta = null)
+        public InitializeResult(string protocolVersion, ServerCapabilitiesModel capabilities, ServerInfo serverInfo, string instructions = null, Meta meta = null)
         {
             ProtocolVersion = protocolVersion;
             Capabilities = capabilities;
             ServerInfo = serverInfo;
+            Instructions = instructions;
             Meta = meta;
         }
 
@@ -31,6 +38,8 @@ namespace McpSdk.Protocol.Models
             if (serverInfo != null)
                 ServerInfo = new ServerInfo(serverInfo);
 
+            Instructions = jsonObject["instructions"]?.AsString();
+
             var metaObj = jsonObject["_meta"]?.AsObject();
             if (metaObj != null)
                 Meta = new Meta(metaObj);
@@ -41,6 +50,7 @@ namespace McpSdk.Protocol.Models
             writer.Write("protocolVersion", ProtocolVersion);
             Capabilities?.WriteTo(writer, "capabilities");
             ServerInfo?.WriteTo(writer, "serverInfo");
+            Instructions?.WriteTo(writer, "instructions");
             Meta?.WriteTo(writer, "_meta");
         }
     }
