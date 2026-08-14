@@ -216,6 +216,16 @@ What the SDK serves as of the `2025-11-25` revision. ✅ supported · ❌ not im
 | Completion | `completion/complete` | `WithCompletionCapability` |
 | Logging | `logging/setLevel` | `WithLoggingCapability` |
 
+`WithInstructions` sets the server-level `instructions` on the initialize result — free-form guidance on
+using the server as a whole, which a client may feed to the model as a system prompt. It is omitted from
+the payload when unset. On the client side `Connect` returns the whole `InitializeResult`, so the
+negotiated version, capabilities, `serverInfo`, and `instructions` are all available after the handshake:
+
+```csharp
+var init = await client.Connect();
+Console.WriteLine(init.Instructions);
+```
+
 Server-emitted notifications: `notifications/message`, `notifications/progress`,
 `notifications/cancelled`, `notifications/tools/list_changed`, `notifications/prompts/list_changed`,
 `notifications/resources/list_changed`, `notifications/resources/updated`.

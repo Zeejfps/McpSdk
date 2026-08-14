@@ -33,6 +33,31 @@ namespace McpSdk.Server.Tests
             await Test("InitializeResult parses capabilities + serverInfo", InitializeResultParsing);
             await Test("instructions are omitted when the server sets none", InstructionsOmittedWhenUnset);
             await Test("instructions round-trip when the server sets them", InstructionsRoundTrip);
+            await Test("Connect returns the server's InitializeResult", ConnectReturnsInitializeResult);
+        }
+
+        private async Task ConnectReturnsInitializeResult()
+        {
+            const string instructions = "Prefer get-forecast over guessing.";
+
+            var (clientEnd, serverEnd) = InMemoryTransport.CreatePair(Json, Loggers);
+            var server = new ServerBuilder()
+                .WithName("Conf Server")
+                .WithVersion("1.0.0")
+                .WithInstructions(instructions)
+                .WithTransport(new FixedTransportFactory(serverEnd))
+                .WithDefaultToolsCapability(Json, tools => tools.AddTool(new TestToolHandler()))
+                .Build();
+            await server.Start();
+
+            var client = ConnectClient(clientEnd);
+            var result = await client.Connect();
+
+            Assert(result != null, "Connect returns an InitializeResult");
+            AssertEqual(ProtocolVersion.Latest, result?.ProtocolVersion, "negotiated version is reachable");
+            AssertEqual("Conf Server", result?.ServerInfo?.Name, "serverInfo is reachable");
+            Assert(result?.Capabilities?.Tools != null, "capabilities are reachable");
+            AssertEqual(instructions, result?.Instructions, "instructions are reachable");
         }
 
         private async Task ModernPeerHandshake()

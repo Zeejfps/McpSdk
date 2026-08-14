@@ -205,7 +205,7 @@ namespace McpSdk.Client
             }
         }
         
-        public async Task Connect()
+        public async Task<InitializeResult> Connect()
         {
             if (IsConnected)
                 throw new Exception("Client is already connected");
@@ -247,6 +247,9 @@ namespace McpSdk.Client
                 _roots.ListChanged += OnRootsListChanged;
             
             IsConnected = true;
+
+            // Returned only once negotiation has succeeded, so a caller holding it can trust every field.
+            return initializeResult;
         }
 
         public async Task Ping(CancellationToken cancellationToken = default)
